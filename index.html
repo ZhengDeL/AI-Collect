@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 情报站 · 每日 AI 技术情报</title>
+<meta name="description" content="每天更新的 AI 技术情报：昇腾、英伟达、模型发布、开源项目、框架与业界调优。">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <div class="brand">
+      <span class="logo">📡</span>
+      <div>
+        <h1>AI 情报站</h1>
+        <p class="tagline">每天一份，看得懂、用得上</p>
+      </div>
+    </div>
+    <button id="theme-toggle" class="icon-btn" aria-label="切换主题" title="切换主题">◐</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="toolbar">
+    <div class="filters" id="filters" role="tablist" aria-label="按来源筛选"></div>
+    <div class="search-box">
+      <input id="search" type="search" placeholder="搜索标题、要点、标签…" aria-label="搜索">
+    </div>
+  </section>
+
+  <section class="meta-bar">
+    <div class="date-nav">
+      <button id="prev-day" class="icon-btn" aria-label="前一天" title="前一天">‹</button>
+      <span id="current-date" class="date-label">加载中…</span>
+      <button id="next-day" class="icon-btn" aria-label="后一天" title="后一天">›</button>
+    </div>
+    <div id="summary" class="summary"></div>
+  </section>
+
+  <section id="list" class="list" aria-live="polite"></section>
+
+  <section id="empty" class="empty" hidden>
+    <p>这一天还没有内容。</p>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>由团队每日整理 · 内容仅代表摘录与判断，不构成投资或采购建议</p>
+    <p class="muted">仓库：<a href="https://github.com/ZhengDeL/AI-Collect" target="_blank" rel="noopener">ZhengDeL/AI-Collect</a></p>
+  </div>
+</footer>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
