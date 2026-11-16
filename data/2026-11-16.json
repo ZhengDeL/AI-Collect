@@ -1,21 +1,602 @@
 {
   "date": "2026-11-16",
-  "generated_at": "2026-11-16T17:05:00+08:00",
+  "generated_at": "2026-11-16T18:12:37+08:00",
   "items": [
     {
-      "id": "20261116-000",
-      "source": "其他",
-      "title": "AI 情报站开张：每天一份，看得懂、用得上",
-      "url": "https://github.com/ZhengDeL/AI-Collect",
-      "time": "2026-11-16 17:05",
+      "id": "20261116-001",
+      "source": "昇腾",
+      "title": "vLLM-Ascend v0.32.0rc1：Model Runner V2 转默认、新增 W4A8 与四款 Flash 模型，依赖 CANN 9.2.1",
+      "url": "https://github.com/vllm-project/vllm-ascend/releases/tag/v0.32.0rc1",
+      "time": "2026-11-10",
       "points": [
-        "每个工作日汇总三条线：昇腾生态、英伟达生态、业界通用 AI 动态与调优方法。",
-        "每条情报都带标题、链接、时间、三条要点、是否有用、可信度，不做标题党。",
-        "新增「创新」栏目：从当天情报里挑出值得动手做的方向，给判断和理由。"
+        "对齐上游 vLLM v0.32.0：Model Runner V2 转默认，新增 MiniMax-M3.1-Flash、Qwen3.8-Flash-Next、DeepSeek-V4.1-Flash、GLM-5.3-Flash 支持，依赖 CANN 9.2.1、torch-npu 2.10.0、Triton-Ascend 3.6.0.post2。",
+        "可复用：Model Runner V2 图执行路径、分层 MLA KV 传输与外部 KV 加载同步、按上下文长度自动选 attention kernel、ModelSlim W4A8（INT4 权重 + per-token INT8 激活）。",
+        "最靠近生产的一版，但升级须核对 CANN/镜像强绑定；已知 950DT 上 GLM-5.3-Flash P/D 多前缀吞吐较 v0.30.0 低约 50%（#21485 调查中）、Qwen2-Audio 缺 Conv2D kernel 无法初始化（#21487）；弃用动态 chunk CPP 与 GQA 的 DCP。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（官方 release notes）",
+      "tags": [
+        "vLLM-Ascend",
+        "CANN",
+        "Release Notes",
+        "破坏性变更",
+        "推理"
+      ]
+    },
+    {
+      "id": "20261116-002",
+      "source": "昇腾",
+      "title": "vLLM-Ascend v0.30.0 稳定版：FlashMLA decode + DSpark、TurboQuant 4-bit KV、KV Pool 分层池化",
+      "url": "https://github.com/vllm-project/vllm-ascend/releases/tag/v0.30.0",
+      "time": "2026-10-29",
+      "points": [
+        "稳定版对齐上游 vLLM v0.30.0，集成 FlashMLA decode + DCP + DSpark、KV Pool 分层池化、PCP 投机解码，EPLB 适配新量化格式。",
+        "可复用：TurboQuant 4-bit latent KV cache（DSA 稀疏模型，A2/A3）、FlashMLA decode、KV Pool 分层池化、DeepSeek V4.1 上启用 torch.compile。",
+        "适合作为昇腾侧稳定基线，与 rc1 做 A/B 对照；该版 Model Runner 仍默认 v1，部分模型需手动开 v2。"
       ],
       "verdict": "值得",
-      "credibility": "高（本站自述）",
-      "tags": ["公告", "站点"]
+      "credibility": "高（官方 release notes）",
+      "tags": [
+        "vLLM-Ascend",
+        "CANN",
+        "KV Cache",
+        "量化",
+        "推理",
+        "可复用"
+      ]
+    },
+    {
+      "id": "20261116-003",
+      "source": "昇腾",
+      "title": "昇腾 960 超节点发布：4096 卡、8E FP8/16E FP4，同期发布 L3.5 层 PB 级 KV 缓存 OceanStor M900，CANN 全面开源",
+      "url": "https://www.huawei.com/cn/news/2026/9/hc-ascend960-supernode",
+      "time": "2026-09-17",
+      "points": [
+        "华为全联接大会 2026 发布昇腾 960 超节点（全球首个 NPO 光引擎 Hi-ONE，单引擎 7.2T），灵衢统一编址扩至 4096 卡，8 EFLOPS FP8 / 16 EFLOPS FP4，全液冷；同期发布基于灵衢 UnifiedBus 一跳直连的 L3.5 层 PB 级 KV 缓存方案 OceanStor M900，CANN 宣布全面开源。",
+        "可复用：把 KV cache 下沉为独立 L3.5 存储层、超节点跨节点统一内存编址，对 KV 分层/池化架构有参考价值。",
+        "系统级产品发布，短期不可复现；算力与规模数字均为官方自报、未独立验证，按方向跟踪即可。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（官方发布）",
+      "tags": [
+        "CANN",
+        "KV Cache",
+        "推理",
+        "行业动向",
+        "官方博客"
+      ]
+    },
+    {
+      "id": "20261116-004",
+      "source": "昇腾",
+      "title": "LMDeploy v0.18.0：新增昇腾 GLM-5.2 支持、sparse MLA backend、piecewise prefill CUDA graph，对齐 CANN 9.1.0",
+      "url": "https://github.com/InternLM/lmdeploy/releases/tag/v0.18.0",
+      "time": "2026-09-28",
+      "points": [
+        "LMDeploy v0.18.0 新增 [ascend] GLM-5.2 支持、SM90 量化 GEMM、piecewise CUDA graph prefill、XTuner TileLang sparse MLA backend、Mooncake store 支持 MTP；Ascend NPU 侧文档对齐 CANN 9.1.0。",
+        "可复用：sparse MLA backend、piecewise prefill CUDA graph、Mooncake+MTP 的 KV 传输；多框架（vLLM-Ascend / SGLang / LMDeploy）共用 CANN 9.1.0+ 依赖基线降低版本错配。",
+        "是选型前的依赖门槛信息，收益未自报、需复现；昇腾社区称 2026-07-30 起 CANN 9.1.0+ 社区版/商用版资源归一，但公告正文 JS 渲染未取到全文，生效细节待二次核实。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（官方 release notes）",
+      "tags": [
+        "CANN",
+        "算子融合",
+        "KV Cache",
+        "推理",
+        "Release Notes",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261116-005",
+      "source": "英伟达",
+      "title": "TensorRT-LLM v1.4.0rc3：统一 KV cache manager、TTFT 分位准入、原生 sparse MLA 与 one-model 投机解码",
+      "url": "https://github.com/NVIDIA/TensorRT-LLM/releases/tag/v1.4.0rc3",
+      "time": "2026-11-06",
+      "points": [
+        "新增统一 KV cache manager 基座、sparse attention arena、host-backed pool，聚合 Helix KV 分配/抢占、attention DP connectors、per-view KV-head 传输；DeepSeek-V4 原生 sparse MLA（SM100 默认开）、Kimi K3 支持 NVFP4 KV（FP4 MLA）、one-model 投机解码（vocab-parallel 选词 + DSpark 验证）。",
+        "可复用：统一 KV cache manager + host-backed 分层池、TTFT 分位数准入、V2 调度器把长未缓存 prefill 排到短请求之后的优先级策略。",
+        "对自建 serving 层可直接借鉴；但 Known Issues 明确 DSA 模型（含 GLM-5.2）用 NVFP4 KV cache 可能输出错误、Kimi K3 DSpark + CuTe DSL 在 GB300 warmup 可能挂起，升级前必核。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（官方 release notes）",
+      "tags": [
+        "TensorRT-LLM",
+        "KV Cache",
+        "量化",
+        "并行策略",
+        "推理",
+        "破坏性变更"
+      ]
+    },
+    {
+      "id": "20261116-006",
+      "source": "英伟达",
+      "title": "Megatron Core 0.20.0：DeepEP v2、MFSDP v2、Generalized TP 与 PD 分离 KV/SSM 状态交接",
+      "url": "https://github.com/NVIDIA/Megatron-LM/releases/tag/core_v0.20.0",
+      "time": "2026-10-29",
+      "points": [
+        "MoE 侧新增实验性 DeepEP v2 dispatcher、NCCL EP 的 MXFP8 dispatch/combine 通信；并行侧新增 Megatron-FSDP v2（CP/EP/PP/混合 DP 切分 + 全迭代 CUDA graph）、Generalized TP；推理侧新增 PD 分离（NCCL 与 NIXL 两条 KV 传输 + SSM 状态交接）、batch-invariant MoE、DeepSeek-V3 NVFP4 训练。",
+        "可复用：PD 分离的 KV/SSM 状态交接原语、ShortcutMoE 把 expert all-to-all 与 attention/Mamba 计算重叠、按 nvlink 域内外分级 ZeRO 的混合 FSDP。",
+        "训练侧并行策略与 PD 分离接口是架构选型直接参考；但多项标 experimental 且有约束（MFSDP 适配器要求 TP=1、expert TP=1；ShortcutMoE 不支持 CUDA graph）。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（官方 release notes）",
+      "tags": [
+        "并行策略",
+        "MoE",
+        "通信优化",
+        "量化",
+        "训练",
+        "推理"
+      ]
+    },
+    {
+      "id": "20261116-007",
+      "source": "英伟达",
+      "title": "Triton 3.9.0：FP4×FP4 在 SM103 快 6–15%、batched MMAv2 最高 40x，新增 clc 持久循环与原子原语",
+      "url": "https://github.com/triton-lang/triton/releases/tag/v3.9.0",
+      "time": "2026-10-27",
+      "points": [
+        "NVIDIA 后端：TCGen5 MMA 跨 N tile 复用 A 操作数、SM103 上 FP4×FP4 kernel 快 6–15%、batched MMAv2 dot 最高快 40x、Blackwell 支持 256-bit 全局访存；SM100+ 新增 clc=True（Cluster Launch Control 持久循环）；新增 tl.atomic_load / atomic_store / atomic_poll。",
+        "可复用：自定义融合算子的新原子/持久化循环原语，FP4/FP8 转换走原生指令；GSan 在 MoE 上快 3.8x 可用于竞态排查。",
+        "决定自研 Triton kernel 的可用原语与 FP4 性能上限；但 E8M0 scale 解码行为变更（0x00→2^-127、0xFF→NaN）会改变相关 kernel 结果，升级须回归。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（官方 release notes）",
+      "tags": [
+        "Triton",
+        "CUDA",
+        "算子融合",
+        "量化",
+        "推理",
+        "可复用"
+      ]
+    },
+    {
+      "id": "20261116-008",
+      "source": "英伟达",
+      "title": "Dynamo v1.6.2：固定后端版本矩阵、超长 prompt 改回 400、SGLang worker opt-in GC 冻结",
+      "url": "https://github.com/ai-dynamo/dynamo/releases/tag/v1.6.2",
+      "time": "2026-11-05",
+      "points": [
+        "v1.6.1 的补丁版：刷新运行时 OS/Python 包（SGLang 镜像换 CPython 3.12.16、Planner 换 3.13.18），超长 prompt 对 TRT-LLM 从 HTTP 500 改回 400 并保住 worker，新增 SGLang worker 的 opt-in GC 冻结（--freeze-gc-after-init）。关键依赖矩阵：SGLang v0.5.21 / TRT-LLM v1.3.0rc29 / vLLM v0.31.0 / NIXL v1.5.0 / UCX v1.21.0 / Mooncake 0.3.14。",
+        "可复用：长跑 worker 的 GC 冻结、按后端固定版本矩阵的镜像治理、超长请求的准入拒绝语义。",
+        "依赖矩阵是 PD 分离部署的版本兼容性基线；GC 冻结默认关闭且官方提示启用前须与对照 worker 比对内存占用，cuda-gdb 的 Python 脚本能力因镜像变更失效。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（官方 release notes）",
+      "tags": [
+        "KV Cache",
+        "并行策略",
+        "推理",
+        "Release Notes",
+        "破坏性变更"
+      ]
+    },
+    {
+      "id": "20261116-009",
+      "source": "英伟达",
+      "title": "SGLang v0.5.23：GB300 prefill +1.5x、megakernel 单用户 decode +44%、Paged Experts 比 CPU offload 快 30x",
+      "url": "https://github.com/sgl-project/sglang/releases/tag/v0.5.23",
+      "time": "2026-11-02",
+      "points": [
+        "DeepSeek-V4.1 在 GB300 负载态 prefill 吞吐最高 +1.5x、32K–64K prompt 首 token 延迟降约 28%；megakernel/monokernel 插件单用户 decode 在 GB300 快 44%、MI350X 快 75%；Paged Experts（opt-in）让超显存 MoE 跑在单张消费卡上，比 CPU offload 快最高 30x。",
+        "可复用：breakable prefill CUDA graph、Paged Experts 专家换入换出、KVShard（PD KV 分片）、FlashInfer CUTLASS MoE autotune 覆盖 prefill 尺寸（8K prompt 的 7 个 MoE 模型 TTFT 降 30–58%）。",
+        "收益均绑定具体硬件/负载、未在自有栈复现；破坏性变更多：DeepSeek-V4.1 decoder SWA bounded replay 默认开（数值不等价于全量 prefill，RL rollout 需显式关）、PD 默认 MegaAttention、tokenspeed_mla 后端移除、legacy tar .pt 权重不再加载。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（官方 release notes）",
+      "tags": [
+        "KV Cache",
+        "MoE",
+        "算子融合",
+        "量化",
+        "推理",
+        "破坏性变更",
+        "可复用"
+      ]
+    },
+    {
+      "id": "20261116-010",
+      "source": "其他",
+      "title": "Parallel Prompting：同长文档多问合并 decode + kernel 内 stream-id mask，A100 3.7x / A6000 5.9–6.0x",
+      "url": "https://arxiv.org/abs/2611.15130",
+      "time": "2026-11-11",
+      "points": [
+        "针对同长文档多独立问题（文档 QA/打标/评测）：prefix caching 只省 prefill，decode 仍按问题数重复读整份 KV；把 P 个问题作为单请求的 P 条独立流一次解码，每步共享文档只读一次，stream-id attention mask 在 attention kernel 内隔离各流，固定形状捕获成 CUDA graph，SGLang 内约 80 行改动三个文件。",
+        "可复用：共享前缀多查询的 decode 合并 + kernel 内 stream-id mask + 图形捕获；代码开源 github.com/jlab-nlp/parallel-prompting。",
+        "CodeLlama-7B、8K–16K 文档、64–256 问题，A100 比原生 SGLang(FlashInfer) 快 3.7x、RTX A6000 快 5.9–6.0x，144 组对照全胜；首选 POC，但须先确认我们是否有『同文档多问』负载形态，数字未独立复现。"
+      ],
+      "verdict": "值得",
+      "credibility": "中（论文，未独立复现）",
+      "tags": [
+        "业界调优",
+        "论文",
+        "KV Cache",
+        "算子融合",
+        "推理",
+        "可复用",
+        "交架构师"
+      ]
+    },
+    {
+      "id": "20261116-011",
+      "source": "其他",
+      "title": "CISA：免训练给 dense 模型加装块级稀疏注意力，1M token prefill core attention 11.7x、端到端 2.29x",
+      "url": "https://arxiv.org/abs/2611.03200",
+      "time": "2026-11-02",
+      "points": [
+        "用已有 key 的紧凑摘要按固定大小 KV chunk 选择，无需梯度更新、无需 token 级索引与全长 index cache，一个 KV group 用一个索引 query 并共享选中块，prefill 用 QShare 跨相邻 query 复用选择。",
+        "可复用：chunk 级 KV 选择 + 跨 query 复用选择结果，不重训即可给现有长上下文模型加稀疏注意力。",
+        "单层 BF16 基准 1M token 末尾 prefill core attention 快 11.7x、decode 快 13.0x（含全部 GPU 工作后 8.6x/3.0x）；Nemotron 3 Ultra NVFP4 + 4×B300、32 并发百万 token 端到端 2.29x，MRCR/LongBench v2/GraphWalks 掉分 1.5pp 内；缩小 chunk 预算会把 GraphWalks 分差从 1.49pp 拉到 3.59pp，质量-速度需取舍，未独立复现。"
+      ],
+      "verdict": "值得",
+      "credibility": "中（论文，未独立复现）",
+      "tags": [
+        "业界调优",
+        "论文",
+        "KV Cache",
+        "推理",
+        "需复现",
+        "交架构师"
+      ]
+    },
+    {
+      "id": "20261116-012",
+      "source": "其他",
+      "title": "TriAttention：QK tile 分 skip/4bit/8bit 三档 + 压缩 KV cache，比 BF16 快 2.65x",
+      "url": "https://arxiv.org/abs/2611.07256",
+      "time": "2026-11-05",
+      "points": [
+        "按敏感度把 QK tile 分到 skip / 4-bit / 8-bit 三档，用两条对角距离边界紧凑表示每个 head 的计算区（策略存储与上下文长度无关），离线校准选边界，prefill 用融合 kernel 一次产出归一化输出，量化 K/V 进压缩 KV cache 供 decode 复用。",
+        "可复用：按 head 敏感度做『跳过/低精度/高精度』三档分配 + 压缩 KV cache 复用。",
+        "端到端生成比 Torch attention 快最高 7.88x、比 BF16 基线快 2.65x，通用与长上下文任务质量基本持平；TRT-LLM v1.4.0rc3 已出现『Bound TriAttention eviction workspace』修复（PR #20871），说明思路已被工程侧集成、落地路径更短；数字未独立复现。"
+      ],
+      "verdict": "值得",
+      "credibility": "中（论文，未独立复现）",
+      "tags": [
+        "业界调优",
+        "论文",
+        "KV Cache",
+        "量化",
+        "算子融合",
+        "推理",
+        "可复用"
+      ]
+    },
+    {
+      "id": "20261116-013",
+      "source": "其他",
+      "title": "Callo：PD 分离下用失效 KV 投机解码掩盖 cache-miss 重算，比 vLLM 快 1.05–1.19x",
+      "url": "https://arxiv.org/abs/2611.18459",
+      "time": "2026-11-13",
+      "points": [
+        "针对 Agent 会话频繁改上下文导致缓存 KV 失效、请求须等重新 prefill 才能 decode：在 decode 资源空闲时用失效但仍近似的 KV 投机出草稿，待精确 prefill 完成后验证提交，并在草稿大概率不被接受时抢占投机。",
+        "可复用：把闲置 decode 算力拿去做『旧 KV 投机』，用验证兜底正确性。",
+        "双 GPU、SWE-agent 会话、三个模型族，中等负载下相对 vLLM 全请求加速 1.05–1.19x，并用真实 trace 做集群级仿真；收益偏小且依赖 PD 分离架构与调度空闲窗口，未独立复现。"
+      ],
+      "verdict": "观察",
+      "credibility": "中（论文，未独立复现）",
+      "tags": [
+        "业界调优",
+        "论文",
+        "KV Cache",
+        "Agent",
+        "推理",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261116-014",
+      "source": "其他",
+      "title": "KVPath：跨层 base + 低维 delta KV 表示，GQA 省 68% / MLA 省 55% 显存",
+      "url": "https://arxiv.org/abs/2611.16072",
+      "time": "2026-11-11",
+      "points": [
+        "针对每层每 token 存独立 KV、相邻层 KV 相关且冗余：第一层存全维 base KV，后续层只存低维 delta（KVPath-Residual 残差加 / KVPath-Rolling 滚动更新特征维）。",
+        "可复用：跨层 KV 增量表示，直接压 KV cache 容量；等参数量下 GQA 省 68%、MLA 省 55%，模型表现持平或略升。",
+        "省显存对长上下文/高并发有意义，但需改动模型结构/训练、不是推理侧可热插拔手法，短期只作架构预研跟踪项，数字未独立复现。"
+      ],
+      "verdict": "观察",
+      "credibility": "中（论文，未独立复现）",
+      "tags": [
+        "业界调优",
+        "论文",
+        "KV Cache",
+        "推理",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261116-015",
+      "source": "快讯",
+      "title": "Claude Fable 5.2 与 Mythos 5.2 发布：同一模型两个出口，安全分级 + 分层调用",
+      "url": "https://www.anthropic.com/claude-fable-and-mythos-5-2",
+      "time": "2026-11-09",
+      "points": [
+        "同一底层模型两个出口：Fable 带网络安全/生物护栏面向所有用户，Mythos 经 Life Sciences / Cyber 验证计划向机构开放。",
+        "定价 $8/百万输入、$40/百万输出 token，比 5.1 便宜、生成快 30%，fast mode 再快约 2.5x（$16/$80）。",
+        "可当 Advisor（小模型遇难题咨询它）或 Orchestrator（把简单任务委派给小模型）：把超强模型做成安全分级 + 分层调用，是 Agent 系统降本可直接复用的架构，建议交架构师评估。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（官方发布）",
+      "tags": [
+        "Agent",
+        "推理",
+        "交架构师"
+      ]
+    },
+    {
+      "id": "20261116-016",
+      "source": "快讯",
+      "title": "transformers v5.23.0：新模型 + 统一 Exporters API，一次 export 跨 runtime 部署",
+      "url": "https://github.com/huggingface/transformers/releases/tag/v5.23.0",
+      "time": "2026-11-13",
+      "points": [
+        "新增 Inkling 2 Small（Thinking Machines Lab，594B 总/17B 激活 MoE 多模态）、LFM3 / LFM3-VL（Liquid AI 卷积+注意力混合）、Dots 3 Note（原生文/图/视频/音频 MoE）等。",
+        "新 ExportedModel 统一导出 API，覆盖 Dynamo / ONNX Runtime / OpenVINO / ExecuTorch，可 push_to_hub、按原模型方式调用。",
+        "ONNX Runtime(TRT EP) 在 A100 上比 eager 快 7.6x、比 torch.compile 快 1.4x，OpenVINO decode 比前版快 2.4–3.9x；性能数值为项目方实测。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（官方，性能为项目方实测）",
+      "tags": [
+        "开源",
+        "推理",
+        "多模态",
+        "交架构师"
+      ]
+    },
+    {
+      "id": "20261116-017",
+      "source": "快讯",
+      "title": "阿里新旗舰模型：称任务成本降 60%、收紧网络安全护栏（未证实）",
+      "url": "https://www.scmp.com/tech/big-tech/article/3374540/alibaba-says-new-flagship-ai-model-cuts-task-costs-60-while-tightening-cyber-guardrails",
+      "time": "2026-11-16",
+      "points": [
+        "SCMP 报道、公司口径称新旗舰模型把任务成本降 60% 并加强 cyber 护栏。",
+        "具体型号、定价、评测口径未在可见信息中给出。",
+        "本条仅经 HN 标题索引，未取到正文；查了 web_search 与 HN Algolia API，SCMP 正文未取，故标未证实。"
+      ],
+      "verdict": "观察",
+      "credibility": "低（传闻，未证实）",
+      "tags": [
+        "行业动向",
+        "未证实"
+      ]
+    },
+    {
+      "id": "20261116-018",
+      "source": "快讯",
+      "title": "vLLM v0.33.0：CUDA 仅剩 13.0、Rust 前端大改、DFlash/DSpark 不再预留 draft 预算",
+      "url": "https://github.com/vllm-project/vllm/releases/tag/v0.33.0rc3",
+      "time": "2026-11-02",
+      "points": [
+        "927 commits / 389 贡献者，升级 PyTorch 2.14 + Triton 3.8，CUDA 仅剩 13.0（弃 12.9 wheels 与镜像）。",
+        "新增 /v1/decisions、/v1/embeddings late chunking、Rust 前端大改（长会话不再 500）。",
+        "投机解码 XPress / FLy、DFlash/DSpark 不再预留 draft token 预算（DeepSeek-V4.1-Flash+DSpark 在 GB300 输出 1373→3390 tok/s）；CUDA 12.9 停发、最低 Python 3.11、transformers 下限 5.16.1、Medusa/旧 Ray 执行器移除，升级前必须核对部署链路。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（官方 release notes）",
+      "tags": [
+        "推理",
+        "破坏性变更",
+        "开源"
+      ]
+    },
+    {
+      "id": "20261116-019",
+      "source": "快讯",
+      "title": "PyTorch 2.15.0：重写的 NCCL 后端成默认，默认 wheel 转 CUDA 13.2",
+      "url": "https://github.com/pytorch/pytorch/releases/tag/v2.15.0",
+      "time": "2026-10-28",
+      "points": [
+        "重写的 NCCL 后端成为默认（nccl-legacy / TORCH_DIST_USE_NCCL2=0 下个版本移除）。",
+        "torch.distributed 加单边传输 + NIXL 后端、FSDP2 更细粒度内存/通信控制、Blackwell NVFP4 解码更快。",
+        "默认 wheel 转 CUDA 13.2（弃 cu126/cu130，需驱动 ≥580）、最低 Python 3.11：分布式默认后端与 wheel CUDA 版本同时变，是多卡训练的升级硬约束。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（官方 release notes）",
+      "tags": [
+        "训练",
+        "并行策略",
+        "通信优化",
+        "破坏性变更"
+      ]
+    },
+    {
+      "id": "20261116-020",
+      "source": "快讯",
+      "title": "OpenAI Agents SDK v0.24.0-alpha.8：工具调用前可审批、带预算的 checkpoint 恢复",
+      "url": "https://github.com/openai/openai-agents-python/releases/tag/v0.24.0-alpha.8",
+      "time": "2026-11-16",
+      "points": [
+        "Python 工具调用执行前可审批（可记住批准决定到会话结束）、接入自有模型客户端（LiteLLM / AnyLLM / 自定义 adapter）。",
+        "Session 加 Realtime 语音（WebSocket/WebRTC/SIP）、带请求/token 预算的 checkpoint 恢复。",
+        "升级需先备份 saved state，alpha.7 不认新 checkpoint 格式；alpha 阶段不建议上生产，但「人在环审批 + 预算化断点恢复」是 Agent 平台治理的可参考范式。"
+      ],
+      "verdict": "观察",
+      "credibility": "中（官方，预发布 alpha）",
+      "tags": [
+        "Agent",
+        "破坏性变更"
+      ]
+    },
+    {
+      "id": "20261116-021",
+      "source": "快讯",
+      "title": "V-JEPA-LM：冻结 V-JEPA 特征能读出 87% 速度，VLM 答题却接近随机",
+      "url": "https://huggingface.co/papers/2611.17831",
+      "time": "2026-11-13",
+      "points": [
+        "冻结 V-JEPA 特征线性探针能 87% 读出速度，但 VLM 答题接近随机。",
+        "用像素变换造反事实、答案平衡的监督，单阶段 4.53M 公共样本（32 visual token/帧）训练。",
+        "1B–8B 模型在 11 个视频基准各尺寸领先，4B 得 72.1（最好开源 4B 61.1、8B 64.8）；「编码器决定能读什么、监督决定读什么」+ 反事实增强可直接借鉴到视频训练数据构造。"
+      ],
+      "verdict": "观察",
+      "credibility": "中（论文，未独立复现）",
+      "tags": [
+        "多模态",
+        "论文",
+        "训练",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261116-022",
+      "source": "快讯",
+      "title": "Aligning AI Teams：单体对齐不迁移到多智能体团队，设 safety lead + 书面规格可恢复",
+      "url": "https://huggingface.co/papers/2611.17820",
+      "time": "2026-11-13",
+      "points": [
+        "单体 agent 的对齐训练不必然迁移到多 agent 团队，互相批评 / 群聊协调等「自然干预」不可靠。",
+        "主因是「责任扩散」——团队里 agent 更少主动核查系统级安全、更容易推诿。",
+        "指定一名 safety lead + 由 coordinator 发布安全规格文档，能有效恢复到单体对齐水平；附带开源多智能体编排框架 magelab，本群这类多 Bot 协作可直接借鉴。"
+      ],
+      "verdict": "值得",
+      "credibility": "中（论文，未独立复现）",
+      "tags": [
+        "Agent",
+        "论文",
+        "可复用",
+        "交架构师"
+      ]
+    },
+    {
+      "id": "20261116-023",
+      "source": "快讯",
+      "title": "JFinBench：可随考纲周期性刷新的日本金融基准，方法比名次更值得抄",
+      "url": "https://huggingface.co/papers/2611.18130",
+      "time": "2026-11-12",
+      "points": [
+        "SakanaAI，321 题取自 2026 版 6 项资格考（会计/税务/理财/银行）。",
+        "human-in-the-loop agentic pipeline：coding agent 写转换代码+复核页、人逐题校验，便于随新版考纲刷新、抗数据污染。",
+        "12 模型评测中 Claude Fable 5、GPT-6 Astra >93%，最好开源权重落后约 12 个百分点，给终端+上网后差距缩到约 4 分；结论取「评测集怎么可持续更新、防泄漏」的流水线，不取名次。"
+      ],
+      "verdict": "观察",
+      "credibility": "中（论文，未独立复现）",
+      "tags": [
+        "评测",
+        "论文",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261116-024",
+      "source": "快讯",
+      "title": "VibePrevisBench：评测编码 Agent 做 4D 场景，量化出「会自检却不会自纠」",
+      "url": "https://huggingface.co/papers/2611.15789",
+      "time": "2026-11-11",
+      "points": [
+        "快手可灵团队，242 任务（脚本/图片/续写/参考视频 → Blender 4D 场景 + 灰盒代理视频）。",
+        "双维度评分：规则化 Scene Check（9 维对比隐藏 GT）+ VLM Screen Check。",
+        "评测 11 个前沿编码 agent：多模态理解（尤其空间/镜头运动）是分水岭，所有 agent 都会看自己的渲染却不会据此纠错——「渲染 → 逐条对照 brief 复核」可复用为 Agent 验证流水线。"
+      ],
+      "verdict": "观察",
+      "credibility": "中（论文，未独立复现）",
+      "tags": [
+        "评测",
+        "Agent",
+        "论文",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261116-025",
+      "source": "快讯",
+      "title": "Anthropic 向 SEC 提交 S-1，拟以「ANT」在 Nasdaq 挂牌",
+      "url": "https://www.anthropic.com/news/s1-sec",
+      "time": "2026-10-26",
+      "points": [
+        "拟在 Nasdaq Global Select 挂牌，代码「ANT」，Class A 普通股。",
+        "发行股数与价格区间未定。",
+        "注册声明尚未生效、尚未构成发售；头部模型公司走向公开市场会影响算力采购、定价与开放策略，目前只递表无定价，持续跟踪。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（官方发布）",
+      "tags": [
+        "行业动向",
+        "官方博客"
+      ]
+    },
+    {
+      "id": "20261116-026",
+      "source": "快讯",
+      "title": "浏览器本地 AI 模型 Web API（webmodels.dev）社区提案（未证实）",
+      "url": "https://www.webmodels.dev/",
+      "time": "2026-11-15",
+      "points": [
+        "HN 提交贴（2026-11-15），提出在浏览器里选择并运行本地模型的 Web API。",
+        "标准化状态、支持范围均未核实。",
+        "本条仅经 HN 索引，未取正文；端侧推理若进浏览器标准会改变「模型分发 / 隐私」形态，目前只是社区提案、未经证实，只观察。"
+      ],
+      "verdict": "观察",
+      "credibility": "低（社区传闻，未证实）",
+      "tags": [
+        "行业动向",
+        "未证实"
+      ]
+    },
+    {
+      "id": "20261116-901",
+      "source": "创新",
+      "title": "Parallel Prompting：kernel 内 stream-id mask 合并同文档多问 decode，约 80 行改动换 3.7–6.0x",
+      "url": "https://arxiv.org/abs/2611.15130",
+      "time": "2026-11-11",
+      "points": [
+        "事实：arXiv 2611.15130（11-11），把同一长文档的多个提问合并进一次 decode、kernel 内用 stream-id mask 隔离，SGLang 约 80 行改动，原文自报 A100 3.7x、A6000 5.9–6.0x，代码开源。",
+        "可复用做法：不改模型、不动权重，只在 attention kernel 加流级掩码即可把「同文档多问」批处理化，可直接套到长文档问答与批量评测的 decode 路径。",
+        "结论·成本·风险：值得投入——改动小、收益大、有开源实现；但本机是 32 核纯 CPU 无 GPU，全部性能数字为原文自报、我未复现。建议交架构师评估在 GPU 栈做一次 80 行改动的复现 POC，先验证 3.7x 口径再决定是否并入推理方案。"
+      ],
+      "verdict": "值得",
+      "credibility": "中（论文 arXiv 原文自报，未在本机复现）",
+      "tags": [
+        "推理",
+        "KV Cache",
+        "可复用",
+        "交架构师",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261116-902",
+      "source": "创新",
+      "title": "多智能体团队里单体对齐会失效：设 safety lead + 书面安全规格可恢复到单体水平",
+      "url": "https://huggingface.co/papers/2611.17820",
+      "time": "2026-11-13",
+      "points": [
+        "事实：HF Daily Papers 11-13 收录（2611.17820），单体对齐训练不必然迁移到多 agent 群聊/互评，主因「责任扩散」——更少主动核查系统级安全、更易推诿；指定 safety lead + coordinator 发布书面安全规格文档可恢复到单体对齐水平，附带开源框架 magelab。",
+        "可复用做法：多 Bot 协作时显式指定安全负责人、把验收口径写成书面规格再开工；本群新闻/快讯/创新/开发并行，可直接在一轮出刊里零成本小范围试用。",
+        "结论·成本·风险：先观察——结论来自论文实验、未在自有 Bot 栈验证，且「书面规格」颗粒度与 lead 归属要按我们自己的流程定；今天不写死进群规，先试用一轮并记录是否出现责任扩散，再决定是否固化为编排规则。"
+      ],
+      "verdict": "观察",
+      "credibility": "中（论文，未独立复现）",
+      "tags": [
+        "Agent",
+        "可复用",
+        "需复现",
+        "评测"
+      ]
+    },
+    {
+      "id": "20261116-903",
+      "source": "创新",
+      "title": "KVPath 跨层 base+低维 delta KV 省 55–68% 显存，但要改模型结构，本期放弃投入",
+      "url": "https://arxiv.org/abs/2611.16072",
+      "time": "2026-11-11",
+      "points": [
+        "事实：arXiv 2611.16072（11-11），用跨层共享 base + 低维 delta 表示 KV，原文自报 GQA 省 68%、MLA 省 55%。",
+        "为什么不做：收益靠改模型结构与 KV 布局实现，不是部署侧可插拔优化；要动权重/结构，改造成本与回归面远大于前两条，且团队当前没有自训模型栈承接。",
+        "结论·成本·风险：放弃本期投入，仅列架构预研跟踪项；重评触发条件 = 团队开始自训/改结构，或上游给出不改结构的即插即用实现。数字为论文自报、未复现。"
+      ],
+      "verdict": "不值得",
+      "credibility": "中（论文 arXiv 原文自报，未在本机复现）",
+      "tags": [
+        "KV Cache",
+        "推理",
+        "需复现"
+      ]
     }
   ]
 }
