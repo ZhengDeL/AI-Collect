@@ -1,6 +1,6 @@
 {
   "date": "2026-11-16",
-  "generated_at": "2026-11-16T18:12:37+08:00",
+  "generated_at": "2026-11-16T22:30:31+08:00",
   "items": [
     {
       "id": "20261116-001",
@@ -536,6 +536,366 @@
       "tags": [
         "行业动向",
         "未证实"
+      ]
+    },
+    {
+      "id": "20261116-027",
+      "source": "快讯",
+      "title": "Tencent/LoopForge — 自托管 coding-agent 交付工作流编排",
+      "url": "https://github.com/Tencent/LoopForge",
+      "time": "2026-11-16",
+      "points": [
+        "累计 2,214 stars｜语言 Go｜近 24h +1,016（trending 实测 stars today）",
+        "自托管的工作流编排，把 CodeBuddy、Codex、Claude Code 等 coding agent 用脚本串起来并设置人工审批门，附带面向本地 coding assistant 的工作流。",
+        "可复用点：多 coding agent 编排 + 人工审批门（human approval gates）的脚本化交付流程设计。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261116-028",
+      "source": "快讯",
+      "title": "NVIDIA/SkillEvaluator — AI agent 技能的多层评测框架",
+      "url": "https://github.com/NVIDIA/SkillEvaluator",
+      "time": "2026-11-16",
+      "points": [
+        "累计 2,299 stars｜语言 Python｜近 24h +953（trending 实测 stars today）",
+        "NVIDIA 开源的多层评测框架，用于评估 AI agent skills：质量门禁、语义重叠检测、合成评测数据集生成，以及测量技能对 agent 行为影响的在线评测。",
+        "可复用点：给 agent skills 做质量门禁与语义去重的评测流水线，自建技能库时可用于回归校验。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261116-029",
+      "source": "快讯",
+      "title": "alibaba/open-code-review — 确定性规则 + LLM Agent 混合代码审查",
+      "url": "https://github.com/alibaba/open-code-review",
+      "time": "2026-11-16",
+      "points": [
+        "累计 52,710 stars｜语言 Go｜近 24h +946（trending 实测 stars today）",
+        "阿里开源的代码审查工具，混合架构：确定性流水线 + LLM Agent，精确到行级评论，内置多语言规则集（NPE、线程安全、XSS、SQL 注入），兼容 OpenAI 与 Anthropic 接口。",
+        "可复用点：规则引擎兜底 + LLM 补充的混合审查架构，以及行级评论的落地方式。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261116-030",
+      "source": "快讯",
+      "title": "tradermonty/claude-trading-skills — 面向股票投资者的 Claude Code 技能集",
+      "url": "https://github.com/tradermonty/claude-trading-skills",
+      "time": "2026-11-16",
+      "points": [
+        "累计 6,038 stars｜语言 Python｜近 24h +841（trending 实测 stars today）",
+        "一组给 Claude Code 用的股票投资/交易技能：市场分析、技术绘图、经济日历、选股器与交易策略开发。",
+        "可复用点：把垂直领域（投研）工作流拆成可复用 agent skills 的组织方式。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261116-031",
+      "source": "快讯",
+      "title": "ChromeDevTools/chrome-devtools-mcp — 把 Chrome DevTools 暴露给 coding agent 的 MCP",
+      "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp",
+      "time": "2026-11-16",
+      "points": [
+        "累计 57,471 stars｜语言 TypeScript｜近 24h +837（trending 实测 stars today）",
+        "Chrome DevTools 官方团队提供的 MCP server，让 coding agent 能直接调用浏览器 DevTools 能力。",
+        "可复用点：以 MCP 协议把调试/浏览器能力封装给 agent 的接口边界设计。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261116-032",
+      "source": "快讯",
+      "title": "ag-ui-protocol/ag-ui — Agent 与前端应用的交互协议",
+      "url": "https://github.com/ag-ui-protocol/ag-ui",
+      "time": "2026-11-16",
+      "points": [
+        "累计 18,467 stars｜语言 TypeScript｜近 24h +790（trending 实测 stars today）",
+        "AG-UI：Agent-User Interaction Protocol，定义 agent 与前端应用之间的交互协议，把 agent 能力接入前端界面。",
+        "可复用点：agent↔前端的事件/状态协议约定，做 agent 产品前端时可直接对照。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261116-033",
+      "source": "快讯",
+      "title": "affaan-m/ECC — agent harness 性能优化系统",
+      "url": "https://github.com/affaan-m/ECC",
+      "time": "2026-11-16",
+      "points": [
+        "累计 304,243 stars｜语言 JavaScript｜近 24h +722（trending 实测 stars today）",
+        "面向 Claude Code、Codex、Opencode、Cursor 等 harness 的性能优化系统，涵盖 skills、instincts、memory、security 与 research-first 开发方法。",
+        "可复用点：给多种 coding harness 统一沉淀 memory / security / skills 的组织思路，方法论值得对照观察。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261116-034",
+      "source": "快讯",
+      "title": "backnotprop/plannotator — human-in-the-loop 的 agent 工作台",
+      "url": "https://github.com/backnotprop/plannotator",
+      "time": "2026-11-16",
+      "points": [
+        "累计 12,279 stars｜语言 TypeScript｜近 24h +689（trending 实测 stars today）",
+        "让人保持在 agent 回路里的工作台：对 agent 产出做塑造、决策、规划、批注、代码评审、团队共享，并把反馈一键回传给 agent。",
+        "可复用点：人在环（human-in-the-loop）的批注 / 反馈回传闭环交互设计。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261116-035",
+      "source": "快讯",
+      "title": "google-labs-code/stitch-skills — 遵循开放标准的 Agent Skills 库",
+      "url": "https://github.com/google-labs-code/stitch-skills",
+      "time": "2026-11-16",
+      "points": [
+        "累计 9,612 stars｜语言 TypeScript｜近 24h +540（trending 实测 stars today）",
+        "Google Labs 的 Agent Skills 库，配合 Stitch MCP server 使用；每个技能遵循 Agent Skills 开放标准，兼容 Gemini CLI、Claude Code、Cursor 等 coding agent。",
+        "可复用点：按开放标准编写的技能样例，可用来对齐自家 skills 的规范与跨 harness 兼容。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261116-036",
+      "source": "快讯",
+      "title": "obra/superpowers — agentic skills 框架与开发方法论",
+      "url": "https://github.com/obra/superpowers",
+      "time": "2026-11-16",
+      "points": [
+        "累计 318,371 stars｜语言 Shell｜近 24h +518（trending 实测 stars today）",
+        "一套 agentic skills 框架加软件开发方法论，以可组合技能驱动 agent 完成开发任务。",
+        "可复用点：把开发流程方法论编码成可组合 skills 的做法，适合对照观察其任务分解方式。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261116-037",
+      "source": "快讯",
+      "title": "dream-num/univer — 可嵌入的 Office 编辑 SDK（主打 AI office）",
+      "url": "https://github.com/dream-num/univer",
+      "time": "2026-11-16",
+      "points": [
+        "累计 27,509 stars｜语言 TypeScript｜近 24h +1,878（trending 实测 stars today）",
+        "Univer Office SDK：把文档编辑、表格计算、协同与文件处理嵌入自有产品，基于可扩展开源内核；描述主打「给人和 AI agent 用的 AI office」。边界待定：核心是可嵌入的 Office / 前端编辑器 SDK，虽强调 AI agents 定位，本身不属于模型 / Agent / RAG / 评测 / 工具链，按「前端、编辑器」归其他榜。",
+        "可复用点：可扩展的在线表格 / 文档编辑内核与插件式架构，适合需要内嵌 Office 能力的产品参考。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261116-038",
+      "source": "快讯",
+      "title": "GoogleChrome/modern-web-guidance-src — 给 coding agent 的 Web 最佳实践资料",
+      "url": "https://github.com/GoogleChrome/modern-web-guidance-src",
+      "time": "2026-11-16",
+      "points": [
+        "累计 7,781 stars｜语言 TypeScript｜近 24h +1,200（trending 实测 stars today）",
+        "Google Chrome 团队维护的 Web 开发最佳实践资料源，目标是让 coding agent 跟上最新的 Web 规范 / 最佳实践。边界待定：本质是给 agent 读的规则 / 文档资料，不是模型、框架或 Agent 实现，按「文档 / 资料」归其他榜。",
+        "可复用点：把官方最佳实践整理成可被 agent 检索消费的结构化资料，做 agent 知识供给时可参考其组织方式。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261116-039",
+      "source": "快讯",
+      "title": "we-promise/sure — 开源自托管个人理财应用",
+      "url": "https://github.com/we-promise/sure",
+      "time": "2026-11-16",
+      "points": [
+        "累计 15,881 stars｜语言 Ruby｜近 24h +356（trending 实测 stars today）",
+        "面向所有人的个人理财应用（by everyone），可自托管的开源个人财务 / 记账管理，Ruby 实现。",
+        "可复用点：自托管的财务数据模型与多账户 / 资产跟踪实现，适合自部署理财工具参考。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261116-040",
+      "source": "快讯",
+      "title": "kajisho5/ffmpeg-skill — 给 coding agent 的本地视频编辑工具集",
+      "url": "https://github.com/kajisho5/ffmpeg-skill",
+      "time": "2026-11-16",
+      "points": [
+        "累计 6,235 stars｜语言 Python｜近 24h +331（trending 实测 stars today）",
+        "面向 coding agent 的本地视频编辑器：42 个 FFmpeg 工具 + 机器可读契约 + MCP server，供 Claude Code / Cursor / Codex 做剪辑、字幕、重构图、响度、平台导出，全部本地、无需云与 API key。边界待定：核心是 FFmpeg 视频处理工具集，虽以 MCP 暴露给 agent，按「系统 / 多媒体工具」归其他榜。",
+        "可复用点：把命令行多媒体能力以机器可读契约 + MCP 封装给 agent 的工具化方式。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261116-041",
+      "source": "快讯",
+      "title": "maillab/cloud-mail — 基于 Cloudflare 的一站式邮箱服务平台",
+      "url": "https://github.com/maillab/cloud-mail",
+      "time": "2026-11-16",
+      "points": [
+        "累计 16,264 stars｜语言 JavaScript｜近 24h +316（trending 实测 stars today）",
+        "基于 Cloudflare 构建的一站式邮箱服务平台（中英双语项目），提供邮件收发与管理。",
+        "可复用点：完全跑在边缘平台（Cloudflare）上的邮件服务架构与部署形态。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261116-042",
+      "source": "快讯",
+      "title": "DeanChensj/jiangshan-map — 中国历史时序交互地图",
+      "url": "https://github.com/DeanChensj/jiangshan-map",
+      "time": "2026-11-16",
+      "points": [
+        "累计 6,543 stars｜语言 JavaScript｜近 24h +285（trending 实测 stars today）",
+        "「江山时序」中国历史交互地图时间轴（公元前 403 年至今），覆盖 18 个朝代、198 个疆域快照，含古今地名沿革与古典诗词路线。",
+        "可复用点：历史疆域 / 地名的时空数据结构与大规模快照可视化方案。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261116-043",
+      "source": "快讯",
+      "title": "martin-olivier/airgorah — WiFi 安全审计软件",
+      "url": "https://github.com/martin-olivier/airgorah",
+      "time": "2026-11-16",
+      "points": [
+        "累计 6,429 stars｜语言 Rust｜近 24h +267（trending 实测 stars today）",
+        "用 Rust 写的 WiFi 安全审计工具，用于无线网络的安全评估。",
+        "可复用点：Rust 实现的无线抓包 / 审计工具结构；仅在授权环境用于合规安全评估。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261116-044",
+      "source": "快讯",
+      "title": "bilawalsidhu/gods-eye-view — 真实开源空间情报的 3D 地球",
+      "url": "https://github.com/bilawalsidhu/gods-eye-view",
+      "time": "2026-11-16",
+      "points": [
+        "累计 65,240 stars｜语言 JavaScript｜近 24h +257（trending 实测 stars today）",
+        "浏览器里的间谍卫星模拟器，但数据真实：在照片级真实的 3D 地球上呈现实时开源空间情报。",
+        "可复用点：把真实地理 / 卫星数据叠加到 Web 3D 地球上的可视化管线。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261116-045",
+      "source": "快讯",
+      "title": "hieunc229/mailflare — 面向专业人士与团队的邮箱",
+      "url": "https://github.com/hieunc229/mailflare",
+      "time": "2026-11-16",
+      "points": [
+        "累计 6,602 stars｜语言 TypeScript｜近 24h +253（trending 实测 stars today）",
+        "面向专业人士与团队的邮件产品（Mailflare）。",
+        "可复用点：以团队协作为导向的邮件产品形态，可与同类自托管邮件方案对照观察。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261116-046",
+      "source": "快讯",
+      "title": "ModernRelay/omnigraph — 对象存储原生的图数据库",
+      "url": "https://github.com/ModernRelay/omnigraph",
+      "time": "2026-11-16",
+      "points": [
+        "累计 2,754 stars｜语言 Rust｜近 24h +174（trending 实测 stars today）",
+        "对象存储原生的图数据库，支持分支（branching）与类型化本体（typed ontology），Rust 实现。",
+        "可复用点：以对象存储为底座 + 数据分支的图数据版本管理方式。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-16；stars today 为官方近 24h 增量，累计 stars、语言同步取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
       ]
     },
     {
