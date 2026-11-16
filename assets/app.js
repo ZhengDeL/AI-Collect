@@ -151,6 +151,11 @@
     el.list.innerHTML = '<p class="empty">加载中…</p>';
     loadJSON('data/' + date + '.json').then(function (day) {
       state.day = day;
+      // chip 由当日数据动态生成：若上一天选中的来源在这一天不存在，沿用会让列表
+      // 为空且没有任何 chip 高亮，用户无法判断为何空白。此时回退到「全部」；来源仍在则保持筛选。
+      if (state.source !== '全部' && !sourcesOf(day.items || [])[state.source]) {
+        state.source = '全部';
+      }
       renderDay();
       history.replaceState(null, '', '#' + date);
     }).catch(function (e) {
