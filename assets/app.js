@@ -15,6 +15,7 @@
     search: document.getElementById('search'),
     list: document.getElementById('list'),
     empty: document.getElementById('empty'),
+    overview: document.getElementById('overview'),
     dateLabel: document.getElementById('current-date'),
     summary: document.getElementById('summary'),
     prev: document.getElementById('prev-day'),
@@ -90,6 +91,72 @@
     });
   }
 
+  // 可信度按文本分级上色：高/官方→绿，低/传闻/未证实/未查到→红，其余→蓝
+  function credClass(c) {
+    var s = String(c || '');
+    if (/低|传闻|未证实|未查到/.test(s)) return 'low';
+    if (/高|官方/.test(s)) return 'high';
+    return 'mid';
+  }
+
+  // 今日概览：基于当日全部条目（不随筛选/搜索重算），让人一进来就知道今天有什么
+  function renderOverview(items) {
+    if (!items || !items.length) { el.overview.hidden = true; el.overview.innerHTML = ''; return; }
+    el.overview.hidden = false;
+    var counts = sourcesOf(items);
+    var order = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
+    var stats = order.map(function (n) {
+      return '<span class="ov-stat" data-src="' + esc(n) + '"><span class="dot"></span>' +
+        '<em>' + esc(n) + '</em> <b>' + counts[n] + '</b> 条</span>';
+    }).join('');
+    var picks = items.filter(function (it) { return verdictClass(it.verdict) === 'yes'; }).slice(0, 2);
+    var picksHtml = picks.length ? picks.map(function (it, i) {
+      return '<div class="ov-pick"><span class="rank">' + (i + 1) + '</span>' +
+        '<span class="badge ' + esc(it.source || '其他') + '">' + esc(it.source || '其他') + '</span>' +
+        '<a href="' + esc(it.url || '#') + '" target="_blank" rel="noopener">' + esc(it.title) + '</a></div>';
+    }).join('') : '<div class="ov-pick"><span class="rank">—</span>本期暂无「值得」条目</div>';
+
+    el.overview.innerHTML =
+      '<p class="ov-eyebrow">今日概览 · DAILY BRIEF</p>' +
+      '<div class="ov-top">' +
+        '<h2 class="ov-date">' + esc(fmtDate(state.date)) + '</h2>' +
+        '<div class="ov-total"><b>' + items.length + '</b><span>条情报 · 已分类整理</span></div>' +
+      '</div>' +
+      '<div class="ov-stats">' + stats + '</div>' +
+      '<div class="ov-picks"><h3>今日最值得看</h3>' + picksHtml + '</div>';
+  }
+
+  // 单张卡片：首条要点常显，其余收进 <details>；verdict/可信度做成有色徽标；链接收成「原文 ↗」
+  function cardHTML(it, i) {
+    var src = it.source || '其他';
+    var pts = it.points || [];
+    var lead = pts.length ? '<div class="point-lead"><span class="pdot">①</span><span>' + esc(pts[0]) + '</span></div>' : '';
+    var more = pts.length > 1
+      ? '<details class="points-more"><summary>展开其余 ' + (pts.length - 1) + ' 条要点</summary>' +
+          '<ul class="points">' + pts.slice(1).map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') +
+        '</ul></details>'
+      : '';
+    var tags = (it.tags || []).map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join('');
+    var time = it.time ? '<span>🕒 ' + esc(it.time) + '</span>' : '';
+    var verdict = it.verdict
+      ? '<span class="vbadge vbadge-' + verdictClass(it.verdict) + '">' + esc(it.verdict) + '</span>' : '';
+    var cred = it.credibility
+      ? '<span class="cbadge cbadge-' + credClass(it.credibility) + '">可信度 ' + esc(it.credibility) + '</span>' : '';
+    var origin = '<a class="origin" href="' + esc(it.url || '#') + '" target="_blank" rel="noopener">原文 ↗</a>';
+
+    return '<article class="card" data-id="' + esc(it.id || '') + '" style="--i:' + i + '">' +
+      '<div class="card-top">' +
+        '<span class="badge ' + esc(src) + '">' + esc(src) + '</span>' +
+        time + origin +
+      '</div>' +
+      '<h2><a href="' + esc(it.url || '#') + '" target="_blank" rel="noopener">' + esc(it.title) + '</a></h2>' +
+      (lead || more ? '<div class="points-box">' + lead + more + '</div>' : '') +
+      '<div class="card-foot">' + verdict + cred +
+        (tags ? '<span class="tags">' + tags + '</span>' : '') +
+      '</div>' +
+    '</article>';
+  }
+
   function renderList() {
     var items = (state.day && state.day.items) || [];
     var q = state.query.trim().toLowerCase();
@@ -113,27 +180,24 @@
     }
     el.empty.hidden = true;
 
-    el.list.innerHTML = shown.map(function (it) {
-      var src = it.source || '其他';
-      var pts = (it.points || []).map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('');
-      var tags = (it.tags || []).map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join('');
-      var time = it.time ? '<span>🕒 ' + esc(it.time) + '</span>' : '';
-      var cred = it.credibility ? '<span class="cred">可信度 ' + esc(it.credibility) + '</span>' : '';
-
-      return '<article class="card">' +
-        '<div class="card-top">' +
+    // 按来源分组：组顺序固定为「当日全部条目的来源计数降序」（与 chip 一致），
+    // 组内按时间新→旧，只渲染命中的条目，空组跳过。排序作用于 filter 出的新数组，不改 state.day.items。
+    var counts = sourcesOf(items);
+    var order = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
+    var html = order.map(function (src) {
+      var gi = shown.filter(function (it) { return (it.source || '其他') === src; });
+      if (!gi.length) return '';
+      gi.sort(function (a, b) { return String(b.time || '').localeCompare(String(a.time || '')); });
+      return '<section class="group">' +
+        '<div class="group-head">' +
           '<span class="badge ' + esc(src) + '">' + esc(src) + '</span>' +
-          time +
+          '<span class="group-count">' + gi.length + ' 条</span>' +
+          '<span class="group-line"></span>' +
         '</div>' +
-        '<h2><a href="' + esc(it.url || '#') + '" target="_blank" rel="noopener">' + esc(it.title) + '</a></h2>' +
-        (pts ? '<ul class="points">' + pts + '</ul>' : '') +
-        '<div class="card-foot">' +
-          (it.verdict ? '<span class="verdict ' + verdictClass(it.verdict) + '">' + esc(it.verdict) + '</span>' : '') +
-          cred +
-          (tags ? '<span class="tags">' + tags + '</span>' : '') +
-        '</div>' +
-      '</article>';
+        '<div class="group-cards">' + gi.map(cardHTML).join('') + '</div>' +
+      '</section>';
     }).join('');
+    el.list.innerHTML = html;
   }
 
   function renderDay() {
@@ -141,6 +205,7 @@
     var idx = state.index.dates.findIndex(function (d) { return d.date === state.date; });
     el.prev.disabled = idx >= state.index.dates.length - 1;
     el.next.disabled = idx <= 0;
+    renderOverview((state.day && state.day.items) || []);
     renderFilters();
     renderList();
   }
