@@ -1,0 +1,32 @@
+# AI 情报站：入库数据契约门禁
+# 纯静态站不打包，这一条 CI 只做一件事——校验 data/** 是否符合 README 契约。
+# 校验器随仓库走（tools/validate_ai_collect.py），不引任何外部/本地个人副本。
+# 有 error 即让 job 失败；warning 只提示、不影响门禁（与校验器退出码口径一致）。
+# 全程只用内置检出能力，无需额外凭据，也不触碰站点发布设置。
+name: 校验入库数据
+
+on:
+  # 推 main 且改动命中 data/** 才自动跑；无关提交不发 Actions
+  push:
+    branches: [main]
+    paths:
+      - 'data/**'
+  # PR 一律校验（无路径过滤），改动门禁脚本自身也能提前发现问题
+  pull_request:
+  # 手动兜底入口：不想等 push、想随时验一次时用
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 准备 Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 校验 data/**（--dir . ，0 error 才过）
+        run: python tools/validate_ai_collect.py --dir .
