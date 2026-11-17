@@ -22,10 +22,10 @@ import re
 import sys
 import urllib.request
 
-SOURCE_ENUM = {"昇腾", "英伟达", "快讯", "创新", "其他"}
+SOURCE_ENUM = {"昇腾", "英伟达", "快讯", "星榜", "创新", "其他"}
 VERDICT_ENUM = {"值得", "观察", "不值得"}
 REQUIRED = ["id", "source", "title", "url", "time", "points", "verdict", "credibility", "tags"]
-KNOWN_BADGES = {"昇腾", "英伟达", "快讯", "创新", "其他"}  # assets/style.css 实读已定义
+KNOWN_BADGES = {"昇腾", "英伟达", "快讯", "星榜", "创新", "其他"}  # assets/style.css 实读已定义
 # 快讯移交样本里出现的「是否有用/有用」等口语取值 -> 契约值的合法映射（仅提示，不自动改）
 VERDICT_ALIASES = {"有用": "值得", "是": "值得", "没用": "不值得", "否": "不值得"}
 CRED_HINT = re.compile(r"(官方|论文|实测|社区|二手|转述|传闻|未证实|未查到)")

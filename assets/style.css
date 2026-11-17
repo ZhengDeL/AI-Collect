@@ -23,6 +23,8 @@
   --green-soft: rgba(61, 220, 151, .14);
   --blue-soft: rgba(78, 161, 255, .14);
   --amber-soft: rgba(255, 180, 84, .14);
+  --violet: #a371f7;
+  --violet-soft: rgba(163, 113, 247, .16);
 
   --shadow: 0 6px 24px rgba(0, 0, 0, .28);
   --shadow-soft: 0 2px 10px rgba(0, 0, 0, .18);
@@ -39,6 +41,8 @@
   --ink-3: #7d8ea3;
   --accent: #1f6feb;
   --accent-soft: rgba(31, 111, 235, .1);
+  --violet: #7c4dff;
+  --violet-soft: rgba(124, 77, 255, .12);
   --shadow: 0 4px 18px rgba(15, 35, 65, .08);
   --shadow-soft: 0 2px 10px rgba(15, 35, 65, .06);
 }
@@ -278,6 +282,7 @@ body {
 .badge.快讯 { background: var(--blue-soft); color: var(--accent); }
 .badge.创新 { background: var(--amber-soft); color: var(--amber); }
 .badge.其他 { background: var(--accent-soft); color: var(--accent); }
+.badge.星榜 { background: var(--violet-soft); color: var(--violet); }
 
 .card h2 { margin: 0 0 calc(var(--sp) * 1.25); font-size: 17.5px; line-height: 1.45; }
 .card h2 a { color: var(--ink); text-decoration: none; }

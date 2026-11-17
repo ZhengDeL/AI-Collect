@@ -720,7 +720,7 @@
     },
     {
       "id": "20261117-035",
-      "source": "快讯",
+      "source": "星榜",
       "title": "obra/superpowers — agentic skills 框架与开发方法论",
       "url": "https://github.com/obra/superpowers",
       "time": "2026-11-17",
@@ -738,7 +738,7 @@
     },
     {
       "id": "20261117-036",
-      "source": "快讯",
+      "source": "星榜",
       "title": "Tencent/LoopForge — 自托管 coding-agent 交付工作流编排",
       "url": "https://github.com/Tencent/LoopForge",
       "time": "2026-11-17",
@@ -756,7 +756,7 @@
     },
     {
       "id": "20261117-037",
-      "source": "快讯",
+      "source": "星榜",
       "title": "alibaba/open-code-review — 确定性规则 + LLM Agent 混合代码审查",
       "url": "https://github.com/alibaba/open-code-review",
       "time": "2026-11-17",
@@ -774,7 +774,7 @@
     },
     {
       "id": "20261117-038",
-      "source": "快讯",
+      "source": "星榜",
       "title": "NVIDIA/SkillEvaluator — AI agent 技能的多层评测框架",
       "url": "https://github.com/NVIDIA/SkillEvaluator",
       "time": "2026-11-17",
@@ -792,7 +792,7 @@
     },
     {
       "id": "20261117-039",
-      "source": "快讯",
+      "source": "星榜",
       "title": "ChromeDevTools/chrome-devtools-mcp — 把 Chrome DevTools 暴露给 coding agent 的 MCP",
       "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp",
       "time": "2026-11-17",
@@ -810,7 +810,7 @@
     },
     {
       "id": "20261117-040",
-      "source": "快讯",
+      "source": "星榜",
       "title": "tradermonty/claude-trading-skills — 面向股票投资者的 Claude Code 技能集",
       "url": "https://github.com/tradermonty/claude-trading-skills",
       "time": "2026-11-17",
@@ -828,7 +828,7 @@
     },
     {
       "id": "20261117-041",
-      "source": "快讯",
+      "source": "星榜",
       "title": "ag-ui-protocol/ag-ui — Agent 与前端应用的交互协议",
       "url": "https://github.com/ag-ui-protocol/ag-ui",
       "time": "2026-11-17",
@@ -846,7 +846,7 @@
     },
     {
       "id": "20261117-042",
-      "source": "快讯",
+      "source": "星榜",
       "title": "affaan-m/ECC — agent harness 性能优化系统",
       "url": "https://github.com/affaan-m/ECC",
       "time": "2026-11-17",
@@ -864,7 +864,7 @@
     },
     {
       "id": "20261117-043",
-      "source": "快讯",
+      "source": "星榜",
       "title": "backnotprop/plannotator — human-in-the-loop 的 agent 工作台",
       "url": "https://github.com/backnotprop/plannotator",
       "time": "2026-11-17",
@@ -882,7 +882,7 @@
     },
     {
       "id": "20261117-044",
-      "source": "快讯",
+      "source": "星榜",
       "title": "google-labs-code/stitch-skills — 遵循开放标准的 Agent Skills 库",
       "url": "https://github.com/google-labs-code/stitch-skills",
       "time": "2026-11-17",
@@ -900,7 +900,7 @@
     },
     {
       "id": "20261117-045",
-      "source": "快讯",
+      "source": "星榜",
       "title": "dream-num/univer — 可嵌入的 Office 编辑 SDK（主打 AI office）",
       "url": "https://github.com/dream-num/univer",
       "time": "2026-11-17",
@@ -918,7 +918,7 @@
     },
     {
       "id": "20261117-046",
-      "source": "快讯",
+      "source": "星榜",
       "title": "GoogleChrome/modern-web-guidance-src — 给 coding agent 的 Web 最佳实践资料",
       "url": "https://github.com/GoogleChrome/modern-web-guidance-src",
       "time": "2026-11-17",
@@ -936,7 +936,7 @@
     },
     {
       "id": "20261117-047",
-      "source": "快讯",
+      "source": "星榜",
       "title": "kajisho5/ffmpeg-skill — 给 coding agent 的本地视频编辑工具集",
       "url": "https://github.com/kajisho5/ffmpeg-skill",
       "time": "2026-11-17",
@@ -954,7 +954,7 @@
     },
     {
       "id": "20261117-048",
-      "source": "快讯",
+      "source": "星榜",
       "title": "Likely7/Veyra-NRVideo — 带 AI 超分的视频播放/画质增强工具",
       "url": "https://github.com/Likely7/Veyra-NRVideo",
       "time": "2026-11-17",
@@ -972,7 +972,7 @@
     },
     {
       "id": "20261117-049",
-      "source": "快讯",
+      "source": "星榜",
       "title": "we-promise/sure — 开源自托管个人理财应用",
       "url": "https://github.com/we-promise/sure",
       "time": "2026-11-17",
@@ -990,7 +990,7 @@
     },
     {
       "id": "20261117-050",
-      "source": "快讯",
+      "source": "星榜",
       "title": "boykopovar/AnyPS5 — PS5 可执行文件移植工具",
       "url": "https://github.com/boykopovar/AnyPS5",
       "time": "2026-11-17",
@@ -1008,7 +1008,7 @@
     },
     {
       "id": "20261117-051",
-      "source": "快讯",
+      "source": "星榜",
       "title": "DeanChensj/jiangshan-map — 中国历史时序交互地图",
       "url": "https://github.com/DeanChensj/jiangshan-map",
       "time": "2026-11-17",
@@ -1026,7 +1026,7 @@
     },
     {
       "id": "20261117-052",
-      "source": "快讯",
+      "source": "星榜",
       "title": "hieunc229/mailflare — 面向专业人士与团队的邮箱",
       "url": "https://github.com/hieunc229/mailflare",
       "time": "2026-11-17",
@@ -1044,7 +1044,7 @@
     },
     {
       "id": "20261117-053",
-      "source": "快讯",
+      "source": "星榜",
       "title": "bilawalsidhu/gods-eye-view — 真实开源空间情报的 3D 地球",
       "url": "https://github.com/bilawalsidhu/gods-eye-view",
       "time": "2026-11-17",
@@ -1062,7 +1062,7 @@
     },
     {
       "id": "20261117-054",
-      "source": "快讯",
+      "source": "星榜",
       "title": "martin-olivier/airgorah — WiFi 安全审计软件",
       "url": "https://github.com/martin-olivier/airgorah",
       "time": "2026-11-17",
