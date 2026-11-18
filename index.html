@@ -7,6 +7,11 @@
 <meta name="description" content="每天更新的 AI 技术情报：昇腾、英伟达、模型发布、开源项目、框架与业界调优。">
 <link rel="stylesheet" href="assets/style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+<style>
+.header-actions { display: flex; align-items: center; gap: 12px; }
+.header-link { color: var(--ink-2); text-decoration: none; font-size: 13.5px; font-weight: 600; white-space: nowrap; transition: .16s; }
+.header-link:hover { color: var(--accent); }
+</style>
 </head>
 <body>
 <header class="site-header">
@@ -18,7 +23,10 @@
         <p class="tagline">每天一份，看得懂、用得上</p>
       </div>
     </div>
-    <button id="theme-toggle" class="icon-btn" aria-label="切换主题" title="切换主题">◐</button>
+    <div class="header-actions">
+      <a class="header-link" href="kv.html">KV 卸载 →</a>
+      <button id="theme-toggle" class="icon-btn" aria-label="切换主题" title="切换主题">◐</button>
+    </div>
   </div>
 </header>
 
