@@ -53,6 +53,7 @@
       document.documentElement.setAttribute('data-theme', cur);
       localStorage.setItem('theme', cur);
     });
+    window.__themeClickBound = true;   // 首页还加载 kv.js，用它避免重复绑定
   }
 
   function loadJSON(url) {

@@ -4,8 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI 情报站 · 每日 AI 技术情报</title>
-<meta name="description" content="每天更新的 AI 技术情报：昇腾、英伟达、模型发布、开源项目、框架与业界调优。">
+<meta name="description" content="每天更新的 AI 技术情报：昇腾、英伟达、模型发布、开源项目、框架与业界调优，另有 KV 卸载全景专题。">
 <link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/kv.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
 <style>
 .header-actions { display: flex; align-items: center; gap: 12px; }
@@ -51,10 +52,35 @@
 
   <section id="topbox" class="topbox" aria-label="今日 TOP 10" hidden></section>
 
+  <p class="kv-jump"><a href="#kv-block">↓ 常驻专题：KV 卸载全景 <b id="kv-jump-count">74</b> 条</a></p>
+
   <section id="list" class="list" aria-live="polite"></section>
 
   <section id="empty" class="empty" hidden>
     <p>这一天还没有内容。</p>
+  </section>
+
+  <section id="kv-block" aria-label="KV 卸载全景（常驻专题）">
+    <div class="kv-block-head">
+      <p class="kv-eyebrow">常驻专题 · KV CACHE OFFLOADING</p>
+      <h2 class="kv-block-title">KV 卸载全景图</h2>
+      <p class="kv-sub">证据分级 A/B/C/D，只有 A/B 可「建议上」；数字与来源以原链接为准。想只看这一页？<a href="kv.html">单独打开 →</a></p>
+    </div>
+
+    <section id="kv-overview" class="kv-overview" aria-label="全景统计"></section>
+
+    <section class="toolbar">
+      <div id="kv-filters" class="filters" role="tablist" aria-label="KV 筛选"></div>
+      <div class="search-box">
+        <input id="kv-search" type="search" placeholder="搜索方案、引擎、收益、坑…" aria-label="搜索 KV 方案">
+      </div>
+    </section>
+
+    <section id="kv-list" class="kv-list" aria-live="polite"></section>
+
+    <section id="kv-empty" class="empty" hidden>
+      <p>没有匹配的方案。</p>
+    </section>
   </section>
 </main>
 
@@ -66,5 +92,6 @@
 </footer>
 
 <script src="assets/app.js"></script>
+<script src="assets/kv.js"></script>
 </body>
 </html>

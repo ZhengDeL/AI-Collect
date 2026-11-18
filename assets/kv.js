@@ -43,6 +43,9 @@
   function initTheme() {
     var saved = localStorage.getItem('theme');
     if (saved) document.documentElement.setAttribute('data-theme', saved);
+    // 首页同时加载 app.js：主题按钮已由 app.js 绑定，两个 handler 会把主题切两次而互相抵消
+    if (window.__themeClickBound) return;
+    window.__themeClickBound = true;
     el.theme.addEventListener('click', function () {
       var cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme', cur);
@@ -239,6 +242,8 @@
     loadJSON('data/kv.json').then(function (doc) {
       if (!doc || !Array.isArray(doc.items)) throw new Error('KV 数据格式错误');
       state.doc = doc;
+      var jump = document.getElementById('kv-jump-count');
+      if (jump) jump.textContent = items().length;   // 首页跳转提示的条数跟着数据走
       renderOverview();
       renderFilters();
       renderList();
