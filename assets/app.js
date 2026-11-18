@@ -7,6 +7,7 @@
     date: null,
     day: null,
     source: '全部',
+    tune: false,
     query: ''
   };
 
@@ -67,6 +68,11 @@
     return m;
   }
 
+  // 「调优」是 tag 维度，与 source 正交：字面口径，含该 tag 即计入（含 source=创新）
+  function hasTune(it) {
+    return (it.tags || []).indexOf('业界调优') !== -1;
+  }
+
   function renderFilters() {
     var items = (state.day && state.day.items) || [];
     var counts = sourcesOf(items);
@@ -81,14 +87,29 @@
         '<span class="count">' + counts[n] + '</span></button>';
     });
 
+    // tag 维度的「调优」chip：与 source chip 同套样式同一行，数字为含该 tag 的条数
+    var tuneCount = items.filter(hasTune).length;
+    html += '<button class="chip' + (state.tune ? ' active' : '') +
+      '" data-tune="1" role="tab">调优<span class="count">' + tuneCount + '</span></button>';
+
     el.filters.innerHTML = html;
-    el.filters.querySelectorAll('.chip').forEach(function (b) {
+    el.filters.querySelectorAll('.chip[data-src]').forEach(function (b) {
       b.addEventListener('click', function () {
         state.source = b.getAttribute('data-src');
+        state.tune = false; // 点任一 source chip 清掉调优筛选，避免两个维度叠加
         renderFilters();
         renderList();
       });
     });
+    var tuneBtn = el.filters.querySelector('.chip[data-tune]');
+    if (tuneBtn) {
+      tuneBtn.addEventListener('click', function () {
+        state.tune = !state.tune;
+        if (state.tune) state.source = '全部'; // 调优只与「全部」共存，不与具体来源叠加
+        renderFilters();
+        renderList();
+      });
+    }
   }
 
   // 可信度按文本分级上色：高/官方→绿，低/传闻/未证实/未查到→红，其余→蓝
@@ -136,7 +157,9 @@
           '<ul class="points">' + pts.slice(1).map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') +
         '</ul></details>'
       : '';
-    var tags = (it.tags || []).map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join('');
+    var tags = (it.tags || []).map(function (t) {
+      return '<span class="tag' + (t === '业界调优' ? ' tag-tune' : '') + '">' + esc(t) + '</span>';
+    }).join('');
     var time = it.time ? '<span>🕒 ' + esc(it.time) + '</span>' : '';
     var verdict = it.verdict
       ? '<span class="vbadge vbadge-' + verdictClass(it.verdict) + '">' + esc(it.verdict) + '</span>' : '';
@@ -162,7 +185,11 @@
     var q = state.query.trim().toLowerCase();
 
     var shown = items.filter(function (it) {
-      if (state.source !== '全部' && (it.source || '其他') !== state.source) return false;
+      if (state.tune) {
+        if (!hasTune(it)) return false;
+      } else if (state.source !== '全部' && (it.source || '其他') !== state.source) {
+        return false;
+      }
       if (!q) return true;
       var hay = [it.title, (it.points || []).join(' '), (it.tags || []).join(' '), it.verdict || '']
         .join(' ').toLowerCase();

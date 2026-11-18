@@ -363,6 +363,13 @@ body {
   font-size: 11.5px;
   color: var(--ink-3);
 }
+/* 调优方法条：只对「业界调优」这一个 tag 上 --accent 色，与其他灰色 tag 拉开辨识度 */
+.tag.tag-tune {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}
 .origin {
   color: var(--accent);
   text-decoration: none;
