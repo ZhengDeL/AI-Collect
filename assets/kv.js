@@ -34,6 +34,31 @@
     ['active', '活跃']
   ];
 
+  // 代号释义：页面上 S1–S6 / L1–L5 / A–D 全部靠这三张表渲染，改口径只改这里
+  var SCENARIO_INFO = {
+    S1: ['单实例共置', '单实例里同时做 prefill 和 decode（PD 混合），把前缀 KV 从显存挪到本机内存或盘。'],
+    S2: ['PD 分离传输', 'prefill 与 decode 拆到不同实例，KV 要跨机搬运——这是「传输」，不是「卸载」。'],
+    S3: ['集群共享池', '多个实例共用一个远端 KV 池，谁命中谁少算，池子通常是内存 + SSD。'],
+    S4: ['超长上下文', '128k+ 场景：只保留重要的 KV（稀疏），或按热度分层摆放。'],
+    S5: ['多模态 encoder', '图像/视频 encoder 的输出复用，不是纯文本 KV。'],
+    S6: ['RL/训推分离', 'rollout 与训练之间复用 KV / hidden-state，含权重热更新。']
+  };
+
+  var EVIDENCE_INFO = {
+    A: ['官方/源码', '官方文档、源码或 release note 里写明的能力，可照做。'],
+    B: ['一手实测', '有人真的跑过并给出数字（含本机实测）。'],
+    C: ['论文自报', '论文里自报的数字，未独立复现。'],
+    D: ['社区声称', '社区说好用，但没有可核的证据（未复现）。']
+  };
+
+  var LAYER_INFO = {
+    L1: ['HBM', '加速卡显存。KV 本来就生成在这里，最快的一层。'],
+    L2: ['主机 DRAM', '服务器内存。容量比显存大得多，带宽低一个量级。'],
+    L3: ['本地 NVMe/SSD', '本机盘。容量最大，延迟最高。'],
+    L4: ['远端内存/存储', '跨机经 RDMA/网络拿到的另一台机器的内存或盘。'],
+    L5: ['集群共享池', '全局共享的前缀缓存服务，如 Mooncake Store、LMCache、Ascend Store。']
+  };
+
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -84,9 +109,12 @@
 
     var dist = '<div class="kv-dist"><span class="dist-label">证据分级</span>' +
       EVIDENCES.map(function (e) {
-        return '<span class="ev-dist-item"><span class="ebadge ev-' + e + '">' + e + '</span>' +
+        var info = EVIDENCE_INFO[e] || [e, e];
+        return '<span class="ev-dist-item" title="' + esc('证据 ' + e + '：' + info[0] + '——' + info[1]) + '">' +
+          '<span class="ebadge ev-' + e + '">' + e + '</span>' +
           '<b>' + (evCount[e] || 0) + '</b></span>';
-      }).join('') + '</div>';
+      }).join('') + '</div>' +
+      '<p class="kv-evnote">A 官方/源码 · B 一手实测 · C 论文自报 · D 社区声称；只有 A/B 才写「建议上」，C/D 只作线索。</p>';
 
     var gen = state.doc && state.doc.generated_at
       ? '<p class="kv-sub">数据生成：' + esc(state.doc.generated_at) + '</p>' : '';
@@ -96,9 +124,10 @@
   }
 
   // ---------- 三组可叠加筛选（组间 AND，组内单选）----------
-  function chip(cls, key, val, label, count, disabled, active) {
+  function chip(cls, key, val, label, count, disabled, active, title) {
     return '<button class="chip' + (active ? ' active' : '') + (disabled ? ' kv-disabled' : '') +
       '" data-key="' + key + '" data-val="' + esc(val) + '" role="tab"' +
+      (title ? ' title="' + esc(title) + '"' : '') +
       (disabled ? ' disabled aria-disabled="true"' : '') + '>' +
       esc(label) + (count != null ? '<span class="count">' + count + '</span>' : '') + '</button>';
   }
@@ -121,11 +150,13 @@
         return chip('', 'line', p[0], p[1], c, false, state.line === p[0]);
       }).join('') + '</div>';
 
-    // ② 场景轴 S1–S6
-    var scRow = '<div class="filter-row"><span class="filter-label">场景</span>' +
+    // ② 场景轴 S1–S6：chip 上直接带中文短名，不用回头对照图例
+    var scRow = '<div class="filter-row"><span class="filter-label">场景轴</span>' +
       chip('', 'scenario', '全部', '全部', all, false, state.scenario === '全部') +
       SCENARIOS.map(function (s) {
-        return chip('', 'scenario', s, s, scCount[s] || 0, false, state.scenario === s);
+        var info = SCENARIO_INFO[s] || [s, ''];
+        return chip('', 'scenario', s, s + ' ' + info[0], scCount[s] || 0, false,
+          state.scenario === s, s + ' ' + info[0] + '：' + info[1]);
       }).join('') + '</div>';
 
     // ③ 证据 A/B/C/D；C 档 0 条 → 显示 C 0 并禁用，点了也不出空白页
@@ -134,9 +165,11 @@
       EVIDENCES.map(function (e) {
         var c = evCount[e] || 0;
         var disabled = c === 0;
+        var info = EVIDENCE_INFO[e] || [e, ''];
         // 若当前误选了空档，重置回全部，避免出现空白页
         if (disabled && state.evidence === e) state.evidence = '全部';
-        return chip('', 'evidence', e, e, c, disabled, state.evidence === e);
+        return chip('', 'evidence', e, e + ' ' + info[0], c, disabled, state.evidence === e,
+          '证据 ' + e + '（' + info[0] + '）：' + info[1]);
       }).join('') + '</div>';
 
     el.filters.innerHTML = lineRow + scRow + evRow;
@@ -164,17 +197,21 @@
 
   function cardHTML(it) {
     var ev = it.evidence || 'D';
-    var ebadge = '<span class="ebadge ev-' + esc(ev) + '" title="证据等级 ' + esc(ev) + '">' + esc(ev) + '</span>';
+    var evInfo = EVIDENCE_INFO[ev] || [ev, ''];
+    var ebadge = '<span class="ebadge ev-' + esc(ev) + '" title="' +
+      esc('证据 ' + ev + '（' + evInfo[0] + '）：' + evInfo[1]) + '">' + esc(ev) + '</span>';
 
     var line = lineBadge(it.line);
     var id = it.id ? '<span class="kv-id">' + esc(it.id) + '</span>' : '';
 
     var tags = '';
     var scen = (it.scenario || []).map(function (s) {
-      return '<span class="tag">' + esc(s) + '</span>';
+      var info = SCENARIO_INFO[s] || [s, ''];
+      return '<span class="tag" title="' + esc(s + ' ' + info[0] + '：' + info[1]) + '">' + esc(s) + '</span>';
     }).join('');
     var layers = (it.layers || []).map(function (l) {
-      return '<span class="tag">' + esc(l) + '</span>';
+      var info = LAYER_INFO[l] || [l, ''];
+      return '<span class="tag" title="' + esc(l + ' ' + info[0] + '：' + info[1]) + '">' + esc(l) + '</span>';
     }).join('');
     if (scen || layers) tags = '<div class="kv-tags">' + scen + layers + '</div>';
 
@@ -232,8 +269,39 @@
     el.list.innerHTML = shown.map(cardHTML).join('');
   }
 
+  // ---------- 图例：S1–S6 / L1–L5 / A–D 逐条解释（代号都从上面三张表渲染）----------
+  function legendRows(map, order) {
+    return order.map(function (k) {
+      var info = map[k] || [k, ''];
+      return '<div class="leg-row"><dt><span class="leg-code">' + esc(k) + '</span>' +
+        esc(info[0]) + '</dt><dd>' + esc(info[1]) + '</dd></div>';
+    }).join('');
+  }
+
+  function renderLegend() {
+    var host = el.filters && el.filters.closest ? el.filters.closest('.toolbar') : null;
+    if (!host) return;
+    if (document.getElementById('kv-legend')) return;
+    host.insertAdjacentHTML('afterend',
+      '<details class="kv-legend" id="kv-legend">' +
+        '<summary>图例：S1–S6 场景轴、L1–L5 缓存层级、A–D 证据等级分别是什么意思</summary>' +
+        '<div class="leg-body">' +
+          '<section class="leg-sec"><h3>缓存层级：这份 KV 放在哪一级</h3>' +
+            '<dl>' + legendRows(LAYER_INFO, ['L1', 'L2', 'L3', 'L4', 'L5']) + '</dl></section>' +
+          '<section class="leg-sec"><h3>场景轴：这条方案解决哪种部署形态</h3>' +
+            '<dl>' + legendRows(SCENARIO_INFO, SCENARIOS) + '</dl></section>' +
+          '<section class="leg-sec"><h3>证据等级：这条说法有多硬</h3>' +
+            '<dl>' + legendRows(EVIDENCE_INFO, EVIDENCES) + '</dl>' +
+            '<p class="leg-note">只有 A / B 才写「建议上」；C 是论文自报、D 是社区声称，都只作线索。</p></section>' +
+          '<section class="leg-sec"><h3>编号</h3>' +
+            '<p class="leg-note">N1–N39 是 NVIDIA 线，A1–A35 是昇腾线。卡片左上角的彩色字母是<b>证据等级</b>，跟编号不是一回事。</p></section>' +
+        '</div>' +
+      '</details>');
+  }
+
   function boot() {
     initTheme();
+    renderLegend();
     el.search.addEventListener('input', function () {
       state.query = el.search.value;
       renderList();

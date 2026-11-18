@@ -120,3 +120,71 @@ body.focusing #kv-block { display: none !important; }
 .pit-row { display: flex; gap: 8px; padding: 5px 0; font-size: 12.5px; border-top: 1px dashed var(--line); }
 .pit-k { flex: none; width: 56px; color: var(--ink-3); }
 .pit-v { color: var(--ink-2); overflow-wrap: anywhere; min-width: 0; }
+
+/* 证据分级下面那行释义 */
+.kv-evnote {
+  margin: calc(var(--sp) * 1.5) 0 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-3);
+}
+
+/* 图例：默认收起，点开逐条解释 S1–S6 / L1–L5 / A–D */
+.kv-legend {
+  margin-top: calc(var(--sp) * 2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+}
+.kv-legend > summary {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--ink-2);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kv-legend > summary::-webkit-details-marker { display: none; }
+.kv-legend > summary::before {
+  content: "▸";
+  color: var(--accent);
+  transition: transform .16s;
+}
+.kv-legend[open] > summary::before { transform: rotate(90deg); }
+.kv-legend > summary:hover { color: var(--accent); }
+.leg-body { padding: 0 14px 14px; }
+.leg-sec + .leg-sec { margin-top: calc(var(--sp) * 2); }
+.leg-sec h3 {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  color: var(--ink);
+}
+.leg-sec dl { margin: 0; }
+.leg-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 10px;
+  padding: 5px 0;
+  border-top: 1px dashed var(--line);
+  font-size: 12.5px;
+}
+.leg-row dt { display: flex; align-items: baseline; gap: 6px; color: var(--ink-2); }
+.leg-row dd { margin: 0; color: var(--ink-3); line-height: 1.6; }
+.leg-code {
+  flex: none;
+  min-width: 26px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.leg-note { margin: 8px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--ink-3); }
+@media (max-width: 520px) {
+  .leg-row { grid-template-columns: 1fr; gap: 2px; }
+}
