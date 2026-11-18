@@ -8,7 +8,9 @@
     day: null,
     source: '全部',
     tune: false,
-    query: ''
+    query: '',
+    focus: null,        // 当前聚焦查看的条目 id（TOP 点击 / #card-<id> 分享）
+    pendingFocus: null  // boot 阶段从 hash 解析出、待加载完当天后消费的聚焦 id
   };
 
   var el = {
@@ -170,6 +172,82 @@
     return { folded: folded, hidden: hidden };
   }
 
+  // ---- 聚焦查看（TOP 点击 / #card-<id> 分享）----
+
+  // 按 id 在当前日期条目里找条目
+  function focusItemById(id) {
+    if (id == null) return null;
+    var items = (state.day && state.day.items) || [];
+    for (var i = 0; i < items.length; i++) {
+      if (String(items[i].id) === String(id)) return items[i];
+    }
+    return null;
+  }
+
+  function focusItem() {
+    return state.focus ? focusItemById(state.focus) : null;
+  }
+
+  // 该 id 在可见卡（去重后）按评分排序里的名次（1-based），找不到返回 0
+  function focusRankOf(id, visible) {
+    var sorted = visible.slice().sort(byScore);
+    for (var i = 0; i < sorted.length; i++) {
+      if (String(sorted[i].id) === String(id)) return i + 1;
+    }
+    return 0;
+  }
+
+  function setHashFocus(id) { history.replaceState(null, '', '#card-' + id); }
+  function setHashDate() { history.replaceState(null, '', '#' + state.date); }
+
+  // CSS 里 html{scroll-behavior:smooth} 会让程序化 scrollTo 变成动画，导致聚焦后
+  // 目标卡首行短时间不在视口内；这里强制瞬时回到页首。
+  function scrollTopInstant() {
+    try { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
+    catch (e) { window.scrollTo(0, 0); }
+  }
+
+  // 进入聚焦：只显示目标卡，清空其它筛选态，写可分享 hash，回到页首
+  function enterFocus(id) {
+    var it = focusItemById(id);
+    if (!it) return false;
+    state.focus = String(id);
+    state.source = '全部';
+    state.tune = false;
+    state.query = '';
+    if (el.search) el.search.value = '';
+    document.body.classList.add('focusing');
+    setHashFocus(state.focus);
+    renderFilters();
+    renderList();
+    scrollTopInstant();
+    return true;
+  }
+
+  // 退出聚焦：恢复全部卡片与默认筛选，hash 回到日期
+  function exitFocus() {
+    if (!state.focus) return;
+    state.focus = null;
+    document.body.classList.remove('focusing');
+    setHashDate();
+    renderFilters();
+    renderDay();
+    scrollTopInstant();
+  }
+
+  // hash / 前进后退变化时同步聚焦态
+  function syncFromHash() {
+    var h = location.hash.replace('#', '');
+    if (h.indexOf('card-') === 0) {
+      var id = h.slice(5);
+      if (!state.focus || state.focus !== id) {
+        if (focusItemById(id)) enterFocus(id);
+      }
+    } else if (state.focus) {
+      exitFocus();
+    }
+  }
+
   function renderFilters() {
     var items = (state.day && state.day.items) || [];
     var counts = sourcesOf(items);
@@ -194,6 +272,8 @@
       b.addEventListener('click', function () {
         state.source = b.getAttribute('data-src');
         state.tune = false; // 点任一 source chip 清掉调优筛选，避免两个维度叠加
+        if (state.focus) { state.focus = null; setHashDate(); }
+        document.body.classList.remove('focusing');
         renderFilters();
         renderList();
       });
@@ -203,6 +283,8 @@
       tuneBtn.addEventListener('click', function () {
         state.tune = !state.tune;
         if (state.tune) state.source = '全部'; // 调优只与「全部」共存，不与具体来源叠加
+        if (state.focus) { state.focus = null; setHashDate(); }
+        document.body.classList.remove('focusing');
         renderFilters();
         renderList();
       });
@@ -246,7 +328,8 @@
 
   // 单张卡片：首条要点常显，其余收进 <details>；verdict/可信度做成有色徽标；链接收成「原文 ↗」
   // rank: 组内 TOP 名次（1/2/3），0 表示不显示；folded: 折叠到本卡的创新判断条目数组
-  function cardHTML(it, i, rank, folded) {
+  // focused: 是否为聚焦查看的那张卡（命中则加 .focused 描边）
+  function cardHTML(it, i, rank, folded, focused) {
     var src = it.source || '其他';
     var pts = it.points || [];
     var lead = pts.length ? '<div class="point-lead"><span class="pdot">①</span><span>' + esc(pts[0]) + '</span></div>' : '';
@@ -281,7 +364,7 @@
       }).join('');
     }
 
-    return '<article class="card" id="' + esc(cardDomId(it)) + '" data-id="' + esc(it.id || '') + '" style="--i:' + i + '">' +
+    return '<article class="card' + (focused ? ' focused' : '') + '" id="' + esc(cardDomId(it)) + '" data-id="' + esc(it.id || '') + '" style="--i:' + i + '">' +
       '<div class="card-top">' +
         '<span class="badge ' + esc(src) + '">' + esc(src) + '</span>' +
         time + origin +
@@ -295,7 +378,8 @@
     '</article>';
   }
 
-  // 全局「今日 TOP 10」：基于去重后可见卡片，受 chip/搜索筛选联动，点击锚点跳到下方卡片
+  // 全局「今日 TOP 10」：只从可见卡（已去重、已排除折叠隐藏项）取，随 chip/搜索联动。
+  // 点击不再用锚点瞬移到页尾，而是进入聚焦查看；href 保留 #card-<id> 供新标签/分享直达。
   function renderTop(visible) {
     if (!visible.length) { el.topbox.hidden = true; el.topbox.innerHTML = ''; return; }
     el.topbox.hidden = false;
@@ -305,7 +389,7 @@
         var sc = scoreOf(it);
         var src = it.source || '其他';
         return '<li class="top-item">' +
-          '<a href="#' + esc(cardDomId(it)) + '">' +
+          '<a href="#' + esc(cardDomId(it)) + '" data-focus="' + esc(it.id || '') + '">' +
             '<span class="top-rank">' + (i + 1) + '</span>' +
             '<span class="top-title">' + esc(it.title) + '</span>' +
             '<span class="badge ' + esc(src) + '">' + esc(src) + '</span>' +
@@ -314,10 +398,42 @@
         '</li>';
       }).join('') + '</ol>';
     el.topbox.innerHTML = html;
+    el.topbox.querySelectorAll('.top-item a[data-focus]').forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault(); // 阻止原生锚点瞬移
+        enterFocus(a.getAttribute('data-focus'));
+      });
+    });
   }
 
   function renderList() {
     var items = (state.day && state.day.items) || [];
+
+    // 聚焦查看：只渲染目标卡 + 顶部聚焦条，回到页首；概览/TOP/工具条/日期条由
+    // body.focusing 的 CSS 统一隐藏，保证目标卡首行落在第一屏，不会跳到页尾。
+    var fit = focusItem();
+    if (fit) {
+      var foldAll = foldMapOf(items);
+      var allVisible = items.filter(function (it) {
+        return !(it.id && foldAll.hidden[String(it.id)]);
+      });
+      var rank = focusRankOf(state.focus, allVisible);
+      var title = String(fit.title || '');
+      var bar = '<div class="focus-bar">' +
+        '<span class="focus-label">正在查看' + (rank ? ' TOP #' + rank : '') + ' · ' +
+          esc(title.slice(0, 30)) + (title.length > 30 ? '…' : '') + '</span>' +
+        '<button type="button" class="focus-back" id="focus-back">返回全部</button>' +
+      '</div>';
+      var key = String(fit.id || normUrl(fit.url));
+      el.list.innerHTML = bar + cardHTML(fit, 0, 0, foldAll.folded[key] || null, true);
+      el.empty.hidden = true;
+      el.topbox.hidden = true;
+      el.summary.textContent = '正在查看 1 条 · 共 ' + items.length + ' 条';
+      var back = document.getElementById('focus-back');
+      if (back) back.addEventListener('click', exitFocus);
+      return;
+    }
+
     var q = state.query.trim().toLowerCase();
 
     var shown = items.filter(function (it) {
@@ -389,6 +505,7 @@
   function goto(date) {
     if (date === state.date) return;
     state.date = date;
+    state.focus = null; // 切期号退出聚焦
     el.list.innerHTML = '<p class="empty">加载中…</p>';
     loadJSON('data/' + date + '.json').then(function (day) {
       state.day = day;
@@ -397,8 +514,19 @@
       if (state.source !== '全部' && !sourcesOf(day.items || [])[state.source]) {
         state.source = '全部';
       }
+      // boot 阶段从 #card-<id> 解析出的聚焦：当天确有该条才进入聚焦
+      if (state.pendingFocus) {
+        if ((day.items || []).some(function (it) { return String(it.id) === String(state.pendingFocus); })) {
+          state.focus = state.pendingFocus;
+          state.source = '全部';
+          state.tune = false;
+        }
+        state.pendingFocus = null;
+      }
+      document.body.classList.toggle('focusing', !!state.focus);
       renderDay();
-      history.replaceState(null, '', '#' + date);
+      history.replaceState(null, '', state.focus ? '#card-' + state.focus : '#' + date);
+      if (state.focus) scrollTopInstant();
     }).catch(function (e) {
       el.list.innerHTML = '';
       el.empty.hidden = false;
@@ -411,6 +539,7 @@
 
     el.search.addEventListener('input', function () {
       state.query = el.search.value;
+      if (state.focus) { state.focus = null; setHashDate(); document.body.classList.remove('focusing'); }
       renderList();
     });
 
@@ -423,11 +552,25 @@
       if (i > 0) goto(state.index.dates[i - 1].date);
     });
 
+    window.addEventListener('hashchange', syncFromHash);
+    window.addEventListener('popstate', syncFromHash);
+
     loadJSON('data/index.json').then(function (index) {
       if (!index || !index.dates || !index.dates.length) throw new Error('还没有任何一期内容');
       state.index = index;
       var hash = location.hash.replace('#', '');
-      var start = index.dates.some(function (d) { return d.date === hash; }) ? hash : index.dates[0].date;
+      var focusFromHash = null, start = null;
+      if (hash.indexOf('card-') === 0) {
+        focusFromHash = hash.slice(5);
+        // id 形如 20261118-009 → 期号 2026-11-18；据此直接加载对应那天
+        var m = focusFromHash.match(/^(\d{4})(\d{2})(\d{2})/);
+        if (m) {
+          var d = m[1] + '-' + m[2] + '-' + m[3];
+          if (index.dates.some(function (x) { return x.date === d; })) start = d;
+        }
+      }
+      if (!start) start = index.dates.some(function (d) { return d.date === hash; }) ? hash : index.dates[0].date;
+      state.pendingFocus = focusFromHash;
       goto(start);
     }).catch(function (e) {
       el.dateLabel.textContent = '暂无内容';

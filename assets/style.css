@@ -448,6 +448,49 @@ body {
 }
 .origin:hover { text-decoration: underline; }
 
+/* ---------- 聚焦查看（TOP 点击 / #card-<id> 分享）---------- */
+/* 聚焦态隐藏概览/TOP/筛选/日期/搜索，列表从页首开始，只留聚焦条 + 目标卡 */
+body.focusing #overview,
+body.focusing .toolbar,
+body.focusing .meta-bar,
+body.focusing #topbox { display: none !important; }
+.focus-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp);
+  padding: calc(var(--sp) * 1.5) calc(var(--sp) * 2);
+  margin-bottom: calc(var(--sp) * 2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.focus-label { min-width: 0; overflow-wrap: anywhere; }
+.focus-back {
+  flex: none;
+  padding: 6px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .16s;
+}
+.focus-back:hover { background: var(--accent); color: var(--bg); }
+/* 命中聚焦的卡片：3px accent 描边，明显区别于普通卡 */
+.card.focused {
+  border: 3px solid var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft), var(--shadow);
+  animation: none; /* 聚焦卡不做入场位移，保证首行立刻落在视口内 */
+  transform: none;
+}
+
 .empty { text-align: center; padding: calc(var(--sp) * 9) 0; color: var(--ink-3); }
 
 .site-footer {
