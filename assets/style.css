@@ -227,6 +227,43 @@ body {
 .icon-btn:disabled { opacity: .3; cursor: default; }
 .summary { font-size: 13px; color: var(--ink-3); }
 
+/* ---------- 今日 TOP 10 ---------- */
+.topbox {
+  margin-bottom: calc(var(--sp) * 3);
+  padding: calc(var(--sp) * 2.5) calc(var(--sp) * 3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, var(--bg-soft), var(--card));
+  box-shadow: var(--shadow-soft);
+  animation: rise .38s ease both;
+}
+.top-eyebrow { margin: 0 0 calc(var(--sp) * 1.5); font-size: 12px; letter-spacing: 1.2px; color: var(--ink-3); }
+.top-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.top-item a {
+  display: flex;
+  align-items: center;
+  gap: var(--sp);
+  padding: 6px 4px;
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 13.5px;
+  min-width: 0;
+}
+.top-item a:hover { background: var(--accent-soft); }
+.top-rank {
+  flex: none; width: 22px; height: 22px; border-radius: 6px;
+  display: grid; place-items: center;
+  font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: var(--accent); border: 1px solid var(--accent);
+}
+.top-item:nth-child(-n+3) .top-rank { background: var(--accent); color: var(--bg); }
+.top-title { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.top-score {
+  flex: none; font-variant-numeric: tabular-nums; font-weight: 700;
+  color: var(--amber); font-size: 13px;
+}
+
 /* ---------- 分组 + 卡片 ---------- */
 .list { padding-bottom: calc(var(--sp) * 5); }
 .group { margin-bottom: calc(var(--sp) * 3.5); animation: rise .4s ease both; }
@@ -287,6 +324,39 @@ body {
 .card h2 { margin: 0 0 calc(var(--sp) * 1.25); font-size: 17.5px; line-height: 1.45; }
 .card h2 a { color: var(--ink); text-decoration: none; }
 .card h2 a:hover { color: var(--accent); }
+
+/* 组内 TOP3 名次徽章：accent 描边，#1 实心 */
+.rankbadge {
+  display: inline-block; vertical-align: middle; margin-right: 8px;
+  padding: 1px 8px; border-radius: 6px;
+  font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: var(--accent); border: 1px solid var(--accent);
+}
+.rankbadge.rank-1 { background: var(--accent); color: var(--bg); }
+
+/* 创新判断带：左侧 3px accent 竖线，13px / --ink-2，默认折叠成一行 */
+.innov-band {
+  margin-top: calc(var(--sp) * 1.5);
+  padding: calc(var(--sp) * .75) calc(var(--sp) * 1.5);
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 13px;
+  color: var(--ink-2);
+  min-width: 0;
+}
+.innov-band > summary {
+  list-style: none; cursor: pointer;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  color: var(--ink-2);
+  user-select: none;
+  min-width: 0;
+}
+.innov-band > summary::-webkit-details-marker { display: none; }
+.innov-band > summary::before { content: "▸"; color: var(--accent); transition: transform .16s; display: inline-block; flex: none; }
+.innov-band[open] > summary::before { transform: rotate(90deg); }
+.innov-peek { flex: 1 1 160px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.innov-body { margin-top: var(--sp); overflow-wrap: anywhere; }
 
 /* 3 条要点：首条常显，其余折叠 */
 .points-box { margin: 0 0 calc(var(--sp) * 1.5); }
@@ -411,4 +481,9 @@ body {
   .card h2 { font-size: 16px; }
   .group-cards { gap: calc(var(--sp) * 1.5); }
   .tags { margin-left: 0; }
+  .topbox { padding: calc(var(--sp) * 2); }
+  .top-item a { flex-wrap: wrap; }
+  .top-title { flex-basis: 100%; order: 3; }
+  .innov-band { padding: calc(var(--sp) * .75); }
+  .innov-peek { flex-basis: 100%; }
 }
