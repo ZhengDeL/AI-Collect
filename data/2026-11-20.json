@@ -1,0 +1,1292 @@
+{
+  "date": "2026-11-20",
+  "generated_at": "2026-11-20T09:36:14+08:00",
+  "items": [
+    {
+      "id": "20261120-001",
+      "source": "英伟达",
+      "title": "NVIDIA 与微软在 Ignite 扩大全栈合作：Vera Rubin NVL72 进 Azure、Nemotron 进 Foundry、AI 下沉 Windows PC",
+      "url": "https://blogs.nvidia.com/blog/microsoft-ignite-accelerated-computing-azure-windows-pcs/",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19 20:00 GMT NVIDIA 官方博客（同步进 Newsroom）宣布在 Microsoft Ignite 与微软扩大全栈合作，Vera Rubin NVL72 已在 Azure 数据中心运行，开放模型与定制能力进入 Microsoft Foundry，并新增边缘与 Windows PC 侧部署选项。",
+        "规模：MLPerf Training v6.1 中 Azure 用 10240 块 GB200 NVL72 跑 DeepSeek-V3，为该轮最大规模；MLPerf Inference v6.1 中 GB300 NVL72 在 DeepSeek-R1 交互吞吐上领先云侧提交超 10%（Signal65）。",
+        "判断：生态合作与云侧算力供给事件、非调优方法；EY 用 Foundry 适配 Nemotron 分类采购记录，官方称准确率高 55%、成本降 15 倍，供判断企业模型定制路径。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（NVIDIA 官方博客 / Newsroom）",
+      "tags": [
+        "官方博客",
+        "行业动向",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-002",
+      "source": "英伟达",
+      "title": "NVIDIA 发布 Into the Omniverse 系列：前沿 AI Agent 结合 Omniverse 做工业数字孪生与机器人仿真",
+      "url": "https://blogs.nvidia.com/blog/developers-simulation-frontier-ai-agents/",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19 17:00 GMT NVIDIA 官方博客发布 Into the Omniverse 系列，展示开发者用 GPT-6 Astra / Sol 等前沿模型加 Omniverse 库把仿真想法做成应用。",
+        "案例：Falkor（KONGSBERG）用 GPT-6 Astra 把 CAD 转设施级数字孪生、跑在 Azure 的 RTX PRO 6000 Server 上；另有 SimReady 资产做机器人抓取仿真、语音控制 VR 仿真（Claude Code 约跑 8 小时、一个周末完成）。",
+        "判断：物理 AI 与仿真生态案例合集、非调优方法；供观察前沿模型切入工业数字孪生与机器人仿真的落地方式。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（NVIDIA 官方博客）",
+      "tags": [
+        "官方博客",
+        "Agent",
+        "多模态"
+      ]
+    },
+    {
+      "id": "20261120-003",
+      "source": "英伟达",
+      "title": "NVIDIA 技术博客：用 Dynamo 缓解强化学习 rollout 阶段瓶颈",
+      "url": "https://developer.nvidia.com/blog/reducing-rollout-bottlenecks-in-reinforcement-learning-with-nvidia-dynamo/",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19 20:28Z NVIDIA 技术博客发布《Reducing Rollout Bottlenecks in Reinforcement Learning with NVIDIA Dynamo》。",
+        "内容：聚焦 RL 训练中 rollout（生成轨迹）阶段的推理瓶颈，用 Dynamo 跨大规模 GPU 集群编排推理，并处理请求调度、模型更新与故障恢复；微软 AI 已用 Dynamo 支撑后训练 RL rollout。",
+        "判断：按官方博客发布事件收，points 只写发布了什么、不搬调优配方；属 RL 推理基础设施方向，供判断 Dynamo 在 RL 后训练中的定位。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（NVIDIA 官方技术博客）",
+      "tags": [
+        "官方博客",
+        "推理",
+        "训练"
+      ]
+    },
+    {
+      "id": "20261120-004",
+      "source": "英伟达",
+      "title": "NVIDIA 技术博客：GPU 原生数据采集让科学仪器实现实时 AI",
+      "url": "https://developer.nvidia.com/blog/enabling-real-time-ai-for-scientific-instruments-with-gpu-native-data-acquisition/",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19 17:00Z NVIDIA 技术博客发布《Enabling Real-Time AI for Scientific Instruments with GPU-Native Data Acquisition》，属 SC26 相关技术文章。",
+        "内容：面向电子能量损失谱等科学仪器，指出数据搬运与处理速度限制仪器设计，用 GPU 原生数据采集缩短延迟，使 AI 可实时调节流程、引导实验。",
+        "判断：科研仪器加 GPU 采集的应用案例、非调优方法；供观察 GPU 原生 DAQ 在科学仪器方向的落地。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（NVIDIA 官方技术博客）",
+      "tags": [
+        "官方博客",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261120-005",
+      "source": "英伟达",
+      "title": "NVIDIA 技术博客：用 AI Agent 在 Rust 中构建工具调用解析器",
+      "url": "https://developer.nvidia.com/blog/build-tool-calling-parsers-in-rust-with-ai-agents/",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19 16:30Z NVIDIA 技术博客发布《Build Tool-Calling Parsers in Rust with AI Agents》。",
+        "内容：针对工具调用分片到达、参数截断、模型标记泄漏等问题，讲前端解析器如何把 token 或解码文本转成可见文本、推理与工具调用，并用 AI agent 为新模型构建 Rust 解析器。",
+        "判断：偏工程教程的官方发布、非性能调优方法；属 Agent 工具调用前端解析方向，供观察。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（NVIDIA 官方技术博客）",
+      "tags": [
+        "官方博客",
+        "Agent"
+      ]
+    },
+    {
+      "id": "20261120-006",
+      "source": "英伟达",
+      "title": "NVIDIA 公告：将参加 12 月 1 日第 30 届 UBS 全球科技与 AI 大会",
+      "url": "https://nvidianews.nvidia.com/news/nvidia-announces-upcoming-event-for-financial-community-6929322",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19 22:00 GMT NVIDIA Newsroom 发布公告，将在 12 月 1 日 6:35 a.m. PT 的第 30 届 UBS Global Technology and AI Conference 做面向金融界的演示。",
+        "内容：投资者可在 investor.nvidia.com 收听直播，回放保留 90 天。",
+        "判断：纯 IR 日程公告、非技术情报；仅作事件留档，供跟踪公司财报与对外沟通节奏。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（NVIDIA Newsroom 官方公告）",
+      "tags": [
+        "公告",
+        "站点"
+      ]
+    },
+    {
+      "id": "20261120-007",
+      "source": "英伟达",
+      "title": "TensorRT-LLM 发布 v1.4.0rc4 候选版本",
+      "url": "https://github.com/NVIDIA/TensorRT-LLM/releases/tag/v1.4.0rc4",
+      "time": "2026-11-18",
+      "points": [
+        "事件：11-18 19:16Z NVIDIA 在 GitHub 发布 TensorRT-LLM v1.4.0rc4。",
+        "内容：属 v1.4.0 正式版前的候选迭代，上一版 rc3 于 11-06 发布；本条只作版本节点记录，具体改动不在本条展开。",
+        "判断：版本发布事件、非调优方法；供跟踪 TensorRT-LLM 1.4.0 正式版临近节奏。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（NVIDIA GitHub 官方 Release）",
+      "tags": [
+        "Release Notes",
+        "TensorRT-LLM"
+      ]
+    },
+    {
+      "id": "20261120-008",
+      "source": "英伟达",
+      "title": "FlashInfer 发布 v0.7.5 正式版，结束 rc1–rc3 候选",
+      "url": "https://github.com/flashinfer-ai/flashinfer/releases/tag/v0.7.5",
+      "time": "2026-11-18",
+      "points": [
+        "事件：11-18 23:03Z FlashInfer 发布 v0.7.5 正式版，此前 rc3（11-17）、rc2（11-16）、rc1（11-12）依次放出。",
+        "内容：FlashInfer 是面向 LLM 推理的注意力算子库，本条只记录稳定版节点，不展开算子层改动。",
+        "判断：版本发布事件、非调优方法；其是 vLLM / SGLang 等主流推理框架的关键 attention 后端，供跟踪稳定版节奏。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（FlashInfer GitHub 官方 Release）",
+      "tags": [
+        "Release Notes",
+        "推理",
+        "开源"
+      ]
+    },
+    {
+      "id": "20261120-009",
+      "source": "其他",
+      "title": "HF 博客：FLOPs 估不准微调时长，272 次生产 SFT 任务上 CatBoost 把 MAE 从 12.41h 降到 1.71h",
+      "url": "https://huggingface.co/blog/Dharma-AI/predicting-fine-tuning-time",
+      "time": "2026-11-18",
+      "points": [
+        "事件：11-18 18:53 GMT Hugging Face 博客发布《Why your fine-tuning job takes longer than the FLOPs say》（Dharma-AI 团队，预告同名论文将上 arXiv）。",
+        "数据：272 个真实 SFT 任务、约 7382 GPU 小时的 H200 集群；FLOP 基线 R²=0.31 / MAE 12.41h，只用调度前可得信息的 CatBoost 达 R²=0.98、MAE 1.71h、中位误差 0.51h。",
+        "判断：带数字的官方博客发布事件（论文预览），实现细节待 arXiv；结论指向评估频次与检查点 I/O 等非算力开销主导端到端时长，供集群调度参考。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（Hugging Face 官方博客，含实测数据）",
+      "tags": [
+        "官方博客",
+        "训练",
+        "评测"
+      ]
+    },
+    {
+      "id": "20261120-010",
+      "source": "其他",
+      "title": "Google 官方博客发布 Gemini API Tool Retrieval，面向 Agent 规模化",
+      "url": "https://blog.google/innovation-and-ai/technology/developers-tools/gemini-api-tool-retrieval/",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19 18:00 GMT Google 官方博客发布 Gemini API tool retrieval for efficient agent scaling。",
+        "内容：面向 Agent 规模化场景的 API 工具检索能力；官方已确认标题与时间，正文细节本条不展开。",
+        "判断：官方产品与 API 发布事件、非调优方法；供跟踪 Gemini API 在 Agent 工具调用方向的更新。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（Google 官方博客）",
+      "tags": [
+        "官方博客",
+        "Agent",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-011",
+      "source": "其他",
+      "title": "OpenAI 发布 Performance Factory：用 Codex 驱动工作流自动发现并修复性能问题",
+      "url": "https://openai.com/index/how-openai-performance-factory-keeps-chatgpt-fast",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19 08:00 GMT OpenAI 官方（Engineering 类）发布《How OpenAI's Performance Factory keeps ChatGPT fast》。",
+        "内容：介绍其内部 Performance Factory——一套 Codex 驱动的工作流，用于自动发现并修复性能问题、保持 ChatGPT 响应速度；页面正文受限，points 基于官方 RSS 描述。",
+        "判断：官方工程博客发布事件；不展开内部实现细节，供了解其性能治理思路。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（OpenAI 官方 RSS 描述）",
+      "tags": [
+        "官方博客",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-012",
+      "source": "其他",
+      "title": "OpenAI 发布 Deploying Daybreak Red 参考架构指南",
+      "url": "https://openai.com/business/learn/deploying-daybreak-red",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19 00:00 GMT OpenAI 官方（Guides 类）发布《Deploying Daybreak Red》。",
+        "内容：给出监督式安全调查的参考架构，覆盖安全控制、部署设置与监控；页面仅公开 RSS 一句话描述，不补编具体配置。",
+        "判断：官方指南发布事件；供跟踪 OpenAI 在安全调查场景的产品化动向。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（OpenAI 官方 RSS 描述）",
+      "tags": [
+        "官方博客",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-013",
+      "source": "其他",
+      "title": "OpenAI 发布 See PR scans in action 产品演示",
+      "url": "https://openai.com/business/learn/pr-scans-demo",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19 00:00 GMT OpenAI 官方（Demos 类）发布《See PR scans in action》。",
+        "内容：演示 PR 扫描流程，展示审查者在 pull request 工作流中如何查看扫描结果；页面仅公开 RSS 一句话描述。",
+        "判断：官方产品演示发布事件、价值较低，仅作留档；供跟踪 Codex PR 扫描能力动向。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（OpenAI 官方 RSS 描述）",
+      "tags": [
+        "官方博客",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-014",
+      "source": "其他",
+      "title": "OpenAI 发布 Codex Security Plugin 演示",
+      "url": "https://openai.com/business/learn/codex-security-plugin-demo",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19 00:00 GMT OpenAI 官方（Demos 类）发布《Explore the Codex Security Plugin》。",
+        "内容：演示 Codex Security Plugin 从入门到结果查看的完整工作流；页面仅公开 RSS 一句话描述。",
+        "判断：官方产品演示发布事件；供跟踪 Codex 安全插件方向，不补编演示细节。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（OpenAI 官方 RSS 描述）",
+      "tags": [
+        "官方博客",
+        "Agent",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-015",
+      "source": "其他",
+      "title": "OpenAI 发布 Get started with Daybreak Blue 上手演示",
+      "url": "https://openai.com/business/learn/daybreak-blue-onboarding-demo",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19 00:00 GMT OpenAI 官方（Demos 类）发布《Get started with Daybreak Blue》。",
+        "内容：Daybreak Blue 的上手演示，聚焦设置体验与起步流程；页面仅公开 RSS 一句话描述。",
+        "判断：官方产品演示发布事件、价值较低，仅作留档；供跟踪 Daybreak 产品线动向。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（OpenAI 官方 RSS 描述）",
+      "tags": [
+        "官方博客",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-016",
+      "source": "昇腾",
+      "title": "vLLM-Ascend 合入：HiSparse KV 卸载扩展到 A2/A3（arch22 + 原生 INT8 KV cache）",
+      "url": "https://github.com/vllm-project/vllm-ascend/commit/915e7011736c4d69e188df3d3792d7bd72111598",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19（UTC 08:27）合入 PR #22062，把已有的 HiSparse host-backed KV 卸载实现从 A5 扩到 A2/A3。",
+        "要点：新增 arch22 residency 解析器、小写入集批量失效、原生 INT8 主 KV 与 INT8 Indexer key（FP16 scale）；A3 服务与 97 项硬件测试通过；但 AISBench 并发 8 的 ON/OFF 实测显示 32K TTFT +2.71%、TPOT +8.98%、吞吐 −5.64%（64K 类似），作者注明「ON 变慢需进一步调查、非本 PR 独立回归结论」，A2 运行时与 A5 E2E 未附。",
+        "判断：特性合入事件，配方与取舍交调优情报；此处记「A2/A3 现可用 HiSparse + INT8 KV，但并发下实测变慢、不要默认开启」。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（官方仓库合并提交，含 A3 实测 ON/OFF 数据、厂商口径）",
+      "tags": [
+        "vLLM-Ascend",
+        "KV Cache",
+        "量化",
+        "开源"
+      ]
+    },
+    {
+      "id": "20261120-017",
+      "source": "昇腾",
+      "title": "vLLM-Ascend 合入：INT8 GLM-5.3-Flash KPool indexer（managed scales）落到 A3，BF16 仍为默认",
+      "url": "https://github.com/vllm-project/vllm-ascend/commit/536f084ccb4b336bef7f4c0b8b2ab16d55b6af43",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19（UTC 15:13）合入 PR #22191，为 A3 上 GLM-5.3-Flash 新增可选 INT8 PoolKeyIndexer 路径。",
+        "要点：--attention-config.indexer_kv_dtype int8 用 FP16 每向量 scale 量化压缩后的 key/query，key 与 scale 共用 managed KV cache 页以便 P/D 传输；AIME26 准确率 90%→90% 不变；历史 prefill 算子采样显示 device 延迟降 6.01–18.94%（4K/1 与 128K/1，不同输入 dtype 与调用mix，非同输入 kernel 加速比，也非整模型收益）。",
+        "判断：特性合入事件，开关与精度/延迟细节交调优情报；此处只记「A3 新增 INT8 indexer KV 选项、BF16 仍默认、需配套 ops-transformer 版本」。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（官方仓库合并提交，性能为历史算子采样、厂商口径）",
+      "tags": [
+        "vLLM-Ascend",
+        "量化",
+        "KV Cache",
+        "开源"
+      ]
+    },
+    {
+      "id": "20261120-018",
+      "source": "昇腾",
+      "title": "vLLM-Ascend 合入：修复 A5 全图投机解码（DSpark/DFlash）在 padding batch 下的注意力元数据不匹配",
+      "url": "https://github.com/vllm-project/vllm-ascend/commit/2f41be5d8f579cab1cf6c1b09b1b1c55ccea8eb1",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19（UTC 13:57）合入 PR #22156，修复 FULL-graph 投机解码中 padding batch 导致的 Q/KV 段数不一致（N 个 Q 段对 N+1 个 KV 长度项），原报错 aclnnFusedInferAttentionScoreV5 561002。",
+        "要点：在 DSpark/DFlash 的 _update_draft_attn_metadata 里把 KV 长度与 block table 同步裁剪到 num_reqs_padded；A5（Ascend950DT）TP4 实测 DSpark、DFlash 各 60/60 通过，GSM8K 前 300 例精度与 draft 接受率修复前后一致（95.33%）。",
+        "判断：bugfix 事件、无吞吐基准；供判断 A5 上投机解码稳定性，我们若在 A5 跑 FULL_DECODE_ONLY + 投机需包含此修复。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（官方仓库合并提交，含 A5 硬件验证记录）",
+      "tags": [
+        "vLLM-Ascend",
+        "推理",
+        "开源"
+      ]
+    },
+    {
+      "id": "20261120-019",
+      "source": "快讯",
+      "title": "Claude Fable 5.2 解决两个黑洞物理开放问题：20 年未解计算与模引导精确上限（HN 369 分）",
+      "url": "https://www.anthropic.com/research/claude-black-hole-physics",
+      "time": "2026-11-19",
+      "points": [
+        "第一题：1999 年提出、2003 年立项的 Hawking-Page 相变三圈计算，涉及上千项费曼图且发散需仔细抵消；Claude 跑一小组自身副本、每块独立算两遍，证出弱耦合侧同样是突变相变，与引力侧定性一致。",
+        "第二题：模引导（modular bootstrap）借谱曲线发现物理学家漏掉的规律，证明最轻黑洞质量上限 M₁≤c/Λ、Λ 精确约 9.1266 且不可再降；结果已用 Lean 形式验证、物理学家逐条核对。",
+        "看点：两篇预印本在 hexagonmath.org（2611.00175/00174），方法为「多 agent 副本并行+形式验证」，可迁移到长链条科研计算；厂商自报突破、未独立复现。"
+      ],
+      "verdict": "值得",
+      "credibility": "官方（Anthropic 官方研究博客，两篇预印本已 Lean 形式验证并经物理学家核对，未独立复现）",
+      "tags": [
+        "AI",
+        "官方博客"
+      ]
+    },
+    {
+      "id": "20261120-020",
+      "source": "快讯",
+      "title": "180B MoE 塞进 32GB 内存：Transformers 加专家流式，解码追到 Strata 的 6% 以内",
+      "url": "https://huggingface.co/blog/moe-expert-streaming",
+      "time": "2026-11-18",
+      "points": [
+        "核心做法是把缓存改成 slot pool：一个预分配设备张量跨层共享、每层维护「专家 id→槽位」表，把路由器 id 重映射到槽位后 grouped_mm 可原样跑，省掉自定义专家 matmul；未命中由 8 个 I/O 线程预取、提前跑下两层路由器猜专家。",
+        "Qwen3.8-Flash-Next（48 层×512 专家/10 激活，121GB FP8 + 51GB n-gram 表） experts 压到 3bit、12GiB 缓存，加载后约 18GiB、6K 提示峰值 25.4GiB；最终解码 13.9 tok/s vs Strata 14.8、4K 预填 228 vs 220 tok/s。",
+        "可复用：M5 上实测逐项 tok/s 对比表齐全，关键优化是早提交 GPU 工作（+10%）、大块预填、原地增长的 KV cache；实现在 transformers#50717，作者自测未第三方复现。"
+      ],
+      "verdict": "值得",
+      "credibility": "官方（Hugging Face 官方工程博客，作者在本机 M5/OLMoE 上实测并给出逐项对比表，未第三方复现）",
+      "tags": [
+        "开源",
+        "推理",
+        "MoE",
+        "KV Cache",
+        "官方博客",
+        "实测",
+        "可复用",
+        "交架构师"
+      ]
+    },
+    {
+      "id": "20261120-021",
+      "source": "快讯",
+      "title": "HubSpot Aviator：20 行 Java 建 agent，模型无关的 transcript 可中途换模型、每周合 2500+ PR",
+      "url": "https://hubspot.engineering/blog/aviator-hubspots-agent-harness/",
+      "time": "2026-11-19",
+      "points": [
+        "把内部 RPC 框架 CHIRP 的工具直接复用到 agent（addChirpTool），定义模型无关 transcript 统一消息/工具调用/结果，换供应商时改写工具调用 ID 与推理块，可在对话中途切模型做故障回退或升级；transcript 可序列化成 JSON 存档、跨机恢复。",
+        "工具规模上千（Sidekick 需 3000+ 工具）：用 deferred 工具+工具搜索按需加载，Skill 规范原生支持并加 load-tools/suggested-tools 元数据，WASM 内嵌 Python+Bash 沙箱给 agent「电脑」并挂虚拟文件系统。",
+        "看点：企业级 agent harness 的完整工程范式（模型解耦/工具检索/skill/沙箱/可持久化状态），Sidekick Code 每周 merge 2500+ PR；数字为厂商自报、未独立验证。"
+      ],
+      "verdict": "值得",
+      "credibility": "官方（HubSpot 工程博客，作者自述生产系统，数字为厂商自报未独立验证）",
+      "tags": [
+        "Agent",
+        "AI",
+        "官方博客",
+        "可复用"
+      ]
+    },
+    {
+      "id": "20261120-022",
+      "source": "快讯",
+      "title": "软件热力学：成功 coding run 约 80% token 是「热」，改动自由能仅占均值的 14–22%",
+      "url": "https://arxiv.org/abs/2611.23375",
+      "time": "2026-11-19",
+      "points": [
+        "把 agent 生成的 token 当成本、拆成「功」与「热」，测试套件充当软件麦克斯韦妖裁决每次改动；让 agent 反复对仓库做改动再撤销（coding/uncoding 循环），以多次循环成本的离散度定义「软件温度」，该温度随采样温度升高。",
+        "实测：成功 run 约 80% token 花在「没改动请求内容」的模型调用上（热）；按 Jarzynski 等式类比的改动自由能占成功 run 均值的 14–22%；coding 成本是 uncoding 的 1.1–1.5 倍，测试套件判定还随环境波动、接受坏改动有 token 代价。",
+        "看点：给出量化 coding agent 浪费的新视角，作者称可据此优化；43 页含补充材料，作者理论+实验、未独立复现。"
+      ],
+      "verdict": "观察",
+      "credibility": "论文（arXiv 2611.23375，作者理论加实验，未独立复现）",
+      "tags": [
+        "Agent",
+        "评测",
+        "论文"
+      ]
+    },
+    {
+      "id": "20261120-023",
+      "source": "快讯",
+      "title": "QDA：用 agent 闭环设计量化方案，W4A16/W4A8/W3A16 平均涨 0.9/1.4/2.2 点",
+      "url": "https://arxiv.org/abs/2611.23388",
+      "time": "2026-11-19",
+      "points": [
+        "让 agent 按「构建候选→评估→迭代」设计每个模型/精度的最优 PTQ 方案：用未见的推理轨迹上相对原模型的输出 KL 散度在几分钟内打分（替代数十 GPU 小时的完整评测），再对有希望的候选跑长生成抓重复循环等失败。",
+        "提供彼此兼容、兼容新架构的公开 PTQ 方法库免去手工移植；四个推理模型上 W4A16/W4A8/W3A16 分别比最强公开方案平均高 0.9/1.4/2.2 点（每次搜索 64 GPU 小时）；320B MoE GLM-5.3-Flash 在 NVFP4 W4A4 恢复到 FP8 精度的 98.3%（最佳厂商 checkpoint 为 96.9%），且现有推理 kernel 无额外开销。",
+        "可复用：库、评估器、harness 承诺开源，交架构师评估量化链路；作者实验（Song Han 组）、未独立复现。"
+      ],
+      "verdict": "值得",
+      "credibility": "论文（arXiv 2611.23388，作者实验并承诺开源，未独立复现）",
+      "tags": [
+        "量化",
+        "Agent",
+        "论文",
+        "可复用",
+        "交架构师"
+      ]
+    },
+    {
+      "id": "20261120-024",
+      "source": "快讯",
+      "title": "Tideway：把显存与主机内存当统一池，消费级设备跑大 MoE 延迟快 1.97×、TTFT 快 2.40×",
+      "url": "https://arxiv.org/abs/2611.14848",
+      "time": "2026-11-19",
+      "points": [
+        "针对消费级 PC 显存/内存双紧、MoE 权重跨 VRAM/RAM/SSD 溢出的问题，指出既有系统把各层当独立缓存、推理时反复抖动；Tideway 把主机内存与 GPU 显存做统一内存池。",
+        "两个关键：按 prefill/decode 不同访问模式做 phase-aware 内存布局，执行引擎在专家换页下优化 CUDA Graph；代表性消费硬件+前沿 MoE 上端到端延迟平均 1.97×、TTFT 2.40×、解码吞吐 1.61×（对比最快基线）。",
+        "可复用：源码已开源（github.com/Afterglow231/Tideway），属跨层内存管理做法；作者自测、未独立复现。"
+      ],
+      "verdict": "值得",
+      "credibility": "论文（arXiv 2611.14848，作者自测、代码开源，未独立复现）",
+      "tags": [
+        "MoE",
+        "推理",
+        "论文",
+        "开源",
+        "可复用"
+      ]
+    },
+    {
+      "id": "20261120-025",
+      "source": "快讯",
+      "title": "Meta 用 AI agent 把 ML 技术传播到整个广告排序模型舰队：60%+ 由 agent 执行，算力降 4×",
+      "url": "https://engineering.fb.com/2026/11/18/ml-applications/ai-agents-to-scale-ml-innovations-across-ads-ranking-models/",
+      "time": "2026-11-18",
+      "points": [
+        "一项在模型 A 上验证的排序技术很难直接搬到模型 B（架构/数据/服务约束各异）；Meta 用标准模型模板（SMT）把技术验证一次后自动传播，两年已交付 5000+ 技术-模型组合、单模型工程量降 92%。",
+        "2026 年 3 月起让 agent 承担判断密集型环节：发现（评估技术可迁移性、排优先级）、泛化（模板级/定制级适配、学工程师调整决策）、采用（起实验、管多日训练、监控收敛、故障恢复）；agent 共享一个含数百万次训练记录的公共知识库。",
+        "看点：官方称 agent 已处理 60%+ 技术传播，工程生产力 3×、部分组合训练算力中位数降 4×、年底预计省 4500 万美元+；数字为厂商自报、未独立验证。"
+      ],
+      "verdict": "值得",
+      "credibility": "官方（Meta 工程博客，数字为厂商自报未独立验证）",
+      "tags": [
+        "Agent",
+        "AI",
+        "官方博客"
+      ]
+    },
+    {
+      "id": "20261120-026",
+      "source": "快讯",
+      "title": "Modular 重做 MAX 的 Module API：加 Eager 层、PyTorch 风格语法，旧版 2027 Q1 移除",
+      "url": "https://www.modular.com/blog/reintroducing-max-module",
+      "time": "2026-11-19",
+      "points": [
+        "新 Module 建在图栈之上的新 Eager 层：不用每次单测/调试都付图编译代价，首次跑 Gemma 4 的首 token 明显更快；开发用 eager、生产用内置 compile 追踪成图（算子融合、常量折叠、执行与内存规划、动态 shape 推理）。",
+        "语法向 PyTorch 靠拢但更简：无需 super().__init__()、直接用 Tensor 代替 nn.Parameter；新增受 JAX Pytree 启发的 Tree 抽象（Tree.map 可只量化 MoE 的专家层），底层可表达数据/流水/张量并行。",
+        "关注点：旧 Module 移到 max.nn.legacy、2027 Q1 移除，属破坏性变更，存量模型需迁移；厂商自述性能、未独立验证。"
+      ],
+      "verdict": "观察",
+      "credibility": "官方（Modular 官方博客，产品与 API 说明，含破坏性变更，未独立验证）",
+      "tags": [
+        "推理",
+        "开源",
+        "官方博客",
+        "破坏性变更"
+      ]
+    },
+    {
+      "id": "20261120-027",
+      "source": "快讯",
+      "title": "automodel：把「模型发现方法论」编成可移植 agent skill，通用 agent 即可发现新模型",
+      "url": "https://arxiv.org/abs/2611.24347",
+      "time": "2026-11-19",
+      "points": [
+        "问题：模型发现（解析方程或神经架构）从手工设计转向自动化，但现有算法各异；作者提出给通用编码 agent（Claude Code/Codex）一份「模型发现配方」skill，看能否直接发现或改进模型。",
+        "在天体物理、心血管动力学、精准农业、交通流、轮胎动力学五个案例上，装备 automodel 的商业 agent 都能识别出新颖且有科学意义的模型；主张把方法论编码成可移植 skill 可替代领域专用自动化发现流水线。",
+        "可复用：skill 开源（github.com/unlayer-ai/automodel），思路是「方法论即 skill」；作者案例研究、未独立复现。"
+      ],
+      "verdict": "观察",
+      "credibility": "论文（arXiv 2611.24347，作者案例研究、skill 开源，未独立复现）",
+      "tags": [
+        "Agent",
+        "论文",
+        "开源",
+        "可复用"
+      ]
+    },
+    {
+      "id": "20261120-028",
+      "source": "快讯",
+      "title": "Resolution Hypothesis：agent 自我进化的瓶颈不是提不出好改动，而是评测分不清好坏",
+      "url": "https://arxiv.org/abs/2611.23068",
+      "time": "2026-11-19",
+      "points": [
+        "agent 进化循环是「proposer 写候选制品（提示/技能/记忆）→选择接受高分者」；作者把各论文方法互有胜负、某些任务无法启动归因于 Resolution Hypothesis：评测有噪音、无法可靠识别改进。",
+        "跨 7 种进化方法、6 个模型、超 1000 万次 LLM 调用：候选层面，有用候选确实存在，但选择区分好坏不比随机强，误差跨轮累积；方法层面，常见几个百分点的差距小于同一方法两次独立运行的差，已发表排名 often 靠运气。",
+        "看点：主张自改进 agent 的研究重心从「设计更多候选改进系统」转向「让真实改进可被检测、可累积」；作者实验、未独立复现。"
+      ],
+      "verdict": "值得",
+      "credibility": "论文（arXiv 2611.23068，7 方法 6 模型超千万次调用，作者实验，未独立复现）",
+      "tags": [
+        "Agent",
+        "评测",
+        "论文"
+      ]
+    },
+    {
+      "id": "20261120-029",
+      "source": "快讯",
+      "title": "Jeveration：System One 模型单次前向生成图像，512×512 用 78ms、比统一模型快最多 122×",
+      "url": "https://arxiv.org/abs/2611.24738",
+      "time": "2026-11-19",
+      "points": [
+        "把「快速并行出决策」的 System One 范式（Jev）扩展到生成：基于冻结的视觉语言模型复用其视觉语义知识，单次前向生成高质量图像，难点在让多点并行预测收敛到一致的整体。",
+        "做法：所有位置条件于一个共享随机状态以协调并行预测，先学离散图像码的分布来引导单 pass 生成（直接图像监督下模型会忽略该状态）；一个 checkpoint 同时支持文生图、图生图、稠密预测，各一次前向。",
+        "看点：512×512 图像 78ms、最多比现有统一模型快 122×，质量与稠密预测仍有竞争力；作者实验、未独立复现。"
+      ],
+      "verdict": "观察",
+      "credibility": "论文（arXiv 2611.24738，作者实验，未独立复现）",
+      "tags": [
+        "多模态",
+        "论文"
+      ]
+    },
+    {
+      "id": "20261120-030",
+      "source": "快讯",
+      "title": "Inference after coding agents：零效应数据上 AI agent 有 54–98% 报出显著 p 值",
+      "url": "https://arxiv.org/abs/2611.23174",
+      "time": "2026-11-19",
+      "points": [
+        "coding agent 让实证研究的每一步（写代码、操作数据）自动化，但在假设检验上带来威胁：agent 实现一种「强化版选择推断」，在隐含估计量空间做开放式搜索又可编程复现。",
+        "实测：在零效应模拟数据上，四个前沿 agent 被要求给出「有说服力的发现」时，54%–98% 的情况下报出显著 p 值。",
+        "可复用：作者提出校正——agent 完成分析后在数据子样本上重置重放，估计其在结果看起来显著时选中该分析的相对概率；对选择行为稳定的 agent 该检验渐近有效，模拟中把高误拒率压回接近标称 5%；作者实验、未独立复现。"
+      ],
+      "verdict": "观察",
+      "credibility": "论文（arXiv 2611.23174，作者模拟实验，未独立复现）",
+      "tags": [
+        "Agent",
+        "评测",
+        "论文"
+      ]
+    },
+    {
+      "id": "20261120-031",
+      "source": "快讯",
+      "title": "Frostbite：AI 端到端发现并验证全新 CPU 架构，25 项工作负载 perf/W 几何均值 4.59×（宣称）",
+      "url": "https://architectlabs.com/blog/frostbite",
+      "time": "2026-11-18",
+      "points": [
+        "基于交互网（interaction nets：每步局部、依赖显式、每个值只有一个所有者）设计新指令集，从编译器、ISA、架构、微架构、RTL、验证到 GDS 全程由 AI agent 群迭代，无人工架构先验；用自研 ASL 规约语言+Lean 做机器可检查的单一真源。",
+        "7nm 流片、综合 800MHz/GDS 500MHz；对一个 quad+L3（0.792mm²）对比同工艺双发射乱序 CPU 核（0.895mm²）：25 个工作负载 perf/W 几何均值 4.59×（搜索集 6.02×、15 个留出集 3.83×）、perf/area 平均 8.77×；agent 试了 58 个想法保留 37 个。",
+        "关注点：性能为厂商宣称、对比 CPU 因法律原因不披露、预流片数据、未独立验证；计划发布 RTL 与 ISA 并上 FPGA playground。"
+      ],
+      "verdict": "观察",
+      "credibility": "官方（Architect Labs 公司博客，数字为厂商宣称、预流片数据，未经第三方验证）",
+      "tags": [
+        "AI",
+        "官方博客",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261120-032",
+      "source": "星榜",
+      "title": "obra/superpowers — 面向编码 agent 的技能框架与软件开发方法论",
+      "url": "https://github.com/obra/superpowers",
+      "time": "2026-11-20",
+      "points": [
+        "累计 322,087 stars｜语言 Shell｜近 24h +2,028（trending 日榜实测 stars today，全池第 1）",
+        "一个 agentic skills 框架，把软件开发的流程与方法论沉淀成可被编码 agent 直接调用的技能集合。",
+        "可复用点：把团队的开发规范写成 agent 可加载的技能文件，让方法论版本化、可复用；具体收益需自行实测。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-033",
+      "source": "星榜",
+      "title": "boykopovar/AnyPS5 — 把 PS5 可执行文件自动移植到 Linux/Windows 的工具",
+      "url": "https://github.com/boykopovar/AnyPS5",
+      "time": "2026-11-20",
+      "points": [
+        "累计 57,867 stars｜语言 C++｜近 24h +1,853（trending 日榜实测 stars today，全池第 2）",
+        "自动把 PS5 平台的可执行程序移植到 Linux 与 Windows 上运行，属于跨平台二进制兼容/转译类系统工具。",
+        "可复用点：看它如何把私有平台 API 映射成宿主实现的思路；移植成功率与兼容性需自行实测。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261120-034",
+      "source": "星榜",
+      "title": "elementalsouls/Claude-BugHunter — 给 Claude Code 用的漏洞猎杀技能包",
+      "url": "https://github.com/elementalsouls/Claude-BugHunter",
+      "time": "2026-11-20",
+      "points": [
+        "累计 12,541 stars｜语言 Python｜近 24h +1,349（trending 日榜实测 stars today）",
+        "面向 Claude Code 的技能包，用于 bug 挖掘与外部红队演练，含 82 个技能、15 个 slash 命令等。",
+        "可复用点：把安全排查流程拆成细粒度 skill + slash 命令的组织方式可借鉴；误报率与覆盖度需自行实测。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-035",
+      "source": "星榜",
+      "title": "google-research/paper-orchestra — 自动写 AI 研究论文的多 agent 框架",
+      "url": "https://github.com/google-research/paper-orchestra",
+      "time": "2026-11-20",
+      "points": [
+        "累计 5,045 stars｜语言 Python｜近 24h +1,196（trending 日榜实测 stars today）",
+        "Google Research 出的多智能体框架，把 AI 研究论文写作流程拆给多个 agent 协同完成。",
+        "可复用点：看多 agent 分工与流程编排如何拆解复杂长任务；生成论文质量需自行实测，别直接采信。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-036",
+      "source": "星榜",
+      "title": "affaan-m/ECC — 面向 agent harness 的性能优化系统",
+      "url": "https://github.com/affaan-m/ECC",
+      "time": "2026-11-20",
+      "points": [
+        "累计 307,298 stars｜语言 JavaScript｜近 24h +959（trending 日榜实测 stars today）",
+        "围绕 agent harness 的性能优化系统，把 skills、instincts、memory、security 与 research-first 开发方式整合成一体。",
+        "可复用点：看它如何把记忆与安全约束内建进 agent 运行时；性能收益为项目自述，需自行实测。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-037",
+      "source": "星榜",
+      "title": "mvanhorn/last30days-skill — 跨多平台调研并综合结论的 agent 技能",
+      "url": "https://github.com/mvanhorn/last30days-skill",
+      "time": "2026-11-20",
+      "points": [
+        "累计 70,804 stars｜语言 Python｜近 24h +954（trending 日榜实测 stars today）",
+        "一个 AI agent 技能，跨 Reddit、X、YouTube、HN、Polymarket 与全网调研任意主题再做综合。",
+        "可复用点：多源检索→去重→综合的流水线设计值得看；信息时效与结论可靠性需自行实测。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-038",
+      "source": "星榜",
+      "title": "HKUDS/CLI-Anything — 让所有软件变成 agent 原生的 CLI 方案",
+      "url": "https://github.com/HKUDS/CLI-Anything",
+      "time": "2026-11-20",
+      "points": [
+        "累计 60,565 stars｜语言 Python｜近 24h +898（trending 日榜实测 stars today）",
+        "提出把任意软件改造成 agent 原生可调用 CLI 的方法与 CLI-Hub，让命令行工具更容易被智能体使用。",
+        "可复用点：把现有工具封装成 agent 友好 CLI 的规范化思路；适配成本需自行实测。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-039",
+      "source": "星榜",
+      "title": "DietrichGebert/ponytail — 让编码 agent 少写代码的提示符技能",
+      "url": "https://github.com/DietrichGebert/ponytail",
+      "time": "2026-11-20",
+      "points": [
+        "累计 194,856 stars｜语言 JavaScript｜近 24h +878（trending 日榜实测 stars today）",
+        "一个 agent 技能，主张像最资深也最懒的工程师那样思考，能不写的代码就不写。",
+        "可复用点：把「最小代码量」偏好固化成可加载技能的思路；实际省码效果需自行实测。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-040",
+      "source": "星榜",
+      "title": "firecrawl/firecrawl — 为 agent 提供搜索与抓取的统一数据 API",
+      "url": "https://github.com/firecrawl/firecrawl",
+      "time": "2026-11-20",
+      "points": [
+        "累计 204,236 stars｜语言 TypeScript｜近 24h +825（trending 日榜实测 stars today）",
+        "面向 agent 的知识基础设施，通过一个 API 提供搜索、抓取和 550+ 数据提供方的接入。",
+        "边界待定：本质是网络抓取/搜索 API，也可作通用爬虫而非纯 AI；可复用点在看它如何把多源数据统一成 agent 可消费的接口，覆盖率与稳定性需自行实测。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-041",
+      "source": "星榜",
+      "title": "mattpocock/skills — 面向工程师的 agent 技能集",
+      "url": "https://github.com/mattpocock/skills",
+      "time": "2026-11-20",
+      "points": [
+        "累计 328,165 stars｜语言 Shell｜近 24h +738（trending 日榜实测 stars today）",
+        "作者直接把自己的 .agents 目录开源出来的一组面向真实工程师的技能集。",
+        "可复用点：看真实开发者如何组织与命名技能文件，可作为自建技能库的参考模板。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-042",
+      "source": "星榜",
+      "title": "Nutlope/hallmark — 给编码 agent 用的反 AI 味设计技能",
+      "url": "https://github.com/Nutlope/hallmark",
+      "time": "2026-11-20",
+      "points": [
+        "累计 58,063 stars｜语言 CSS｜近 24h +534（trending 日榜实测 stars today）",
+        "为 Claude Code、Cursor、Codex 准备的设计技能，目标是做「反 AI 模板味」的页面而非千篇一律的 AI 风格。",
+        "边界待定：既有设计/前端属性又是编码 agent 技能，按两栖仓处理仍归 AI；设计观感需自行实测。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261120-043",
+      "source": "星榜",
+      "title": "getarcaneapp/arcane — 面向所有人的现代 Docker 管理面板",
+      "url": "https://github.com/getarcaneapp/arcane",
+      "time": "2026-11-20",
+      "points": [
+        "累计 10,131 stars｜语言 Go｜近 24h +497（trending 日榜实测 stars today）",
+        "一个现代化的 Docker 管理界面，主打易用与自托管，属于 DevOps 可视化运维工具。",
+        "可复用点：看容器管理面板的权限与状态展示设计；功能完整度需自行实测。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261120-044",
+      "source": "星榜",
+      "title": "solidjs/solid — 声明式、高效的 JavaScript UI 库",
+      "url": "https://github.com/solidjs/solid",
+      "time": "2026-11-20",
+      "points": [
+        "累计 36,826 stars｜语言 TypeScript｜近 24h +459（trending 日榜实测 stars today）",
+        "声明式、高效、灵活的前端 UI 库，以细粒度响应式更新著称。",
+        "可复用点：细粒度响应式与虚拟 DOM 之外的更新模型值得研究；性能对比需自行实测。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261120-045",
+      "source": "星榜",
+      "title": "microsoft/markitdown — 把文件与 Office 文档转成 Markdown 的工具",
+      "url": "https://github.com/microsoft/markitdown",
+      "time": "2026-11-20",
+      "points": [
+        "累计 197,036 stars｜语言 Python｜近 24h +434（trending 日榜实测 stars today）",
+        "微软出的 Python 工具，把各种文件与 Office 文档转换成 Markdown，常作为文档 ingestion 的前置步骤。",
+        "可复用点：做 RAG/文档入库时可拿来统一格式；复杂版式的转换保真度需自行实测。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261120-046",
+      "source": "星榜",
+      "title": "cursor/plugins — Cursor 插件规范与官方插件集",
+      "url": "https://github.com/cursor/plugins",
+      "time": "2026-11-20",
+      "points": [
+        "累计 17,565 stars｜语言 TypeScript｜近 24h +384（trending 日榜实测 stars today）",
+        "Cursor 编辑器的插件规范与官方插件集合。",
+        "边界待定：属编辑器 SDK/扩展生态，按两栖仓归其他；可复用点在看它如何定义插件接口与生命周期。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261120-047",
+      "source": "星榜",
+      "title": "mjmirza/app-store-compliance — 应用上架审核合规清单与提交前守卫",
+      "url": "https://github.com/mjmirza/app-store-compliance",
+      "time": "2026-11-20",
+      "points": [
+        "累计 1,846 stars｜语言 Shell｜近 24h +377（trending 日榜实测 stars today）",
+        "一份可执行的 playbook 与提交前检查守卫，帮助规避 App Store 与 Google Play 的常见审核驳回。",
+        "可复用点：把平台审核规则固化成提交前自动检查的思路；规则时效性需自行核对。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261120-048",
+      "source": "星榜",
+      "title": "XiaoYouChR/Ghost-Downloader-3 — 集大成的开源下载器",
+      "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3",
+      "time": "2026-11-20",
+      "points": [
+        "累计 12,723 stars｜语言 Python｜近 24h +341（trending 日榜实测 stars today）",
+        "一个跨平台开源下载器，主打多源、多协议聚合下载。",
+        "可复用点：看多协议下载任务调度与断点续传的组织方式；稳定性需自行实测。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261120-049",
+      "source": "星榜",
+      "title": "appwrite/appwrite — 面向开发者与 agent 的开源云后端",
+      "url": "https://github.com/appwrite/appwrite",
+      "time": "2026-11-20",
+      "points": [
+        "累计 58,407 stars｜语言 TypeScript｜近 24h +325（trending 日榜实测 stars today）",
+        "开源后端即服务平台，内含认证、数据库、存储、函数、消息、托管等能力，可自托管。",
+        "边界待定：虽提到面向 agent，本质是 BaaS 后端基础设施，按两栖仓归其他；部署复杂度需自行实测。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261120-050",
+      "source": "星榜",
+      "title": "sveltejs/svelte — 面向大众的 Web 前端框架",
+      "url": "https://github.com/sveltejs/svelte",
+      "time": "2026-11-20",
+      "points": [
+        "累计 89,796 stars｜语言 JavaScript｜近 24h +321（trending 日榜实测 stars today）",
+        "编译期优化的前端框架，把组件编译成直接的 DOM 操作，减少运行时开销。",
+        "可复用点：编译期优化思路与运行时轻量化的取舍值得看；性能需自行实测。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261120-051",
+      "source": "星榜",
+      "title": "codecrafters-io/build-your-own-x — 从零重造经典技术的学习合集",
+      "url": "https://github.com/codecrafters-io/build-your-own-x",
+      "time": "2026-11-20",
+      "points": [
+        "累计 563,961 stars｜语言 Markdown｜近 24h +276（trending 日榜实测 stars today）",
+        "通过亲手重造数据库、编译器、操作系统等经典技术来学习编程的教程索引合集。",
+        "可复用点：可作为团队技术深度训练的选题库与学习路径参考。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row 浏览器渲染 DOM 实测，2026-11-20；覆盖总榜+42 语言分类榜共 43 榜、去重后池子 372 仓；stars today 为官方近 24h 增量，累计 stars 与语言取自同一行）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261120-052",
+      "source": "英伟达",
+      "title": "vLLM 官方自测（GB300/GB200，无第三方复现）：GLM-5.3-Flash 的 KDA 层改走 FlashInfer 融合算子，decode 1.9–2.1×、GB300 C1024 吞吐 +24.9%",
+      "url": "https://github.com/vllm-project/vllm/pull/63544",
+      "time": "2026-11-19",
+      "points": [
+        "是什么：把 GLM-5.3-Flash 34 层 KDA（Kimi Delta Attention）从每层 3 个 Triton kernel 换成 FlashInfer 融合单核（fused_kda_decode / packed_fused_kda_decode），prefill 可选用 CuTe DSL 的 recurrent_kda；开关 --kda-decode-backend / --kda-prefill-backend flashinfer，需先把 FlashInfer pin 升到 0.7.3。merged 于 2026-11-18T23:55:10Z。",
+        "为什么有效：VR200 上 decode 1–8 行 1.9–2.1×、32–512 行 1.3–1.8×（H64 fp32 512 行 19.5→12.4 ms/step）；混合 prefill+decode 层 46–61% 更快（32K prefill+512 decode 6.96→2.72 ms）；GB300 agg DEP2 C1024 吞吐 2402→2999 tok/s/GPU（+24.9%）、C512 +13.7%，GB200 +14.8%；GSM8K 91.85→91.88（噪声内）。",
+        "代价与限制：FlashInfer prefill 是 opt-in，低并发 TTFT 反升（GB300 TP4 C1 143→163 ms、C8 603→650 ms），因 host 调用约 190µs vs FlashKDA 50–56µs；仅 SM100/SM103/SM107，我们 A2/A3/950 无此通路。升级为值得的条件：我们在 GB300/GB200 复现 GLM-5.3 的 C1024 吞吐，或昇腾 FLA-NPU 提供等价融合 KDA 算子。同题交叉：vLLM v0.34.0 官方 release notes（11-16 发布，窗口外）也收录同一 KDA 融合方向（#61614 row-strided QKV into FlashKDA），说明技术方向被上游确认。"
+      ],
+      "verdict": "观察",
+      "credibility": "vLLM 官方 PR 实测（作者含 NVIDIA CentML，标注无第三方复现；GB300/GB200/VR200）",
+      "tags": [
+        "业界调优",
+        "算子融合",
+        "推理",
+        "CUDA",
+        "可复用"
+      ]
+    },
+    {
+      "id": "20261120-053",
+      "source": "英伟达",
+      "title": "vLLM 官方自测（H20/SM90，无第三方复现）：Qwen4Exp 的 HyperConnection 上投影与 gate mix 融合进单核，长 prefill TTFT −2.4~2.8%",
+      "url": "https://github.com/vllm-project/vllm/pull/66791",
+      "time": "2026-11-19",
+      "points": [
+        "是什么：在 SM90（Hopper）把 Qwen4Exp 的 HyperConnection 10,240 列 BF16 gate 的 up-projection + sigmoid + 四流混合融进一个 Triton kernel，直接消费 gate tile，不再物化整块 gate；特化条件 BF16、四流、hidden 2560、低秩 320、≥512 本地行。merged 于 2026-11-19T00:30:15Z。",
+        "为什么有效：8×H20 TP8/EP8 上 Qwen3.8-Flash-Next-FP8 的 32K/128K/261K 输入 TTFT P50 分别 −2.76%/−2.77%/−2.40%，E2E −2.3~2.5%；单 H20 冷 L2 CUPTI 测得 kernel time 1024 行 68.71→61.46 µs、8192 行 498.85→390.47 µs；20 case HC 测试全过、32/32 输出 token 一致。",
+        "代价与限制：1K 短 prompt 无收益（两 boot pair 方向相反）；仅 SM90/Hopper、需 Triton 3.9；我们 A2/A3/950 是昇腾 NPU，没有 SM90 与同一 Triton 通路，方法思路可借鉴、代码不可直接搬。"
+      ],
+      "verdict": "不值得",
+      "credibility": "vLLM 官方 PR 实测（标注无第三方复现；8×H20 TP8/EP8）",
+      "tags": [
+        "业界调优",
+        "算子融合",
+        "推理",
+        "Triton",
+        "CUDA"
+      ]
+    },
+    {
+      "id": "20261120-054",
+      "source": "英伟达",
+      "title": "vLLM 官方实测（H100）：GDN chunk_scaled_dot_kkt 把 beta 移到 K 循环后，消除 Triton 流水竞态、autotune kernel 提速 4–6%",
+      "url": "https://github.com/vllm-project/vllm/pull/67812",
+      "time": "2026-11-19",
+      "points": [
+        "是什么：修 #65385，把 k×beta 缩放从 K 循环内移到循环之后（与上游 FLA 一致），使 k 在 wgmma 的共享内存 buffer 之外不再有 register user，绕开 Triton pipeliner 少分一个 slot 导致下一轮 load 覆盖仍在被 wgmma 读的 buffer。merged 于 2026-11-19T00:26:46Z。",
+        "为什么有效：H100 上 27 个 autotune config 从“每次运行结果不同、29 个偏离 fp32 参考 1.7e-3”变成“全部一致、误差 <2.8e-7”；autotuned kernel 26.6→25.0 µs（K=128）、34.5→33.1 µs（K=256），约 4–6% 快；GSM8K（Qwen3.5-0.8B，--gdn-prefill-backend triton）31.5→32.2%。",
+        "代价与限制：影响 Qwen3-Next/Qwen3.5 的 Triton GDN prefill 与 OLMo Hybrid；CI（B200/MI355）不触发该竞态；我们昇腾走 CANN/MRV2 而非 Triton wgmma。升级为值得的条件：我们在自研 GDN/attention Triton 或 Ascend kernel 上复现同类非确定性且该修法在本栈等价成立。"
+      ],
+      "verdict": "观察",
+      "credibility": "vLLM 官方 PR 实测（H100 80GB，明确数值稳定性与提速数据）",
+      "tags": [
+        "业界调优",
+        "算子融合",
+        "推理",
+        "Triton",
+        "训练"
+      ]
+    },
+    {
+      "id": "20261120-055",
+      "source": "英伟达",
+      "title": "SGLang 官方自测（SM120/GB300，无第三方复现）：DeepSeek-V4.1 decode scoring 从 dense-slot 改 paged，单卡峰值 5.48→1.04 GB，TP8/EP8 才能启动",
+      "url": "https://github.com/sgl-project/sglang/pull/45261",
+      "time": "2026-11-19",
+      "points": [
+        "是什么：两个提交修 DeepSeek-V4.1 在 SM120 上 TP8/EP8 默认参数启动失败——c1/c2 indexer 强制给 DeepGEMM paged-MQA 传 schedule（原先为 None 触发断言），decode_scores 改走 SM90 已有的 paged 分支（Triton fp4_index_logits_paged + paged top-k v2）。merged 于 2026-11-18T23:43:02Z。",
+        "为什么有效：ratio=1、batch 248 时单次 decode_scores 峰值 dense-slot 5.48 GB vs paged 1.04 GB（21.0→4.0 bytes/element）；CUDA graph 捕获显存池 5.57–13.46 GB→1.44–2.98 GB；带 scoring 改动在环境变量 workaround 下 GSM8K 96.89%、needle 9/9、单请求 33.5–35.1 tok/s。",
+        "代价与限制：本质是启动/显存修复，吞吐基本持平（33.5–35.1 vs 33.6–35.4 tok/s）；仅 SM12x/GB300；我们 A2/A3/950 无 SM120 与 DeepGEMM FP4 paged-MQA 通路，不适用。"
+      ],
+      "verdict": "不值得",
+      "credibility": "SGLang 官方 PR 实测（SM120/GB300，明确峰值显存与逐位一致数据）",
+      "tags": [
+        "业界调优",
+        "KV Cache",
+        "推理",
+        "CUDA",
+        "破坏性变更"
+      ]
+    },
+    {
+      "id": "20261120-056",
+      "source": "昇腾",
+      "title": "vLLM-Ascend 官方 A3 实测：Qwen4Exp QSA 四处准备算子融合，LightningIndexerV2 准备 8.4→2.24 µs（3.57–3.78×）、kernel 数 7→1",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22086",
+      "time": "2026-11-19",
+      "points": [
+        "是什么：在 A3（Ascend910_9382）融合 QSA 四个准备点——indexer query 把 clamp 与 sin/cos 收集并入 RMSNorm+MRoPE；compressed key 把 pooling/RMSNorm/MRoPE/缓存写合一；LightningIndexerV2 把长度计算、query 边界 clamp、FP32 score 初始化合一；主 attention Q/K 走 split+Q/K RMSNorm+MRoPE 核。merged 于 2026-11-19T13:07:46Z。",
+        "为什么有效：本分支 V2 准备 NPU 实测（A3、BF16、128 calls/NPUGraph、每样本 10 replay、7 样本×5 组 A/B/A）在 query rows 32/128、requests 1/8/32 下 8.0–8.5 µs→2.23–2.24 µs，降 71.96–73.51%（3.57–3.78×）；源码 PR 报主 Q/K RoPE 84.07%、compressed-key 75.54%，kernel 数 7→1。",
+        "代价与限制：只测准备链，排除 scoring/TopK、稀疏注意力核心与模型执行，作者明确“非端到端加速”；GPQA 90.4/91.9/92.42% 是无配对基线的用户报告，不能当精度不退化结论；仅 A3，A2/950 通路不同需单独验证。"
+      ],
+      "verdict": "值得",
+      "credibility": "vLLM-Ascend 官方 PR 实测（A3 910_9382，NPU event 计时，A/B/A 多轮）",
+      "tags": [
+        "业界调优",
+        "算子融合",
+        "推理",
+        "vLLM-Ascend",
+        "CANN"
+      ]
+    },
+    {
+      "id": "20261120-057",
+      "source": "昇腾",
+      "title": "vLLM-Ascend 官方 recipe（16×910B A2 真机）：DeepSeek-V4.1-Flash W4A8 PD 分离可照抄配置——1P(DP2×TP1×PCP4)+1D(DP8×TP1)+Mooncake+DSpark5",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/21852",
+      "time": "2026-11-19",
+      "points": [
+        "是什么：给 recipes.vllm.ai 增加 DeepSeek-V4.1-Flash 的 Ascend 910B（Atlas 800I A2 / 910B4）overlay，用 #1226 通用 PD pool 描述（pd_router: ascend / pd_connector: mooncake_ascend），prefill DP2×TP1×PCP4、decode DP8×TP1、MooncakeHybridConnector 传 KV、DSpark 5-token 投机、Ascend proxy 做前端。merged 于 2026-11-19T11:39:11Z。",
+        "为什么有效：把 1M 上下文 W4A8 PD 在 16×910B4（64 GB HBM/卡）上的合格部署固化成可复现配置；2 节点实测 2 prefill + 8 decode endpoint 全部跑通，含 KV 传输与投机解码，正好命中我们 A2 硬件与 PD 场景。",
+        "代价与限制：recipes 元数据、非代码变更，无吞吐/延迟数字；renderer 未直接建模 PCP（渲染成 --tensor-parallel-size 4，实测用 --tensor-parallel-size 1 --prefill-context-parallel-size 4）；镜像 pin 到公开 v0.32.0rc1、实测用内部 nightly；复现时须以 runbook 记录的两处渲染差异为准。"
+      ],
+      "verdict": "值得",
+      "credibility": "vLLM-Ascend 官方 PR 真机验证（16×Ascend 910B4，2 节点 PD）",
+      "tags": [
+        "业界调优",
+        "并行策略",
+        "KV Cache",
+        "推理",
+        "vLLM-Ascend",
+        "可复用"
+      ]
+    },
+    {
+      "id": "20261120-058",
+      "source": "昇腾",
+      "title": "vLLM-Ascend 官方 A3 实测：GLM5.3-Flash 的 KPool indexer 走 INT8（--attention-config.indexer_kv_dtype int8），算子 profiling 延迟降 6.01–18.94%、AIME 90% 持平",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22191",
+      "time": "2026-11-19",
+      "points": [
+        "是什么：opt-in 的 INT8 PoolKeyIndexer，把压缩后的 key/query 用 FP16 per-vector scale 量化（quant_mode=2，torch.ops.cann_ops_transformer.pool_key_indexer），key 与 scale 共享 managed KV cache page 以便 P/D 传输；BF16 仍默认且该开关与 --kv-cache-dtype 独立。merged 于 2026-11-19T15:13:28Z。",
+        "为什么有效：A3 历史 prefill operator profiling（DP0 八卡、3 秒窗口、独立采样）4K/1 输入 339.08→274.86 µs（−18.94%）、128K/1 6031.71→5669.36 µs（−6.01%）；AIME26 精度 90.00%→90.00%；含 cache layout/写与 graph replay 测试。",
+        "代价与限制：作者明确这些是“历史服务路径算子采样”、输入 dtype 与调用组合不同，不是同输入 kernel 加速、更非整模型收益；需 ops-transformer 支持无完成 pool 的请求；数字非当前 head。升级为值得的条件：在 A3 用同一 input 做 BF16/INT8 端到端 serving A/B，确认 TTFT/TPOT 与精度都不退化。"
+      ],
+      "verdict": "观察",
+      "credibility": "vLLM-Ascend 官方 PR 实测（A3 算子 profiling + AIME；作者标注为历史样本、非同输入对比）",
+      "tags": [
+        "业界调优",
+        "量化",
+        "KV Cache",
+        "推理",
+        "vLLM-Ascend"
+      ]
+    },
+    {
+      "id": "20261120-059",
+      "source": "昇腾",
+      "title": "vLLM-Ascend 官方 950DT 实测：MiniMax-M3 indexer 采用 CANN MsaIndexScore 融合 TopK（return_choice=1），省掉独立 TopK+排序、GPQA 87.88% 在噪声内",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22235",
+      "time": "2026-11-19",
+      "points": [
+        "是什么：CANN ops-transformer 给 MsaIndexScore 增加 block-TopK 融合（return_choice=1，在 ApplyLocalMaskUb 强制块之后做 TopK 并返回已排序 int32 block id），MiniMax-M3 indexer 据此跳过独立 TopK 与排序；门控要求 A5 能力位且 topk∈(0,128] 且 %8==0，否则回落原路径。merged 于 2026-11-19T13:28:02Z。",
+        "为什么有效：950DT 上 q_len=1 各上下文长度与 prefill q_len 16/64/128（<1024 tokens）fused 与分离路径选中同一 block 集；GPQA 87.88 vs 基线 87.88/88.38（±2.3%，1σ，n=198）在噪声内；613 单测通过；M3.1 用 sparse_topk_blocks=16 必过门控。",
+        "代价与限制：作者说明这是“移除工作”、无 benchmark harness 故无 speedup 数字；topk 非 8 对齐会在真实硬件读到未初始化值（实测 4/12/17 出脏值，8/16/24/32 精确）；仅 A5/950DT，A2/A3 门控关。升级为值得的条件：在 950DT 上给出 fused 路径相对独立 TopK+sort 的端到端延迟实测。同题交叉：上游算子 CANN ops-transformer GitCode PR#15456（13 天前 merge，窗口外，仅作交叉佐证、不单独计数）给出融合 vs 拼接合计 63.63 vs 65.71 µs（p5467-v1）等 6 组对比。"
+      ],
+      "verdict": "观察",
+      "credibility": "vLLM-Ascend 官方 PR 真机实测（Ascend 950DT；作者标明无 speedup benchmark）",
+      "tags": [
+        "业界调优",
+        "算子融合",
+        "推理",
+        "vLLM-Ascend",
+        "CANN"
+      ]
+    },
+    {
+      "id": "20261120-060",
+      "source": "昇腾",
+      "title": "vLLM-Ascend 官方 A5：按实际 KV 可见性准备 MLA plan，共享 replay 元数据、只备 decoder cut 之后用到的 ratio（634 CPU 全过、A5 171 过，无加速数字）",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/20508",
+      "time": "2026-11-19",
+      "points": [
+        "是什么：修 A5 V4.1 packed-cache 的 MLA planning——按当前请求真实可见的 KV 行（用 sequence lengths / query ends 裁剪、padding 行清零）按压缩比准备持久 plan，替代按 cache 容量或未裁剪长度准备；batch-local replay mask/plan 仅在 query 坐标、序列长度、replay floor 一致时共享；只准备 decoder cut 后会被消费的 ratio。merged 于 2026-11-19T14:43:56Z。",
+        "为什么有效：消除跨 cache group 的重复元数据工作与错误 plan；634 CPU case 零跳过、A5 171 passed/1 skipped、CANN 9.3 联合 65 passed、双 CPU lane 21370/21313 passed；同 head A3 十项 selected job 全过（共享代码变更也落到 A3）。",
+        "代价与限制：PR 明确“no benchmark attached”（减少工作而非新增加速），无端到端 step-time 数字；A5 新 planner 由 packed-cache 后端门控，普通 A3 仍走同步路径；联合 CANN 9.3 精度验收另算。升级为值得的条件：在 A5 V4.1 长上下文 serving 上给出改前/改后 step time 与元数据耗时对比。"
+      ],
+      "verdict": "观察",
+      "credibility": "vLLM-Ascend 官方 PR（A5/A3 官方 CI 实测；作者明确无性能 benchmark）",
+      "tags": [
+        "业界调优",
+        "KV Cache",
+        "推理",
+        "vLLM-Ascend",
+        "CANN"
+      ]
+    },
+    {
+      "id": "20261120-061",
+      "source": "其他",
+      "title": "vLLM 官方 ROCm 实测（MI355X，无第三方复现）：GLM-5.3-Flash kpool indexer 去掉 int32/int64 拷贝与填充，每步少 66 次 kernel、TPOT −1.7~4.4%",
+      "url": "https://github.com/vllm-project/vllm/pull/63910",
+      "time": "2026-11-19",
+      "points": [
+        "是什么：让 expand_pools_and_append_tail 直接读 int32 pool id 与 int64 position（+1 移进 kernel）、直接写 topk_indices_buffer 并补 -1 tail，去掉每层 6 次 cast/+1/fill/copy launch（每 decode step 66 次）。merged 于 2026-11-18T23:56:52Z。",
+        "为什么有效：MI355X TP4 上 1k/8k/64k/128k、并发 1–32 的 TPOT 中位 −1.7~4.4%（8k c1 6.07→5.89 ms）；MTP3/MTP5 geomean −1.6%/−1.5%；profile 每步 kernel 1295→1229、相关 kernel time 324→17 µs；MI325X（gfx942）15 点全快、吞吐 +1.9%；GSM8K/GPQA 精度不变。",
+        "代价与限制：固定省约 0.2 ms/step，长 step 相对收益缩水（64k c16 −0.2%），128k c8 +2.1% 落在自身 run 间波动内；仅 ROCm/AITER GLM-5.3 kpool，我们昇腾无此路径。升级为值得的条件：把“消除冗余 dtype 转换与逐行拷贝、把 +1/填充并入写核”思路移植到昇腾 indexer 并有 A/B 数字。"
+      ],
+      "verdict": "观察",
+      "credibility": "vLLM 官方 PR 实测（MI355X/MI325X，Swap GPU half 双轮；标注无第三方复现）",
+      "tags": [
+        "业界调优",
+        "算子融合",
+        "推理",
+        "KV Cache",
+        "可复用"
+      ]
+    },
+    {
+      "id": "20261120-062",
+      "source": "其他",
+      "title": "arXiv 2611.24891（Meta 生产 A/B，无外部复现）：Cap-and-Track 用拒绝信号做 LLM 推理准入，同流量下少用 43% H100",
+      "url": "https://arxiv.org/abs/2611.24891",
+      "time": "2026-11-19",
+      "points": [
+        "是什么：面向共享 provider 池与内部 GPU 的异步推理调度——Cap 在饱和资源处 fail-fast 拒绝（避免长队列等待），Track 只用拒绝信号向上探测/退避跟随准入上限；durable priority queue 把超额与被拒请求放到执行之外待重试。提交于 2026-11-18T18:34:10Z（窗口内）。",
+        "为什么有效：Meta 生产 A/B（每副本 Cap+Track）同一分类器流量下比固定速率排队前身高 43% fewer H100；稳态 real-engine replay 中 goodput 在 tuned 固定速率 1% 以内、拒绝份额约其 1/4；该 shaper 日承载 3 亿+在线请求、峰值 24h 11 亿。",
+        "代价与限制：backfill 峰值时低优先级工作等待更久；结论依赖 Meta 自有 shaper/引擎与“拒绝即容量信号”接口，跨栈迁移需引擎支持 fail-fast 与持久队列；论文是设计+生产报告，无开源实现/复现。升级为值得的条件：我们服务池容量频繁变动且准入/排队成为瓶颈，且引擎能暴露准入拒绝信号。"
+      ],
+      "verdict": "观察",
+      "credibility": "论文 + Meta 生产 A/B 实测（无外部复现、无开源实现）",
+      "tags": [
+        "业界调优",
+        "推理",
+        "Agent",
+        "论文",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261120-063",
+      "source": "其他",
+      "title": "SGLang 官方 H200 实测：Qwen-Image 的 DiT 在显存不足时按层流式加载，24/32 GiB 空闲下从 0/4 OOM 变 4/4 可用",
+      "url": "https://github.com/sgl-project/sglang/pull/50440",
+      "time": "2026-11-19",
+      "points": [
+        "是什么：给 QwenImagePipelineConfig 声明 dit_layerwise_offload_modes=(\"memory\",)，auto 模式仅在 DiT 需 >80% 空闲显存且低于保留阈值时按层流式；--performance-mode memory 也改为按层流式而非整组件 offload。merged 于 2026-11-19T00:36:02Z。",
+        "为什么有效：H200 单卡 24/32 GiB 空闲下 Qwen-Image-Edit-2511 从 0/4（HTTP 500, CUDA OOM）变 4/4 成功、两张默认请求出图一致；空 GPU（139 GiB）上输出与基线逐字节相同；默认 40 步编辑 59.9 s@24 GiB（峰值 7092 MB）vs 21.5 s 全驻留（峰值 59506 MB）。",
+        "代价与限制：24 GiB 下比全驻留慢约 2.8×，8-step 图与空 GPU 有 PSNR 28.7–45.7 dB 差异、姿态可能不同；未在真实 24/32 GB 卡、41–48 GiB 区间、多卡上验证；是图像扩散模型非 LLM 主线。升级为值得的条件：我们要在显存受限卡上部署多模态/扩散生成且接受该时延，并有 A/B 出图质量数据。"
+      ],
+      "verdict": "观察",
+      "credibility": "SGLang 官方 PR 实测（H200，4/4 请求与逐字节对比；标注未测真实 24/32GB 卡）",
+      "tags": [
+        "业界调优",
+        "多模态",
+        "推理",
+        "其他领域",
+        "可复用"
+      ]
+    },
+    {
+      "id": "20261120-901",
+      "source": "创新",
+      "title": "Cap-and-Track 把「准入拒绝」当容量信号驱动 LLM 推理分发：只靠 refusal 探测上限，少用 43% H100",
+      "url": "https://arxiv.org/abs/2611.24891",
+      "time": "2026-11-19",
+      "points": [
+        "新机制（对比对象与出处）：LLM 推理服务的固定分发速率会随 serving fleet 扩容、请求大小变化而失效，生成输出长度在准入时又未知。Cap-and-Track（arXiv 2611.24891，Meta traffic shaper，11-18 提交、11-19 进视野）用「后端返回的拒绝」当当前准入上限的信号：Cap 是在饱和资源处的 fail-fast 准入检查、在长队等待前直接拒掉工作，Track 分发器只靠这些 refusal 向上探测并退避，不需要输出长度预测、也不需要全局速率重调；durable 优先级队列把超额工作（含被拒请求的重试）留在执行之外。对比对象=其 queued fixed-rate 前身。",
+        "实测数字（论文自报）：生产同流量 A/B 下，服务一个 classifier 比固定速率前身少用 43% H100；稳态容量 replay 下 goodput 在「调到实测容量之上的固定速率」的 1% 以内、refusal 份额约为其 1/4；该 shaper 日承载 >3 亿在线请求与数百 TB 媒体，最忙 24 小时处理 11 亿请求。",
+        "可用性与代价：值得。A2/A3/H800 都跑 vLLM/Triton serving，这是 serving 层的准入+分发机制、不绑定特定卡（论文用 H100 但机制硬件无关），可直接评估移植到我们的推理网关；310P 低算力纯推理先排除，A5/950 无真机。代价=要在引擎侧暴露 saturation refusal 信号、维护有状态的 durable 优先级队列，且低优先级任务在 backfill 峰值等待变长（论文自己点明）。复现难度中——abs 页 Code/Data 区空、系 Meta 内部系统设计，只能照机制自研，本机无卡未复现。"
+      ],
+      "verdict": "值得",
+      "credibility": "论文自报（arXiv 2611.24891，Meta 组，11-18 提交 / 11-19 公告；未独立复现）",
+      "tags": [
+        "论文",
+        "推理",
+        "需复现",
+        "交架构师"
+      ]
+    },
+    {
+      "id": "20261120-902",
+      "source": "创新",
+      "title": "RSIBench-Infra 把 agent 端到端调优搬上生产级训推栈：20 任务、32 卡、同时覆盖 NVIDIA GPU 与昇腾 NPU",
+      "url": "https://arxiv.org/abs/2611.24395",
+      "time": "2026-11-19",
+      "points": [
+        "新机制（对比对象与出处）：递归自我改进的评测此前多聚焦 kernel 等单一软件层，看不清 agent 能否在生产负载下拿到端到端收益。RSIBench-Infra（arXiv 2611.24395，11-18 提交、11-19 进视野）给 20 个训练/推理任务，跨多模型家族与模态、部署规模到 32 加速器，且**明确同时覆盖 NVIDIA GPU 和 Ascend NPU**；agent 从官方 recipe 的可运行 baseline 出发，可改 engine/kernel/instruction 三层软件栈，用 OCI 镜像层提交协议捕获改动保证可复现，独立评测在任务质量约束下测端到端性能。对比对象=单层 kernel 优化 benchmark。",
+        "实测数字（论文自报）：全部任务结果中 66.2% 超过 1.10× 验证加速；但作者明说「识别有效优化策略、把局部改进稳定转成端到端收益」仍然困难。",
+        "可用性与代价：值得。这是少数直接把 Ascend NPU 纳入评测的一手 benchmark，可当「agent 驱动的算子/框架调优」的外部标尺，与调优情报线工作互补；A3/A2 台账有真机可对照，A5/950 无真机先观察。代价=要搭 OCI 镜像层提交+独立评测整套框架，32 卡规模我们未必凑得出；项目页 rsibench-infra.github.io 有，但 abs 页未见代码仓库链接。复现难度高，本机无卡未复现。"
+      ],
+      "verdict": "值得",
+      "credibility": "论文自报（arXiv 2611.24395，清华等组，11-18 提交 / 11-19 公告；未独立复现）",
+      "tags": [
+        "论文",
+        "评测",
+        "推理",
+        "训练",
+        "需复现",
+        "交架构师"
+      ]
+    },
+    {
+      "id": "20261120-903",
+      "source": "创新",
+      "title": "Muon 曲率诊断证明它在谱顶部 over-step：QKV 分开正交化降 0.0250 nats，cooldown 加 σ^-1/4 谱倾斜再降 0.0120",
+      "url": "https://arxiv.org/abs/2611.24644",
+      "time": "2026-11-19",
+      "points": [
+        "新机制（对比对象与出处）：Muon 沿动量的 polar factor 更新（谱范数下的最速下降），但它固定了两个不看 loss 的分配——每个奇异方向同一步长、非方阵里每个神经元步长由 leverage score 决定。Equal Steps, Unequal Curvature（arXiv 2611.24644，11-18 提交、11-19 进视野）用 held-out 梯度与 Hessian-vector 积按奇异值带/神经元群分解 Muon 步长、算每群二阶最优乘子，发现 124M decoder（FineWeb-Edu）上乘子从顶部奇异方向到尾部单调上升，即 Muon 在高曲率顶部 over-step；并在 Lean 中证明该诊断何时允许在 Muon 自身更新范数上做干预。对比对象=原始 Muon 与各 block-wise 变体。",
+        "实测数字（论文自报）：Q/K/V 分开正交化（而非融合成一个矩阵）降 loss 0.0250 nats 且解释了 block-wise 变体的全部增益；cooldown 加 matmul-only 旋转等变的谱倾斜 σ^{-1/4} 在更强 baseline 上再降 0.0120 nats（与 NorMuon 加性共 0.0158 nats，baseline 需多约 4.3% token 才追平），355M 参数下降 0.0188 nats；能量匹配的 Schatten-1 权重衰减再降 0.0052 nats。",
+        "可用性与代价：观察，升级触发=当要做小规模预训练/继续预训练且优化器是 Muon 系时，把「QKV 分开正交化」当低成本 A/B 项（纯优化器侧改动、不动模型结构）。我们以推理为主、短期不做预训练，故不进值得；A2/A3 能训但当前无此场景，H800 同理。代价=要算 HVP 做曲率诊断（训练额外开销）、σ^{-1/4} 谱倾斜须在 cooldown 定点施加。复现难度中，abs 页未见代码，本机无卡未复现。"
+      ],
+      "verdict": "观察",
+      "credibility": "论文自报（arXiv 2611.24644，11-18 提交 / 11-19 公告；未独立复现）",
+      "tags": [
+        "论文",
+        "训练",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261120-904",
+      "source": "创新",
+      "title": "LeCun 组反事实世界模型：无需反事实数据或重训，用两个实际动作的世界模型预测之差一阶近似「如果当时换动作」，R² 38–46%→86–96%",
+      "url": "https://arxiv.org/abs/2611.24778",
+      "time": "2026-11-19",
+      "points": [
+        "新机制（对比对象与出处）：世界模型看不全世界，隐扰动（如水流推船）改变行动结果后，「同样扰动下换个行动会怎样」这个反事实问题能把坏决策与坏运气分开。Counterfactual World Models（arXiv 2611.24778，Balestriero / LeCun / Varaku，11-18 提交、11-19 进视野）证明只在实际转移上训的世界模型无论数据/容量都无法回答；但对很多物理系统，「自然不跳变」+ 行动与扰动作为独立力（相互作用是时间二阶项）使反事实结果一阶近似=观测结果+世界模型在替代动作与实际动作下预测之差——无需反事实数据、额外参数或重训，并给出 O(h²) 误差界与匹配下界。对比对象=仅事实训练的世界模型与知道模拟器但不知结果的 oracle planner。",
+        "实测数字（论文自报）：四个渲染模拟器上把反事实 R² 从 38–46% 提到 86–96%（同一世界模型、冻结 DINOv2/MAE 编码器）；第五个水下载具用 16× 实际数据达 90–94%；另四个冻结编码器（DINOv3 / SigLIP 2 / CLIP / EVA-02）给 81–95%；事后规划中找到本应达成目标的行动比例 35–69%，对比 oracle planner 的 14–23%。",
+        "可用性与代价：不值得（当前前提不成立），重评触发=若未来做具身/机器人控制或需要「分离坏决策与坏运气」的规划场景。我们是 LLM 推理服务，不做 JEPA 世界模型/机器人控制，A2/A3/H800/310P 都用不上。价值=记下「无需反事实数据、无需重训、用两个实际动作的预测之差一阶近似反事实」这个推理时组合技巧供做决策/规划的同事归档，与 serving 栈分属不同问题层。复现难度中高（需冻结编码器+模拟器），未复现。"
+      ],
+      "verdict": "不值得",
+      "credibility": "论文自报（arXiv 2611.24778，Meta FAIR / LeCun 组，11-18 提交 / 11-19 公告；未独立复现）",
+      "tags": [
+        "论文",
+        "推理",
+        "需复现"
+      ]
+    }
+  ]
+}
