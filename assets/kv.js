@@ -79,7 +79,9 @@
   }
 
   function loadJSON(url) {
-    return fetch(url, { cache: 'no-cache' }).then(function (r) {
+    // Pages CDN max-age=600：拼唯一 ?v= 时间戳，覆盖发布后刷新即见新数据（固定版本号挡不住当天重发）
+    var sep = url.indexOf('?') >= 0 ? '&' : '?';
+    return fetch(url + sep + 'v=' + Date.now(), { cache: 'no-cache' }).then(function (r) {
       if (!r.ok) throw new Error(url + ' → HTTP ' + r.status);
       return r.json();
     });
