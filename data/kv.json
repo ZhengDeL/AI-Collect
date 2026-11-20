@@ -1,80 +1,1987 @@
 {
   "version": "v1",
-  "generated_at": "2026-11-19T02:40:00+08:00",
+  "generated_at": "2026-11-21T02:33:12+08:00",
   "items": [
-    {"id":"N1","line":"nvidia","name":"vLLM APC 自动前缀缓存","scenario":["S1"],"layers":["L1"],"engine":"vLLM latest","gain":"命中免重算；倍数未查到","evidence":"A","pitfalls":{"hit":"前缀hash变即失效","consist":"单实例","block":"否","engine_change":"一个flag","active":"2026-11-18"},"url":"https://docs.vllm.ai/en/latest/features/automatic_prefix_caching/","status":"已验证","flag":"沿用"},
-    {"id":"N2","line":"nvidia","name":"vLLM OffloadingConnector native CPU","scenario":["S1"],"layers":["L1","L2"],"engine":"vLLM 0.11.0引入，0.12.0大改，0.14.0待发","gain":"TTFT -2~22×、吞吐 +9×（Llama-3.1-8B/H100）；0.12.0 -4× TTFT/+5× 吞吐；双向DMA 83.4GB/s","evidence":"B","pitfalls":{"hit":"依赖重复前缀（无前缀也可缓解preempt）","consist":"hash","block":"否(DMA async)","engine_change":"--kv_offloading_backend native","active":"2026-11-18"},"url":"https://vllm-project.github.io/2026/01/08/kv-offloading-connector.html","status":"已验证","flag":"新增"},
-    {"id":"N3","line":"nvidia","name":"vLLM TieringOffloadingSpec fs 二级层","scenario":["S1"],"layers":["L1","L2","L3"],"engine":"vLLM native，fs backend","gain":"未查到（官方博客: 0.11→0.12 block 16KB→2MB，吞吐一个数量级）","evidence":"A","pitfalls":{"hit":"工作集>CPU才用盘","consist":"fs","block":"否","engine_change":"connector配置+共享PVC","active":"2026-11-18"},"url":"https://docs.vllm.ai/en/latest/examples/disaggregated/lmcache/","status":"在读","flag":"新增"},
-    {"id":"N4","line":"nvidia","name":"LMCache in-process CPU offload","scenario":["S1"],"layers":["L1","L2"],"engine":"LMCache + vLLM","gain":"第二轮QA TTFT \"drastically reduced\"（定性）","evidence":"A","pitfalls":{"hit":"依赖重复前缀","consist":"LRU","block":"否","engine_change":"connector","active":"LMCache 2026-11-18"},"url":"https://docs.vllm.ai/en/latest/examples/disaggregated/lmcache/","status":"已验证","flag":"沿用"},
-    {"id":"N5","line":"nvidia","name":"SGLang HiCache device/host","scenario":["S1"],"layers":["L1","L2"],"engine":"SGLang latest，HiRadixTree","gain":"GPU-assisted IO 3× vs cudaMemcpyAsync；page-first+zero-copy 再 2×；整体最高 6× 吞吐/-80% TTFT","evidence":"A","pitfalls":{"hit":"radix前缀","consist":"write-through/selective/write-back","block":"CPU命中用layer-wise overlap","engine_change":"--enable-hierarchical-cache","active":"2026-11-18"},"url":"https://www.lmsys.org/blog/2025-09-10-sglang-hicache/","status":"已验证","flag":"沿用"},
-    {"id":"N6","line":"nvidia","name":"SGLang radix cache host/disk 层","scenario":["S1"],"layers":["L1","L2","L3"],"engine":"SGLang HiCacheFile/3FS/Mooncake/NIXL backend","gain":"3FS:Novita 命中40%→80%、TTFT -56%、吞吐翻倍（引述未复现）","evidence":"D","pitfalls":{"hit":"radix","consist":"prefetch timeout/best-effort","block":"预取可限流","engine_change":"backend接口get/exist/set","active":"2026-11-18"},"url":"https://www.lmsys.org/blog/2025-09-10-sglang-hicache/","status":"已验证","flag":"新增"},
-    {"id":"N7","line":"nvidia","name":"FlexKV CPU tier（logical LRU）","scenario":["S1"],"layers":["L1","L2"],"engine":"FlexKV，vLLM≥0.17.2 内置 FlexKVConnectorV1","gain":"三级缓存；倍数未查到","evidence":"A","pitfalls":{"hit":"RadixTree跨三级匹配","consist":"逻辑LRU不立即物理搬移","block":"async get/put可overlap","engine_change":"vLLM/SGLang/TRTLLM connector；许可Apache-2.0","active":"2026-11-16"},"url":"https://github.com/taco-project/FlexKV/blob/main/README.md","status":"已验证","flag":"新增"},
-    {"id":"N8","line":"nvidia","name":"TokenSpeed host cache + Mooncake L3","scenario":["S1"],"layers":["L1","L2","L3"],"engine":"TokenSpeed v0.1.1 + Mooncake Store","gain":"官方称 Mooncake Store 为 host cache 之下的 L3；倍数未查到","evidence":"A","pitfalls":{"hit":"内容寻址","consist":"共享池","block":"否","engine_change":"server配置","active":"2026-11-18"},"url":"https://github.com/kvcache-ai/Mooncake/blob/main/README.md","status":"已验证","flag":"新增"},
-    {"id":"N9","line":"nvidia","name":"llm-d tiered prefix cache (native CPU)","scenario":["S1"],"layers":["L1","L2"],"engine":"llm-d + vLLM OffloadingConnector，H100×4","gain":"每副本 300GiB CPU tier；lruCapacityPerServer=19200；收益数字未查到","evidence":"A","pitfalls":{"hit":"router双scorer(HBM+CPU)","consist":"PYTHONHASHSEED","block":"否","engine_change":"K8s helm overlay","active":"2026-11-18"},"url":"https://github.com/llm-d/llm-d/blob/main/guides/tiered-prefix-cache/README.md","status":"已验证","flag":"新增"},
-    {"id":"N10","line":"nvidia","name":"llm-d tiered prefix cache (fs)","scenario":["S1"],"layers":["L1","L2","L3"],"engine":"llm-d + ReadWriteMany PVC (Lustre/EFS)","gain":"跨pod文件系统命中；数字未查到","evidence":"A","pitfalls":{"hit":"共享fs","consist":"连接器不evict，靠存储系统/外部controller","block":"读取先入CPU再HBM","engine_change":"PVC+overlay","active":"2026-11-18"},"url":"https://github.com/llm-d/llm-d/blob/main/guides/tiered-prefix-cache/README.md","status":"已验证","flag":"新增"},
-    {"id":"N11","line":"nvidia","name":"llm-d lmcache-connector tier","scenario":["S1"],"layers":["L1","L2"],"engine":"llm-d + LMCache，NVIDIA/AMD/XPU","gain":"100GiB×2 ranks；数字未查到","evidence":"A","pitfalls":{"hit":"lmcache:retrieve_hit_rate","consist":"LRU","block":"否","engine_change":"overlay","active":"2026-11-18"},"url":"https://github.com/llm-d/llm-d/blob/main/guides/tiered-prefix-cache/README.md","status":"已验证","flag":"新增"},
-    {"id":"N12","line":"nvidia","name":"NVIDIA Dynamo KVBM 本地 host 卸载","scenario":["S1"],"layers":["L1","L2"],"engine":"Dynamo KV Cache Manager","gain":"未查到（本次未展开KVBM正文）","evidence":"A","pitfalls":{"hit":"KV感知","consist":"未查到","block":"未查到","engine_change":"Dynamo","active":"未查到（PR#11239合入2026-07-31）"},"url":"https://docs.vllm.ai/en/latest/deployment/integrations/dynamo/","status":"在读","flag":"新增"},
-    {"id":"N13","line":"nvidia","name":"MooncakeConnector (vLLM PD)","scenario":["S2"],"layers":["L4","L5"],"engine":"vLLM v1，2024-12起","gain":"未查到（复用TE带宽87/190GB/s）","evidence":"A","pitfalls":{"hit":"N/A(传输)","consist":"block对齐/失败恢复","block":"PD关键路径","engine_change":"connector","active":"2026-11-18"},"url":"https://docs.vllm.ai/en/latest/examples/disaggregated/mooncake_connector/","status":"已验证","flag":"沿用"},
-    {"id":"N14","line":"nvidia","name":"Mooncake Transfer Engine","scenario":["S2"],"layers":["L4"],"engine":"mooncake-transfer-engine，CUDA<13/≥13分包","gain":"40GB：4×200G 87GB/s、8×400G 190GB/s（TCP 2.4x/4.6x）","evidence":"A","pitfalls":{"hit":"N/A","consist":"多NIC自动failover","block":"异步","engine_change":"TE客户端；许可=Apache-2.0","active":"2026-11-18"},"url":"https://github.com/kvcache-ai/Mooncake/blob/main/README.md","status":"已验证","flag":"沿用"},
-    {"id":"N15","line":"nvidia","name":"NIXL (UCX/RDMA 传输底座)","scenario":["S2"],"layers":["L4"],"engine":"NIXL，UCX 1.23.x，pip install nixl","gain":"未查到通用带宽数（有 NIXLBench/KVBench）","evidence":"A","pitfalls":{"hit":"N/A","consist":"ETCD元数据","block":"异步","engine_change":"C++库+插件；许可=Apache-2.0 但wheel捆绑NVIDIA专有lib","active":"2026-11-18"},"url":"https://github.com/ai-dynamo/nixl/blob/main/README.md","status":"已验证","flag":"新增"},
-    {"id":"N16","line":"nvidia","name":"NIXL Mooncake plugin","scenario":["S2"],"layers":["L4"],"engine":"NIXL src/plugins/mooncake","gain":"未查到","evidence":"A","pitfalls":{"hit":"N/A","consist":"Mooncake TE","block":"否","engine_change":"构建插件","active":"2026-11-18"},"url":"https://github.com/ai-dynamo/nixl/blob/main/src/plugins/mooncake/README.md","status":"在读","flag":"新增"},
-    {"id":"N17","line":"nvidia","name":"InfiniStore PD 传输","scenario":["S2"],"layers":["L4","L5"],"engine":"bytedance/InfiniStore，TCP/RDMA(mlx5)/IB，经LMCache集成","gain":"未查到公开带宽数","evidence":"A","pitfalls":{"hit":"内容寻址","consist":"serverless弹性池","block":"异步","engine_change":"每节点装vLLM+LMCache+InfiniStore","active":"2026-11-18"},"url":"https://github.com/bytedance/InfiniStore/blob/main/README.md","status":"已验证","flag":"新增"},
-    {"id":"N18","line":"nvidia","name":"TRT-LLM Mooncake TE cache_transmission","scenario":["S2"],"layers":["L4"],"engine":"TRT-LLM cpp/tensorrt_llm/executor/cache_transmission/mooncake_utils","gain":"未查到","evidence":"A","pitfalls":{"hit":"N/A","consist":"TE","block":"PD路径","engine_change":"TRT-LLM内置","active":"未查到"},"url":"https://github.com/kvcache-ai/Mooncake/blob/main/README.md","status":"候选","flag":"沿用"},
-    {"id":"N19","line":"nvidia","name":"FlexKV layerwise transfer (SGLang/Mooncake)","scenario":["S2"],"layers":["L1","L4"],"engine":"FlexKV，FLEXKV_ENABLE_LAYERWISE_TRANSFER=1","gain":"未查到倍数（2026-06-24合入）","evidence":"A","pitfalls":{"hit":"layerwise","consist":"source lease","block":"layer等待","engine_change":"SGLang connector","active":"2026-11-16"},"url":"https://github.com/taco-project/FlexKV/blob/main/README.md","status":"已验证","flag":"新增"},
-    {"id":"N20","line":"nvidia","name":"llm-d P2P KV sharing over NIXL","scenario":["S2","S3"],"layers":["L2","L5"],"engine":"llm-d，CPU-to-CPU NIXL(UCX/RDMA)","gain":"doc QA：token-aware+P2P 服务 1.4× load-aware+P2P、2.2× affinity+P2P","evidence":"A","pitfalls":{"hit":"需PYTHONHASHSEED fleet-wide一致+相同block size/TP","consist":"KV event索引","block":"源GPU不参与","engine_change":"MultiConnector+router","active":"2026-11-18"},"url":"https://github.com/llm-d/llm-d/blob/main/docs/architecture/kv-management/p2p-kv-cache-sharing.md","status":"已验证","flag":"新增"},
-    {"id":"N21","line":"nvidia","name":"SGLang PD disaggregation + Mooncake","scenario":["S2"],"layers":["L4"],"engine":"SGLang + Mooncake TE","gain":"未查到","evidence":"A","pitfalls":{"hit":"N/A","consist":"TE","block":"PD","engine_change":"SGLang server args","active":"2026-11-18"},"url":"https://github.com/kvcache-ai/Mooncake/blob/main/README.md","status":"候选","flag":"新增"},
-    {"id":"N22","line":"nvidia","name":"Mooncake Store 分布式 KV 池","scenario":["S3"],"layers":["L5"],"engine":"Mooncake Store，DRAM+SSD多级","gain":"大对象条带+并行IO+零拷贝；倍数未查到","evidence":"A","pitfalls":{"hit":"hash前缀","consist":"replica/soft-hard pin/lease TTL","block":"否","engine_change":"master+client","active":"2026-11-18"},"url":"https://github.com/kvcache-ai/Mooncake/blob/main/README.md","status":"已验证","flag":"沿用"},
-    {"id":"N23","line":"nvidia","name":"MooncakeStoreConnector (vLLM)","scenario":["S3"],"layers":["L5"],"engine":"vLLM latest","gain":"降TTFT/提复用（定性）","evidence":"A","pitfalls":{"hit":"hash前缀","consist":"Store策略","block":"否","engine_change":"connector","active":"2026-11-18"},"url":"https://docs.vllm.ai/en/latest/features/mooncake_store_connector_usage/","status":"已验证","flag":"沿用"},
-    {"id":"N24","line":"nvidia","name":"LMCache Mooncake Store L2 adapter","scenario":["S3"],"layers":["L4","L5"],"engine":"LMCache PR#2911，2026-04-03合入","gain":"STORE 1.91 / LOAD 4.02 GB/s，LOOKUP 1.5–1.8ms，80/80","evidence":"B","pitfalls":{"hit":"内容寻址","consist":"无eviction支持、lease 5000ms/softpin 1800000ms","block":"否","engine_change":"MP adapter","active":"2026-11-18"},"url":"https://github.com/LMCache/LMCache/pull/2911","status":"已验证","flag":"沿用"},
-    {"id":"N25","line":"nvidia","name":"Dynamo KV router + event-driven Mooncake index","scenario":["S3"],"layers":["L5"],"engine":"Dynamo PR#11239，2026-07-31合入","gain":"路由查询 1.93ms vs HTTP 8.24ms；group_id -13.8%；50/50共享命中","evidence":"B","pitfalls":{"hit":"event索引","consist":"seq gap保守清空、无snapshot/replay","block":"否","engine_change":"Dynamo router","active":"未查到"},"url":"https://github.com/ai-dynamo/dynamo/pull/11239","status":"已验证","flag":"沿用"},
-    {"id":"N26","line":"nvidia","name":"TRT-LLM KVCMv2 Mooncake Store connector","scenario":["S3"],"layers":["L5"],"engine":"TRT-LLM PR#19171，2026-10-10合入","gain":"未查到","evidence":"A","pitfalls":{"hit":"内容寻址","consist":"prefix key跨rank一致性待验","block":"preemption保留页","engine_change":"mooncake-store preset，4角色","active":"未查到"},"url":"https://github.com/NVIDIA/TensorRT-LLM/pull/19171","status":"已验证","flag":"沿用"},
-    {"id":"N27","line":"nvidia","name":"llm-d MooncakeStore connector","scenario":["S3"],"layers":["L5"],"engine":"llm-d，80GB DRAM+1TB SSD/node","gain":"未查到","evidence":"A","pitfalls":{"hit":"hash","consist":"RDMA需rdma/ib:1","block":"否","engine_change":"Mooncake Master+Client DaemonSet","active":"2026-11-18"},"url":"https://github.com/llm-d/llm-d/blob/main/guides/tiered-prefix-cache/README.md","status":"已验证","flag":"新增"},
-    {"id":"N28","line":"nvidia","name":"FlexKV distributed reuse","scenario":["S3"],"layers":["L5"],"engine":"FlexKV，Distributed RadixTree+GMS(Redis)+lease","gain":"未查到","evidence":"A","pitfalls":{"hit":"本地快照免去中心查询","consist":"lease保跨节点传输有效性","block":"bounded parallel Get","engine_change":"Redis GMS","active":"2026-11-16"},"url":"https://github.com/taco-project/FlexKV/blob/main/README.md","status":"已验证","flag":"新增"},
-    {"id":"N29","line":"nvidia","name":"InfiniStore 非分离集群共享池","scenario":["S3"],"layers":["L5"],"engine":"InfiniStore standalone，经LMCache","gain":"未查到","evidence":"A","pitfalls":{"hit":"内容寻址","consist":"standalone KV store","block":"否","engine_change":"独立服务","active":"2026-11-18"},"url":"https://github.com/bytedance/InfiniStore/blob/main/README.md","status":"已验证","flag":"新增"},
-    {"id":"N30","line":"nvidia","name":"SGLang HiCache + Mooncake Store","scenario":["S3"],"layers":["L5"],"engine":"SGLang + Mooncake Store (2025-09-10起)","gain":"蚂蚁命中降84% TTFT（引述未复现）","evidence":"D","pitfalls":{"hit":"HiCache radix","consist":"Store","block":"否","engine_change":"backend","active":"2026-11-18"},"url":"https://github.com/kvcache-ai/Mooncake/blob/main/README.md","status":"已验证","flag":"沿用"},
-    {"id":"N31","line":"nvidia","name":"SGLang HiCache 稀疏/预取长上下文","scenario":["S4"],"layers":["L1","L4"],"engine":"SGLang，prefetch policy timeout/best-effort/stage","gain":"官方6×吞吐/-80% TTFT（长上下文+多轮）","evidence":"A","pitfalls":{"hit":"radix","consist":"write policy","block":"timeout模式为TTFT中止预取","engine_change":"hicache flags","active":"2026-11-18"},"url":"https://www.lmsys.org/blog/2025-09-10-sglang-hicache/","status":"已验证","flag":"沿用"},
-    {"id":"N32","line":"nvidia","name":"FlexKV block-wise mode + vectored SSD IO","scenario":["S4"],"layers":["L2","L3"],"engine":"FlexKV，PR#242 vectored SSD I/O","gain":"未查到","evidence":"A","pitfalls":{"hit":"跨层合并大block提升IO","consist":"逻辑LRU","block":"async","engine_change":"Redis/配置","active":"2026-11-16"},"url":"https://github.com/taco-project/FlexKV/blob/main/README.md","status":"已验证","flag":"新增"},
-    {"id":"N33","line":"nvidia","name":"FlexKV GPUDirect Storage 直读NVMe","scenario":["S4"],"layers":["L1","L3"],"engine":"FlexKV GDS，FLEXKV_ENABLE_GDS=1，cuFile","gain":"官方gdscheck/gdsio给工具，带宽未查到","evidence":"A","pitfalls":{"hit":"N/A(直传)","consist":"allow_compat_mode=false强制GDS","block":"DMA不占CPU","engine_change":"装nvidia-gds+privileged容器","active":"2026-11-16"},"url":"https://github.com/taco-project/FlexKV/blob/main/docs/gds/README_en.md","status":"已验证","flag":"新增"},
-    {"id":"N34","line":"nvidia","name":"DeepSeek 3FS 作为 KV 后端","scenario":["S4"],"layers":["L3","L4"],"engine":"3FS，CRAQ强一致，USRBIO","gain":"KVCache读峰值 40 GiB/s（1×400G NIC/node）；集群读6.6TiB/s","evidence":"A","pitfalls":{"hit":"文件系统","consist":"CRAQ强一致","block":"异步IO","engine_change":"部署3FS集群；许可MIT","active":"2026-11-17"},"url":"https://github.com/deepseek-ai/3FS/blob/main/README.md","status":"已验证","flag":"新增"},
-    {"id":"N35","line":"nvidia","name":"vLLM encoder cache transfer connector","scenario":["S5"],"layers":["L2","L5"],"engine":"vLLM PR#41567，v0.31.0","gain":"未查到","evidence":"A","pitfalls":{"hit":"encoder哈希","consist":"Store","block":"否","engine_change":"connector","active":"2026-11-18"},"url":"https://github.com/kvcache-ai/Mooncake/blob/main/README.md","status":"候选","flag":"新增"},
-    {"id":"N36","line":"nvidia","name":"vLLM cross-encoder embedding reuse","scenario":["S5"],"layers":["L5"],"engine":"vLLM PR#56242，v0.31.0，Mooncake Store","gain":"未查到","evidence":"A","pitfalls":{"hit":"hash","consist":"Store","block":"否","engine_change":"connector","active":"2026-11-18"},"url":"https://github.com/kvcache-ai/Mooncake/blob/main/README.md","status":"候选","flag":"新增"},
-    {"id":"N37","line":"nvidia","name":"SGLang Encoder Global Cache Manager","scenario":["S5"],"layers":["L5"],"engine":"SGLang PR#16137，Mooncake驱动","gain":"未查到","evidence":"A","pitfalls":{"hit":"ViT embedding全局共享","consist":"Mooncake","block":"否","engine_change":"SGLang开关","active":"2026-11-18"},"url":"https://github.com/kvcache-ai/Mooncake/blob/main/README.md","status":"候选","flag":"新增"},
-    {"id":"N38","line":"nvidia","name":"Mooncake checkpoint-engine (P2P权重)","scenario":["S6"],"layers":["L4","L5"],"engine":"checkpoint-engine，K1.5/K2生产","gain":"Kimi-K2 1T参数跨千卡 ~20s 更新","evidence":"A","pitfalls":{"hit":"N/A(权重)","consist":"P2P","block":"训练同步路径","engine_change":"独立服务","active":"2026-11-18"},"url":"https://github.com/kvcache-ai/Mooncake/blob/main/README.md","status":"已验证","flag":"新增"},
-    {"id":"N39","line":"nvidia","name":"Mooncake verl/Speculators/Miles rollout后端","scenario":["S6"],"layers":["L4"],"engine":"verl PR#5176、Speculators、Miles","gain":"SGLang RDMA P2P权重 53s→7.2s（7x，跨千GPU，零拷贝）","evidence":"A","pitfalls":{"hit":"N/A(hidden-state/权重)","consist":"RDMA","block":"异步","engine_change":"各框架backend","active":"2026-11-18"},"url":"https://github.com/kvcache-ai/Mooncake/blob/main/README.md","status":"已验证","flag":"新增"},
-    {"id":"A1","line":"ascend","name":"vLLM-Ascend CPUOffloadingSpec","scenario":["S1"],"layers":["L1","L2"],"engine":"vLLM-Ascend latest，OffloadingConnector","gain":"本机实测 H2D 58.21 / D2H 41.38 GB/s(1GB,pinned)","evidence":"B","pitfalls":{"hit":"LRU","consist":"hash","block":"独立NPU stream","engine_change":"connector配置","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/kv_cache_cpu_offload.md","status":"已验证","flag":"沿用"},
-    {"id":"A2","line":"ascend","name":"TieringOffloadingSpec + fs 二级层","scenario":["S1"],"layers":["L1","L2","L3"],"engine":"vLLM-Ascend，pin_shared_mmap + O_DIRECT","gain":"3FS可调线程；数字未查到","evidence":"A","pitfalls":{"hit":"工作集>CPU才用盘","consist":"fs eviction仍在开发","block":"否","engine_change":"connector配置","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/kv_cache_cpu_offload.md","status":"已验证","flag":"沿用"},
-    {"id":"A3","line":"ascend","name":"CANN aclrtMemcpyAsync + host pinned 裸搬运","scenario":["S1"],"layers":["L1","L2"],"engine":"torch_npu 2.10.0.post7 / CANN 9.2.1 / driver 26.1.1","gain":"本机实测 pinned H2D 58.21/D2H 41.38 vs pageable 5.47/22.90 GB/s；4流无增益（原始记录 notes/20261118-bandwidth-probe.md）","evidence":"B","pitfalls":{"hit":"N/A","consist":"N/A","block":"异步stream","engine_change":"需自己写脚本","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/kv_cache_cpu_offload.md","status":"已验证","flag":"新增"},
-    {"id":"A4","line":"ascend","name":"LMCache-Ascend MP connector","scenario":["S1","S3"],"layers":["L1","L2","L5"],"engine":"LMCache-Ascend main/v0.5.6，CANN≥8.5.0","gain":"--chunk-size 128/--l1-size-gb 50/LRU；倍数未查到","evidence":"A","pitfalls":{"hit":"LRU","consist":"server共享","block":"lmcache_driven异步","engine_change":"额外lmcache server；300I DUO不支持、A5计划支持","active":"2026-11-18"},"url":"https://github.com/LMCache/LMCache-Ascend/blob/main/README.md","status":"已验证","flag":"沿用"},
-    {"id":"A5","line":"ascend","name":"UCM PD-mixed PipelineStore","scenario":["S1"],"layers":["L1","L2","L3"],"engine":"vLLM-Ascend main + UCM，Cache|Posix","gain":"官方自报延迟降3-10×/TTFT最高8×（见A17实测）","evidence":"A","pitfalls":{"hit":"前缀","consist":"共享存储","block":"否","engine_change":"UCMConnector+yaml","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/ucm_deployment.md","status":"已验证","flag":"沿用"},
-    {"id":"A6","line":"ascend","name":"llm-d 类 native offload 在昇腾","scenario":["S1"],"layers":["L1","L2"],"engine":"未查到（llm-d文档无昇腾后端）","gain":"未查到","evidence":"A","pitfalls":{"hit":"空白：未找到 A/B 级方案","consist":"未查到","block":"未查到","engine_change":"未查到","active":"未查到"},"url":"https://github.com/llm-d/llm-d/blob/main/guides/tiered-prefix-cache/README.md","status":"候选","flag":"新增"},
-    {"id":"A7","line":"ascend","name":"MooncakeConnectorV1 PD 多机","scenario":["S2"],"layers":["L4"],"engine":"vLLM-Ascend latest，mooncake_master","gain":"官方镜像0.11.0起预装Mooncake；倍数未查到","evidence":"A","pitfalls":{"hit":"N/A","consist":"KV lease(默认11000ms)","block":"PD路径","engine_change":"multi-node配置","active":"2026-11-18"},"url":"https://docs.vllm.ai/projects/ascend/en/latest/tutorials/features/pd_disaggregation_mooncake_multi_node.html","status":"已验证","flag":"沿用"},
-    {"id":"A8","line":"ascend","name":"MooncakeConnectorV2 / MooncakePushConnector","scenario":["S2"],"layers":["L4"],"engine":"vLLM-Ascend (Experimental)","gain":"未查到","evidence":"A","pitfalls":{"hit":"N/A","consist":"与KVPP配合仅P节点开","block":"layerwise push","engine_change":"KVPP+connector","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/kvpp.md","status":"已验证","flag":"新增"},
-    {"id":"A9","line":"ascend","name":"SfaRemoteD2HConnector (P/D 暴露层缓冲)","scenario":["S2"],"layers":["L1","L4"],"engine":"vLLM-Ascend，SfaRemoteD2H","gain":"未查到","evidence":"A","pitfalls":{"hit":"N/A","consist":"端口=DP×TP连续","block":"decode端等待","engine_change":"MultiConnector","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/layerwise_and_sparse_kv_cache_offloading.md","status":"已验证","flag":"沿用"},
-    {"id":"A10","line":"ascend","name":"UCM centralized PD (NFS/3FS)","scenario":["S2"],"layers":["L3"],"engine":"UCMConnector，共享存储","gain":"未查到","evidence":"A","pitfalls":{"hit":"高前缀命中","consist":"共享存储","block":"否","engine_change":"所有节点访问共享存储","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/ucm_deployment.md","status":"已验证","flag":"新增"},
-    {"id":"A11","line":"ascend","name":"UCM distributed PD (P2P via Mooncake)","scenario":["S2"],"layers":["L4"],"engine":"UCMConnector + MooncakeConnectorV1","gain":"未查到","evidence":"A","pitfalls":{"hit":"prefix cache on P","consist":"GDRA？无（原文如此）","block":"否","engine_change":"MultiConnector","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/ucm_deployment.md","status":"已验证","flag":"新增"},
-    {"id":"A12","line":"ascend","name":"D2RH on Atlas 850E (UBoE)","scenario":["S2"],"layers":["L4"],"engine":"vLLM-Ascend，UBoE","gain":"未查到","evidence":"A","pitfalls":{"hit":"N/A","consist":"HIXL资源","block":"否","engine_change":"容器+UBoE配置","active":"2026-11-18"},"url":"https://docs.vllm.ai/projects/ascend/en/latest/tutorials/features/pd_disaggregation_mooncake_multi_node.html","status":"在读","flag":"新增"},
-    {"id":"A13","line":"ascend","name":"EPD disaggregation (encoder→prefill→decode)","scenario":["S2","S5"],"layers":["L4"],"engine":"vLLM-Ascend EPD","gain":"未查到","evidence":"A","pitfalls":{"hit":"N/A","consist":"EPD","block":"否","engine_change":"EPD配置","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/epd_disaggregation.md","status":"在读","flag":"新增"},
-    {"id":"A14","line":"ascend","name":"Ascend Store / Mooncake backend","scenario":["S3"],"layers":["L5"],"engine":"vLLM-Ascend AscendStoreConnector，Mooncake≥0.3.14","gain":"对象数 B×L×R→约B×R；TTFT收益未给数","evidence":"A","pitfalls":{"hit":"hash前缀","consist":"PYTHONHASHSEED=0+拓扑一致","block":"当前层等自己load完成","engine_change":"SDK+master","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/mooncake_layerwise_adaptation_and_optimization.md","status":"已验证","flag":"沿用"},
-    {"id":"A15","line":"ascend","name":"Ascend Store / Memcache backend","scenario":["S3"],"layers":["L4","L5"],"engine":"vLLM-Ascend + atomgit memcache，device_sdma","gain":"未查到","evidence":"A","pitfalls":{"hit":"memcache","consist":"lease_ttl_ms=30000","block":"层等待","engine_change":"MetaService+LocalService","active":"atomgit 2026-11-16"},"url":"https://atomgit.com/Ascend/memcache/blob/master/README.md","status":"在读","flag":"沿用"},
-    {"id":"A16","line":"ascend","name":"Ascend Store / Yuanrong backend","scenario":["S3"],"layers":["L5"],"engine":"vLLM-Ascend Yuanrong","gain":"未查到","evidence":"A","pitfalls":{"hit":"未查到","consist":"未查到","block":"未查到","engine_change":"connector配置","active":"2026-11-18"},"url":"https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/kv_cache_pool_ascend_store.html","status":"候选","flag":"新增"},
-    {"id":"A17","line":"ascend","name":"UCM 大规模EP PD 共享存储 TTFT 实测","scenario":["S3"],"layers":["L3","L5"],"engine":"8×910B3，GLM-5.1-w4a8，DP4TP8→DP8TP4","gain":"32k/64k/128k UCM PC TTFT 51861/69718/105083ms vs HBM 108879/144444/267680ms；TPOT 64/65/66","evidence":"B","pitfalls":{"hit":"共享外部存储保命中率0.8","consist":"PYTHONHASHSEED","block":"否","engine_change":"UCMConnector","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/ucm_deployment.md","status":"已验证","flag":"沿用"},
-    {"id":"A18","line":"ascend","name":"UCM prefix cache NFS Store","scenario":["S3"],"layers":["L3"],"engine":"UCM，NFS","gain":"未查到","evidence":"A","pitfalls":{"hit":"前缀","consist":"NFS","block":"否","engine_change":"UCM配置","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/ucm_deployment.md","status":"已验证","flag":"新增"},
-    {"id":"A19","line":"ascend","name":"UCM prefix cache 3FS Store","scenario":["S3"],"layers":["L4"],"engine":"UCM，3FS","gain":"未查到","evidence":"A","pitfalls":{"hit":"前缀","consist":"3FS CRAQ","block":"否","engine_change":"3FS集群","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/ucm_deployment.md","status":"已验证","flag":"新增"},
-    {"id":"A20","line":"ascend","name":"KVPP (KV pipeline parallelism)","scenario":["S4"],"layers":["L1"],"engine":"vLLM-Ascend，enable_kvpp:true，950DT实测","gain":"容量 6.25×(单节点)/5.35×(双节点)；TTFT 32k -0.33%~128k +3.36%(单)；吞吐 -2.3%~-12.77%","evidence":"B","pitfalls":{"hit":"可配prefix cache","consist":"拓扑namespace隔离","block":"owner等layer load再broadcast","engine_change":"flag，需PIECEWISE/eager，DCP不支持","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/kvpp.md","status":"已验证","flag":"新增"},
-    {"id":"A21","line":"ascend","name":"KVPP + Memcache pooling","scenario":["S3","S4"],"layers":["L1","L5"],"engine":"KVPP + AscendStoreConnector(kv_producer/both)","gain":"未查到","evidence":"A","pitfalls":{"hit":"whole-block","consist":"namespace","block":"否","engine_change":"keep use_layerwise=false","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/kvpp.md","status":"已验证","flag":"新增"},
-    {"id":"A22","line":"ascend","name":"KVPP + Mooncake layerwise pooling","scenario":["S3","S4"],"layers":["L1","L5"],"engine":"KVPP + AscendStoreConnector(mooncake,load_async=false)","gain":"未查到（GLM-5.2验证pending）","evidence":"A","pitfalls":{"hit":"每TP rank只load自有层","consist":"独立pool namespace","block":"owner等pool load再broadcast","engine_change":"实验特性","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/kvpp.md","status":"已验证","flag":"新增"},
-    {"id":"A23","line":"ascend","name":"Layerwise + Sparse KV offload","scenario":["S4"],"layers":["L1","L4"],"engine":"vLLM-Ascend，memcache/device_sdma，dram.size=10GB / dram_size_per_dp_GB=110","gain":"未查到倍数","evidence":"A","pitfalls":{"hit":"跨层共享buffer=3","consist":"PYTHONHASHSEED","block":"当前层等load","engine_change":"PD分离，仅Memcache；950PR/950DT不支持sparse decode","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/layerwise_and_sparse_kv_cache_offloading.md","status":"已验证","flag":"沿用"},
-    {"id":"A24","line":"ascend","name":"HiSparse on Ascend","scenario":["S4"],"layers":["L1","L2"],"engine":"vLLM-Ascend，HiSparseConnector，A5/950 + CANN9.2 SIMT","gain":"未查到倍数","evidence":"A","pitfalls":{"hit":"resolver按选中行查NPU Resident/Hot/Host","consist":"host mirror","block":"attention前refill缺失行","engine_change":"V2 runner+flag，与sparse_kv_offload_config互斥","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/hisparse.md","status":"已验证","flag":"新增"},
-    {"id":"A25","line":"ascend","name":"PreemptOffloadConnector","scenario":["S4"],"layers":["L1","L2"],"engine":"vLLM-Ascend，PD解码端，recompute_scheduler","gain":"未查到","evidence":"A","pitfalls":{"hit":"默认关闭prefix sharing","consist":"HBM→pinned CPU→H2D","block":"forward前restore","engine_change":"仅PD分离Decode，需shm-size=1024g；传输用基础torch copy未优化","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/preempt_offload_connector.md","status":"已验证","flag":"新增"},
-    {"id":"A26","line":"ascend","name":"Shared Engram over HIXL (远端DRAM按行)","scenario":["S4","S6"],"layers":["L4"],"engine":"vLLM-Ascend，A2 device RoCE / A5 UB-URMA","gain":"capacity 65536–262144行；benchmark未查到（官方拒用microbench推断）","evidence":"A","pitfalls":{"hit":"选中行","consist":"generation比对，无自动failover/崩溃回收","block":"lookup在decode graph replay前","engine_change":"独立owner进程+so","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/shared_engram_rdma.md","status":"已验证","flag":"沿用"},
-    {"id":"A27","line":"ascend","name":"UCM sparse attention (GSA/CacheBlend)","scenario":["S4"],"layers":["L1","L3"],"engine":"UCM，training-free","gain":"未查到","evidence":"A","pitfalls":{"hit":"稀疏图/混合块","consist":"共享存储","block":"否","engine_change":"UCM配置","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/ucm_deployment.md","status":"在读","flag":"新增"},
-    {"id":"A28","line":"ascend","name":"Mooncake Layerwise Hybrid Attention","scenario":["S4"],"layers":["L1","L5"],"engine":"vLLM-Ascend，AscendStoreConnector multi cache group","gain":"未查到","evidence":"A","pitfalls":{"hit":"每group对象","consist":"拓扑/PP层划分一致","block":"层等待","engine_change":"hybrid attention指南","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/mooncake_hybrid_attention.md","status":"候选","flag":"新增"},
-    {"id":"A29","line":"ascend","name":"Encoder Cache CPU Offload","scenario":["S5"],"layers":["L1","L2"],"engine":"vLLM-Ascend，encoder cache","gain":"未查到","evidence":"A","pitfalls":{"hit":"encoder hash","consist":"LRU","block":"否","engine_change":"connector配置","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/encoder_cache_cpu_offload.md","status":"候选","flag":"新增"},
-    {"id":"A30","line":"ascend","name":"Qwen38 Mooncake basic pooling","scenario":["S3"],"layers":["L5"],"engine":"vLLM-Ascend，pooling","gain":"未查到（文档存在未展开正文）","evidence":"A","pitfalls":{"hit":"前缀","consist":"pool namespace","block":"否","engine_change":"pool配置","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/qwen38_mooncake_basic_pooling.md","status":"在读","flag":"新增"},
-    {"id":"A31","line":"ascend","name":"D2RH host mirror (RL/推理训练分离)","scenario":["S6"],"layers":["L2","L4"],"engine":"vLLM-Ascend，HIXL/RDMA","gain":"未查到","evidence":"A","pitfalls":{"hit":"N/A","consist":"lease","block":"否","engine_change":"owner进程","active":"2026-11-18"},"url":"https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/shared_engram_rdma.md","status":"在读","flag":"新增"},
-    {"id":"A32","line":"ascend","name":"MindIE KV 分层/命中策略","scenario":["S1","S3"],"layers":["L1","L5"],"engine":"未查到","gain":"未查到","evidence":"A","pitfalls":{"hit":"未查到：查过 vllm-ascend docs 全目录/atomgit memcache/昇腾社区，未找到公开一手 MindIE KV 分层 API/参数","consist":"未查到","block":"未查到","engine_change":"未查到","active":"未查到"},"url":"https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/index.html","status":"候选","flag":"新增"},
-    {"id":"A33","line":"ascend","name":"昇腾 NVMe-oF 远端 KV 后端","scenario":["S4"],"layers":["L3","L4"],"engine":"未查到","gain":"未查到","evidence":"A","pitfalls":{"hit":"空白：vllm-ascend fs tier 仅 POSIX/3FS/NFS，无 NVMe-oF 一手","consist":"未查到","block":"未查到","engine_change":"未查到","active":"未查到"},"url":"https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/kv_cache_pool_ascend_store.html","status":"候选","flag":"新增"},
-    {"id":"A34","line":"ascend","name":"昇腾 GPUDirect-style 存储直读","scenario":["S4"],"layers":["L1","L3"],"engine":"未查到","gain":"未查到","evidence":"A","pitfalls":{"hit":"空白：GDS 为 NVIDIA 专有，昇腾侧未见等价一手","consist":"未查到","block":"未查到","engine_change":"未查到","active":"未查到"},"url":"https://github.com/taco-project/FlexKV/blob/main/docs/gds/README_en.md","status":"候选","flag":"新增"},
-    {"id":"A35","line":"ascend","name":"300I DUO(310P) KV 卸载","scenario":["S1"],"layers":["L1"],"engine":"未查到","gain":"未查到","evidence":"A","pitfalls":{"hit":"空白：LMCache-Ascend 明确 300I DUO not supported；未找到 310P 上 A/B 级 KV 卸载方案","consist":"未查到","block":"未查到","engine_change":"未查到","active":"未查到"},"url":"https://github.com/LMCache/LMCache-Ascend/blob/main/README.md","status":"候选","flag":"新增"}
+    {
+      "id": "N1",
+      "line": "nvidia",
+      "name": "vLLM APC 自动前缀缓存",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1"
+      ],
+      "engine": "vLLM latest",
+      "gain": "命中免重算；倍数未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "前缀hash变即失效",
+        "consist": "单实例",
+        "block": "否",
+        "engine_change": "一个flag",
+        "active": "2026-11-18"
+      },
+      "url": "https://docs.vllm.ai/en/latest/features/automatic_prefix_caching/",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "N2",
+      "line": "nvidia",
+      "name": "vLLM OffloadingConnector native CPU",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "vLLM 0.11.0引入，0.12.0大改，0.14.0待发",
+      "gain": "TTFT -2~22×、吞吐 +9×（Llama-3.1-8B/H100）；0.12.0 -4× TTFT/+5× 吞吐；双向DMA 83.4GB/s",
+      "evidence": "B",
+      "pitfalls": {
+        "hit": "依赖重复前缀（无前缀也可缓解preempt）",
+        "consist": "hash",
+        "block": "否(DMA async)",
+        "engine_change": "--kv_offloading_backend native",
+        "active": "2026-11-18"
+      },
+      "url": "https://vllm-project.github.io/2026/01/08/kv-offloading-connector.html",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N3",
+      "line": "nvidia",
+      "name": "vLLM TieringOffloadingSpec fs 二级层",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2",
+        "L3"
+      ],
+      "engine": "vLLM native，fs backend",
+      "gain": "未查到（官方博客: 0.11→0.12 block 16KB→2MB，吞吐一个数量级）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "工作集>CPU才用盘",
+        "consist": "fs",
+        "block": "否",
+        "engine_change": "connector配置+共享PVC",
+        "active": "2026-11-18"
+      },
+      "url": "https://docs.vllm.ai/en/latest/examples/disaggregated/lmcache/",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "N4",
+      "line": "nvidia",
+      "name": "LMCache in-process CPU offload",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "LMCache + vLLM",
+      "gain": "第二轮QA TTFT \"drastically reduced\"（定性）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "依赖重复前缀",
+        "consist": "LRU",
+        "block": "否",
+        "engine_change": "connector",
+        "active": "LMCache 2026-11-18"
+      },
+      "url": "https://docs.vllm.ai/en/latest/examples/disaggregated/lmcache/",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "N5",
+      "line": "nvidia",
+      "name": "SGLang HiCache device/host",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "SGLang latest，HiRadixTree",
+      "gain": "GPU-assisted IO 3× vs cudaMemcpyAsync；page-first+zero-copy 再 2×；整体最高 6× 吞吐/-80% TTFT",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "radix前缀",
+        "consist": "write-through/selective/write-back",
+        "block": "CPU命中用layer-wise overlap",
+        "engine_change": "--enable-hierarchical-cache",
+        "active": "2026-11-18"
+      },
+      "url": "https://www.lmsys.org/blog/2025-09-10-sglang-hicache/",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "N6",
+      "line": "nvidia",
+      "name": "SGLang radix cache host/disk 层",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2",
+        "L3"
+      ],
+      "engine": "SGLang HiCacheFile/3FS/Mooncake/NIXL backend",
+      "gain": "3FS:Novita 命中40%→80%、TTFT -56%、吞吐翻倍（引述未复现）",
+      "evidence": "D",
+      "pitfalls": {
+        "hit": "radix",
+        "consist": "prefetch timeout/best-effort",
+        "block": "预取可限流",
+        "engine_change": "backend接口get/exist/set",
+        "active": "2026-11-18"
+      },
+      "url": "https://www.lmsys.org/blog/2025-09-10-sglang-hicache/",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N7",
+      "line": "nvidia",
+      "name": "FlexKV CPU tier（logical LRU）",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "FlexKV，vLLM≥0.17.2 内置 FlexKVConnectorV1",
+      "gain": "三级缓存；倍数未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "RadixTree跨三级匹配",
+        "consist": "逻辑LRU不立即物理搬移",
+        "block": "async get/put可overlap",
+        "engine_change": "vLLM/SGLang/TRTLLM connector；许可Apache-2.0",
+        "active": "2026-11-16"
+      },
+      "url": "https://github.com/taco-project/FlexKV/blob/main/README.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N8",
+      "line": "nvidia",
+      "name": "TokenSpeed host cache + Mooncake L3",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2",
+        "L3"
+      ],
+      "engine": "TokenSpeed v0.1.1 + Mooncake Store",
+      "gain": "官方称 Mooncake Store 为 host cache 之下的 L3；倍数未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "内容寻址",
+        "consist": "共享池",
+        "block": "否",
+        "engine_change": "server配置",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/kvcache-ai/Mooncake/blob/main/README.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N9",
+      "line": "nvidia",
+      "name": "llm-d tiered prefix cache (native CPU)",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "llm-d + vLLM OffloadingConnector，H100×4",
+      "gain": "每副本 300GiB CPU tier；lruCapacityPerServer=19200；收益数字未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "router双scorer(HBM+CPU)",
+        "consist": "PYTHONHASHSEED",
+        "block": "否",
+        "engine_change": "K8s helm overlay",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/llm-d/llm-d/blob/main/guides/tiered-prefix-cache/README.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N10",
+      "line": "nvidia",
+      "name": "llm-d tiered prefix cache (fs)",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2",
+        "L3"
+      ],
+      "engine": "llm-d + ReadWriteMany PVC (Lustre/EFS)",
+      "gain": "跨pod文件系统命中；数字未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "共享fs",
+        "consist": "连接器不evict，靠存储系统/外部controller",
+        "block": "读取先入CPU再HBM",
+        "engine_change": "PVC+overlay",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/llm-d/llm-d/blob/main/guides/tiered-prefix-cache/README.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N11",
+      "line": "nvidia",
+      "name": "llm-d lmcache-connector tier",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "llm-d + LMCache，NVIDIA/AMD/XPU",
+      "gain": "100GiB×2 ranks；数字未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "lmcache:retrieve_hit_rate",
+        "consist": "LRU",
+        "block": "否",
+        "engine_change": "overlay",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/llm-d/llm-d/blob/main/guides/tiered-prefix-cache/README.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N12",
+      "line": "nvidia",
+      "name": "NVIDIA Dynamo KVBM 本地 host 卸载",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "Dynamo KV Cache Manager",
+      "gain": "未查到（本次未展开KVBM正文）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "KV感知",
+        "consist": "未查到",
+        "block": "未查到",
+        "engine_change": "Dynamo",
+        "active": "未查到（PR#11239合入2026-07-31）"
+      },
+      "url": "https://docs.vllm.ai/en/latest/deployment/integrations/dynamo/",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "N13",
+      "line": "nvidia",
+      "name": "MooncakeConnector (vLLM PD)",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L4",
+        "L5"
+      ],
+      "engine": "vLLM v1，2024-12起",
+      "gain": "未查到（复用TE带宽87/190GB/s）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "N/A(传输)",
+        "consist": "block对齐/失败恢复",
+        "block": "PD关键路径",
+        "engine_change": "connector",
+        "active": "2026-11-18"
+      },
+      "url": "https://docs.vllm.ai/en/latest/examples/disaggregated/mooncake_connector/",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "N14",
+      "line": "nvidia",
+      "name": "Mooncake Transfer Engine",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L4"
+      ],
+      "engine": "mooncake-transfer-engine，CUDA<13/≥13分包",
+      "gain": "40GB：4×200G 87GB/s、8×400G 190GB/s（TCP 2.4x/4.6x）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "N/A",
+        "consist": "多NIC自动failover",
+        "block": "异步",
+        "engine_change": "TE客户端；许可=Apache-2.0",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/kvcache-ai/Mooncake/blob/main/README.md",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "N15",
+      "line": "nvidia",
+      "name": "NIXL (UCX/RDMA 传输底座)",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L4"
+      ],
+      "engine": "NIXL，UCX 1.23.x，pip install nixl",
+      "gain": "未查到通用带宽数（有 NIXLBench/KVBench）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "N/A",
+        "consist": "ETCD元数据",
+        "block": "异步",
+        "engine_change": "C++库+插件；许可=Apache-2.0 但wheel捆绑NVIDIA专有lib",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/ai-dynamo/nixl/blob/main/README.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N16",
+      "line": "nvidia",
+      "name": "NIXL Mooncake plugin",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L4"
+      ],
+      "engine": "NIXL src/plugins/mooncake",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "N/A",
+        "consist": "Mooncake TE",
+        "block": "否",
+        "engine_change": "构建插件",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/ai-dynamo/nixl/blob/main/src/plugins/mooncake/README.md",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "N17",
+      "line": "nvidia",
+      "name": "InfiniStore PD 传输",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L4",
+        "L5"
+      ],
+      "engine": "bytedance/InfiniStore，TCP/RDMA(mlx5)/IB，经LMCache集成",
+      "gain": "未查到公开带宽数",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "内容寻址",
+        "consist": "serverless弹性池",
+        "block": "异步",
+        "engine_change": "每节点装vLLM+LMCache+InfiniStore",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/bytedance/InfiniStore/blob/main/README.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N18",
+      "line": "nvidia",
+      "name": "TRT-LLM Mooncake TE cache_transmission",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L4"
+      ],
+      "engine": "TRT-LLM cpp/tensorrt_llm/executor/cache_transmission/mooncake_utils",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "N/A",
+        "consist": "TE",
+        "block": "PD路径",
+        "engine_change": "TRT-LLM内置",
+        "active": "未查到"
+      },
+      "url": "https://github.com/kvcache-ai/Mooncake/blob/main/README.md",
+      "status": "候选",
+      "flag": "沿用"
+    },
+    {
+      "id": "N19",
+      "line": "nvidia",
+      "name": "FlexKV layerwise transfer (SGLang/Mooncake)",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L1",
+        "L4"
+      ],
+      "engine": "FlexKV，FLEXKV_ENABLE_LAYERWISE_TRANSFER=1",
+      "gain": "未查到倍数（2026-06-24合入）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "layerwise",
+        "consist": "source lease",
+        "block": "layer等待",
+        "engine_change": "SGLang connector",
+        "active": "2026-11-16"
+      },
+      "url": "https://github.com/taco-project/FlexKV/blob/main/README.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N20",
+      "line": "nvidia",
+      "name": "llm-d P2P KV sharing over NIXL",
+      "scenario": [
+        "S2",
+        "S3"
+      ],
+      "layers": [
+        "L2",
+        "L5"
+      ],
+      "engine": "llm-d，CPU-to-CPU NIXL(UCX/RDMA)",
+      "gain": "doc QA：token-aware+P2P 服务 1.4× load-aware+P2P、2.2× affinity+P2P",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "需PYTHONHASHSEED fleet-wide一致+相同block size/TP",
+        "consist": "KV event索引",
+        "block": "源GPU不参与",
+        "engine_change": "MultiConnector+router",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/llm-d/llm-d/blob/main/docs/architecture/kv-management/p2p-kv-cache-sharing.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N21",
+      "line": "nvidia",
+      "name": "SGLang PD disaggregation + Mooncake",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L4"
+      ],
+      "engine": "SGLang + Mooncake TE",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "N/A",
+        "consist": "TE",
+        "block": "PD",
+        "engine_change": "SGLang server args",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/kvcache-ai/Mooncake/blob/main/README.md",
+      "status": "候选",
+      "flag": "新增"
+    },
+    {
+      "id": "N22",
+      "line": "nvidia",
+      "name": "Mooncake Store 分布式 KV 池",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L5"
+      ],
+      "engine": "Mooncake Store，DRAM+SSD多级",
+      "gain": "大对象条带+并行IO+零拷贝；倍数未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "hash前缀",
+        "consist": "replica/soft-hard pin/lease TTL",
+        "block": "否",
+        "engine_change": "master+client",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/kvcache-ai/Mooncake/blob/main/README.md",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "N23",
+      "line": "nvidia",
+      "name": "MooncakeStoreConnector (vLLM)",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L5"
+      ],
+      "engine": "vLLM latest",
+      "gain": "降TTFT/提复用（定性）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "hash前缀",
+        "consist": "Store策略",
+        "block": "否",
+        "engine_change": "connector",
+        "active": "2026-11-18"
+      },
+      "url": "https://docs.vllm.ai/en/latest/features/mooncake_store_connector_usage/",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "N24",
+      "line": "nvidia",
+      "name": "LMCache Mooncake Store L2 adapter",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L4",
+        "L5"
+      ],
+      "engine": "LMCache PR#2911，2026-04-03合入",
+      "gain": "STORE 1.91 / LOAD 4.02 GB/s，LOOKUP 1.5–1.8ms，80/80",
+      "evidence": "B",
+      "pitfalls": {
+        "hit": "内容寻址",
+        "consist": "无eviction支持、lease 5000ms/softpin 1800000ms",
+        "block": "否",
+        "engine_change": "MP adapter",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/LMCache/LMCache/pull/2911",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "N25",
+      "line": "nvidia",
+      "name": "Dynamo KV router + event-driven Mooncake index",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L5"
+      ],
+      "engine": "Dynamo PR#11239，2026-07-31合入",
+      "gain": "路由查询 1.93ms vs HTTP 8.24ms；group_id -13.8%；50/50共享命中",
+      "evidence": "B",
+      "pitfalls": {
+        "hit": "event索引",
+        "consist": "seq gap保守清空、无snapshot/replay",
+        "block": "否",
+        "engine_change": "Dynamo router",
+        "active": "未查到"
+      },
+      "url": "https://github.com/ai-dynamo/dynamo/pull/11239",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "N26",
+      "line": "nvidia",
+      "name": "TRT-LLM KVCMv2 Mooncake Store connector",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L5"
+      ],
+      "engine": "TRT-LLM PR#19171，2026-10-10合入",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "内容寻址",
+        "consist": "prefix key跨rank一致性待验",
+        "block": "preemption保留页",
+        "engine_change": "mooncake-store preset，4角色",
+        "active": "未查到"
+      },
+      "url": "https://github.com/NVIDIA/TensorRT-LLM/pull/19171",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "N27",
+      "line": "nvidia",
+      "name": "llm-d MooncakeStore connector",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L5"
+      ],
+      "engine": "llm-d，80GB DRAM+1TB SSD/node",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "hash",
+        "consist": "RDMA需rdma/ib:1",
+        "block": "否",
+        "engine_change": "Mooncake Master+Client DaemonSet",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/llm-d/llm-d/blob/main/guides/tiered-prefix-cache/README.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N28",
+      "line": "nvidia",
+      "name": "FlexKV distributed reuse",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L5"
+      ],
+      "engine": "FlexKV，Distributed RadixTree+GMS(Redis)+lease",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "本地快照免去中心查询",
+        "consist": "lease保跨节点传输有效性",
+        "block": "bounded parallel Get",
+        "engine_change": "Redis GMS",
+        "active": "2026-11-16"
+      },
+      "url": "https://github.com/taco-project/FlexKV/blob/main/README.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N29",
+      "line": "nvidia",
+      "name": "InfiniStore 非分离集群共享池",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L5"
+      ],
+      "engine": "InfiniStore standalone，经LMCache",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "内容寻址",
+        "consist": "standalone KV store",
+        "block": "否",
+        "engine_change": "独立服务",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/bytedance/InfiniStore/blob/main/README.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N30",
+      "line": "nvidia",
+      "name": "SGLang HiCache + Mooncake Store",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L5"
+      ],
+      "engine": "SGLang + Mooncake Store (2025-09-10起)",
+      "gain": "蚂蚁命中降84% TTFT（引述未复现）",
+      "evidence": "D",
+      "pitfalls": {
+        "hit": "HiCache radix",
+        "consist": "Store",
+        "block": "否",
+        "engine_change": "backend",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/kvcache-ai/Mooncake/blob/main/README.md",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "N31",
+      "line": "nvidia",
+      "name": "SGLang HiCache 稀疏/预取长上下文",
+      "scenario": [
+        "S4"
+      ],
+      "layers": [
+        "L1",
+        "L4"
+      ],
+      "engine": "SGLang，prefetch policy timeout/best-effort/stage",
+      "gain": "官方6×吞吐/-80% TTFT（长上下文+多轮）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "radix",
+        "consist": "write policy",
+        "block": "timeout模式为TTFT中止预取",
+        "engine_change": "hicache flags",
+        "active": "2026-11-18"
+      },
+      "url": "https://www.lmsys.org/blog/2025-09-10-sglang-hicache/",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "N32",
+      "line": "nvidia",
+      "name": "FlexKV block-wise mode + vectored SSD IO",
+      "scenario": [
+        "S4"
+      ],
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "engine": "FlexKV，PR#242 vectored SSD I/O",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "跨层合并大block提升IO",
+        "consist": "逻辑LRU",
+        "block": "async",
+        "engine_change": "Redis/配置",
+        "active": "2026-11-16"
+      },
+      "url": "https://github.com/taco-project/FlexKV/blob/main/README.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N33",
+      "line": "nvidia",
+      "name": "FlexKV GPUDirect Storage 直读NVMe",
+      "scenario": [
+        "S4"
+      ],
+      "layers": [
+        "L1",
+        "L3"
+      ],
+      "engine": "FlexKV GDS，FLEXKV_ENABLE_GDS=1，cuFile",
+      "gain": "官方gdscheck/gdsio给工具，带宽未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "N/A(直传)",
+        "consist": "allow_compat_mode=false强制GDS",
+        "block": "DMA不占CPU",
+        "engine_change": "装nvidia-gds+privileged容器",
+        "active": "2026-11-16"
+      },
+      "url": "https://github.com/taco-project/FlexKV/blob/main/docs/gds/README_en.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N34",
+      "line": "nvidia",
+      "name": "DeepSeek 3FS 作为 KV 后端",
+      "scenario": [
+        "S4"
+      ],
+      "layers": [
+        "L3",
+        "L4"
+      ],
+      "engine": "3FS，CRAQ强一致，USRBIO",
+      "gain": "KVCache读峰值 40 GiB/s（1×400G NIC/node）；集群读6.6TiB/s",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "文件系统",
+        "consist": "CRAQ强一致",
+        "block": "异步IO",
+        "engine_change": "部署3FS集群；许可MIT",
+        "active": "2026-11-17"
+      },
+      "url": "https://github.com/deepseek-ai/3FS/blob/main/README.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N35",
+      "line": "nvidia",
+      "name": "vLLM encoder cache transfer connector",
+      "scenario": [
+        "S5"
+      ],
+      "layers": [
+        "L2",
+        "L5"
+      ],
+      "engine": "vLLM PR#41567，v0.31.0",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "encoder哈希",
+        "consist": "Store",
+        "block": "否",
+        "engine_change": "connector",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/kvcache-ai/Mooncake/blob/main/README.md",
+      "status": "候选",
+      "flag": "新增"
+    },
+    {
+      "id": "N36",
+      "line": "nvidia",
+      "name": "vLLM cross-encoder embedding reuse",
+      "scenario": [
+        "S5"
+      ],
+      "layers": [
+        "L5"
+      ],
+      "engine": "vLLM PR#56242，v0.31.0，Mooncake Store",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "hash",
+        "consist": "Store",
+        "block": "否",
+        "engine_change": "connector",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/kvcache-ai/Mooncake/blob/main/README.md",
+      "status": "候选",
+      "flag": "新增"
+    },
+    {
+      "id": "N37",
+      "line": "nvidia",
+      "name": "SGLang Encoder Global Cache Manager",
+      "scenario": [
+        "S5"
+      ],
+      "layers": [
+        "L5"
+      ],
+      "engine": "SGLang PR#16137，Mooncake驱动",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "ViT embedding全局共享",
+        "consist": "Mooncake",
+        "block": "否",
+        "engine_change": "SGLang开关",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/kvcache-ai/Mooncake/blob/main/README.md",
+      "status": "候选",
+      "flag": "新增"
+    },
+    {
+      "id": "N38",
+      "line": "nvidia",
+      "name": "Mooncake checkpoint-engine (P2P权重)",
+      "scenario": [
+        "S6"
+      ],
+      "layers": [
+        "L4",
+        "L5"
+      ],
+      "engine": "checkpoint-engine，K1.5/K2生产",
+      "gain": "Kimi-K2 1T参数跨千卡 ~20s 更新",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "N/A(权重)",
+        "consist": "P2P",
+        "block": "训练同步路径",
+        "engine_change": "独立服务",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/kvcache-ai/Mooncake/blob/main/README.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N39",
+      "line": "nvidia",
+      "name": "Mooncake verl/Speculators/Miles rollout后端",
+      "scenario": [
+        "S6"
+      ],
+      "layers": [
+        "L4"
+      ],
+      "engine": "verl PR#5176、Speculators、Miles",
+      "gain": "SGLang RDMA P2P权重 53s→7.2s（7x，跨千GPU，零拷贝）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "N/A(hidden-state/权重)",
+        "consist": "RDMA",
+        "block": "异步",
+        "engine_change": "各框架backend",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/kvcache-ai/Mooncake/blob/main/README.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A1",
+      "line": "ascend",
+      "name": "vLLM-Ascend CPUOffloadingSpec",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "vLLM-Ascend latest，OffloadingConnector",
+      "gain": "本机实测 H2D 58.21 / D2H 41.38 GB/s(1GB,pinned)",
+      "evidence": "B",
+      "pitfalls": {
+        "hit": "LRU",
+        "consist": "hash",
+        "block": "独立NPU stream",
+        "engine_change": "connector配置",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/kv_cache_cpu_offload.md",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "A2",
+      "line": "ascend",
+      "name": "TieringOffloadingSpec + fs 二级层",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2",
+        "L3"
+      ],
+      "engine": "vLLM-Ascend，pin_shared_mmap + O_DIRECT",
+      "gain": "3FS可调线程；数字未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "工作集>CPU才用盘",
+        "consist": "fs eviction仍在开发",
+        "block": "否",
+        "engine_change": "connector配置",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/kv_cache_cpu_offload.md",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "A3",
+      "line": "ascend",
+      "name": "CANN aclrtMemcpyAsync + host pinned 裸搬运",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "torch_npu 2.10.0.post7 / CANN 9.2.1 / driver 26.1.1",
+      "gain": "本机实测 pinned H2D 58.21/D2H 41.38 vs pageable 5.47/22.90 GB/s；4流无增益（原始记录 notes/20261118-bandwidth-probe.md）",
+      "evidence": "B",
+      "pitfalls": {
+        "hit": "N/A",
+        "consist": "N/A",
+        "block": "异步stream",
+        "engine_change": "需自己写脚本",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/kv_cache_cpu_offload.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A4",
+      "line": "ascend",
+      "name": "LMCache-Ascend MP connector",
+      "scenario": [
+        "S1",
+        "S3"
+      ],
+      "layers": [
+        "L1",
+        "L2",
+        "L5"
+      ],
+      "engine": "LMCache-Ascend main/v0.5.6，CANN≥8.5.0",
+      "gain": "--chunk-size 128/--l1-size-gb 50/LRU；倍数未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "LRU",
+        "consist": "server共享",
+        "block": "lmcache_driven异步",
+        "engine_change": "额外lmcache server；300I DUO不支持、A5计划支持",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/LMCache/LMCache-Ascend/blob/main/README.md",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "A5",
+      "line": "ascend",
+      "name": "UCM PD-mixed PipelineStore",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2",
+        "L3"
+      ],
+      "engine": "vLLM-Ascend main + UCM，Cache|Posix",
+      "gain": "官方自报延迟降3-10×/TTFT最高8×（见A17实测）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "前缀",
+        "consist": "共享存储",
+        "block": "否",
+        "engine_change": "UCMConnector+yaml",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/ucm_deployment.md",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "A6",
+      "line": "ascend",
+      "name": "llm-d 类 native offload 在昇腾",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "未查到（llm-d文档无昇腾后端）",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "空白：未找到 A/B 级方案",
+        "consist": "未查到",
+        "block": "未查到",
+        "engine_change": "未查到",
+        "active": "未查到"
+      },
+      "url": "https://github.com/llm-d/llm-d/blob/main/guides/tiered-prefix-cache/README.md",
+      "status": "候选",
+      "flag": "新增"
+    },
+    {
+      "id": "A7",
+      "line": "ascend",
+      "name": "MooncakeConnectorV1 PD 多机",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L4"
+      ],
+      "engine": "vLLM-Ascend latest，mooncake_master",
+      "gain": "官方镜像0.11.0起预装Mooncake；倍数未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "N/A",
+        "consist": "KV lease(默认11000ms)",
+        "block": "PD路径",
+        "engine_change": "multi-node配置",
+        "active": "2026-11-18"
+      },
+      "url": "https://docs.vllm.ai/projects/ascend/en/latest/tutorials/features/pd_disaggregation_mooncake_multi_node.html",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "A8",
+      "line": "ascend",
+      "name": "MooncakeConnectorV2 / MooncakePushConnector",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L4"
+      ],
+      "engine": "vLLM-Ascend (Experimental)",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "N/A",
+        "consist": "与KVPP配合仅P节点开",
+        "block": "layerwise push",
+        "engine_change": "KVPP+connector",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/kvpp.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A9",
+      "line": "ascend",
+      "name": "SfaRemoteD2HConnector (P/D 暴露层缓冲)",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L1",
+        "L4"
+      ],
+      "engine": "vLLM-Ascend，SfaRemoteD2H",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "N/A",
+        "consist": "端口=DP×TP连续",
+        "block": "decode端等待",
+        "engine_change": "MultiConnector",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/layerwise_and_sparse_kv_cache_offloading.md",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "A10",
+      "line": "ascend",
+      "name": "UCM centralized PD (NFS/3FS)",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L3"
+      ],
+      "engine": "UCMConnector，共享存储",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "高前缀命中",
+        "consist": "共享存储",
+        "block": "否",
+        "engine_change": "所有节点访问共享存储",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/ucm_deployment.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A11",
+      "line": "ascend",
+      "name": "UCM distributed PD (P2P via Mooncake)",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L4"
+      ],
+      "engine": "UCMConnector + MooncakeConnectorV1",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "prefix cache on P",
+        "consist": "GDRA？无（原文如此）",
+        "block": "否",
+        "engine_change": "MultiConnector",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/ucm_deployment.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A12",
+      "line": "ascend",
+      "name": "D2RH on Atlas 850E (UBoE)",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L4"
+      ],
+      "engine": "vLLM-Ascend，UBoE",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "N/A",
+        "consist": "HIXL资源",
+        "block": "否",
+        "engine_change": "容器+UBoE配置",
+        "active": "2026-11-18"
+      },
+      "url": "https://docs.vllm.ai/projects/ascend/en/latest/tutorials/features/pd_disaggregation_mooncake_multi_node.html",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "A13",
+      "line": "ascend",
+      "name": "EPD disaggregation (encoder→prefill→decode)",
+      "scenario": [
+        "S2",
+        "S5"
+      ],
+      "layers": [
+        "L4"
+      ],
+      "engine": "vLLM-Ascend EPD",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "N/A",
+        "consist": "EPD",
+        "block": "否",
+        "engine_change": "EPD配置",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/epd_disaggregation.md",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "A14",
+      "line": "ascend",
+      "name": "Ascend Store / Mooncake backend",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L5"
+      ],
+      "engine": "vLLM-Ascend AscendStoreConnector，Mooncake≥0.3.14",
+      "gain": "对象数 B×L×R→约B×R；TTFT收益未给数",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "hash前缀",
+        "consist": "PYTHONHASHSEED=0+拓扑一致",
+        "block": "当前层等自己load完成",
+        "engine_change": "SDK+master",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/mooncake_layerwise_adaptation_and_optimization.md",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "A15",
+      "line": "ascend",
+      "name": "Ascend Store / Memcache backend",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L4",
+        "L5"
+      ],
+      "engine": "vLLM-Ascend + atomgit memcache，device_sdma",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "memcache",
+        "consist": "lease_ttl_ms=30000",
+        "block": "层等待",
+        "engine_change": "MetaService+LocalService",
+        "active": "atomgit 2026-11-16"
+      },
+      "url": "https://atomgit.com/Ascend/memcache/blob/master/README.md",
+      "status": "在读",
+      "flag": "沿用"
+    },
+    {
+      "id": "A16",
+      "line": "ascend",
+      "name": "Ascend Store / Yuanrong backend",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L5"
+      ],
+      "engine": "vLLM-Ascend Yuanrong",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "未查到",
+        "consist": "未查到",
+        "block": "未查到",
+        "engine_change": "connector配置",
+        "active": "2026-11-18"
+      },
+      "url": "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/kv_cache_pool_ascend_store.html",
+      "status": "候选",
+      "flag": "新增"
+    },
+    {
+      "id": "A17",
+      "line": "ascend",
+      "name": "UCM 大规模EP PD 共享存储 TTFT 实测",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L3",
+        "L5"
+      ],
+      "engine": "8×910B3，GLM-5.1-w4a8，DP4TP8→DP8TP4",
+      "gain": "32k/64k/128k UCM PC TTFT 51861/69718/105083ms vs HBM 108879/144444/267680ms；TPOT 64/65/66",
+      "evidence": "B",
+      "pitfalls": {
+        "hit": "共享外部存储保命中率0.8",
+        "consist": "PYTHONHASHSEED",
+        "block": "否",
+        "engine_change": "UCMConnector",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/ucm_deployment.md",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "A18",
+      "line": "ascend",
+      "name": "UCM prefix cache NFS Store",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L3"
+      ],
+      "engine": "UCM，NFS",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "前缀",
+        "consist": "NFS",
+        "block": "否",
+        "engine_change": "UCM配置",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/ucm_deployment.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A19",
+      "line": "ascend",
+      "name": "UCM prefix cache 3FS Store",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L4"
+      ],
+      "engine": "UCM，3FS",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "前缀",
+        "consist": "3FS CRAQ",
+        "block": "否",
+        "engine_change": "3FS集群",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/ucm_deployment.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A20",
+      "line": "ascend",
+      "name": "KVPP (KV pipeline parallelism)",
+      "scenario": [
+        "S4"
+      ],
+      "layers": [
+        "L1"
+      ],
+      "engine": "vLLM-Ascend，enable_kvpp:true，950DT实测",
+      "gain": "容量 6.25×(单节点)/5.35×(双节点)；TTFT 32k -0.33%~128k +3.36%(单)；吞吐 -2.3%~-12.77%",
+      "evidence": "B",
+      "pitfalls": {
+        "hit": "可配prefix cache",
+        "consist": "拓扑namespace隔离",
+        "block": "owner等layer load再broadcast",
+        "engine_change": "flag，需PIECEWISE/eager，DCP不支持",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/kvpp.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A21",
+      "line": "ascend",
+      "name": "KVPP + Memcache pooling",
+      "scenario": [
+        "S3",
+        "S4"
+      ],
+      "layers": [
+        "L1",
+        "L5"
+      ],
+      "engine": "KVPP + AscendStoreConnector(kv_producer/both)",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "whole-block",
+        "consist": "namespace",
+        "block": "否",
+        "engine_change": "keep use_layerwise=false",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/kvpp.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A22",
+      "line": "ascend",
+      "name": "KVPP + Mooncake layerwise pooling",
+      "scenario": [
+        "S3",
+        "S4"
+      ],
+      "layers": [
+        "L1",
+        "L5"
+      ],
+      "engine": "KVPP + AscendStoreConnector(mooncake,load_async=false)",
+      "gain": "未查到（GLM-5.2验证pending）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "每TP rank只load自有层",
+        "consist": "独立pool namespace",
+        "block": "owner等pool load再broadcast",
+        "engine_change": "实验特性",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/kvpp.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A23",
+      "line": "ascend",
+      "name": "Layerwise + Sparse KV offload",
+      "scenario": [
+        "S4"
+      ],
+      "layers": [
+        "L1",
+        "L4"
+      ],
+      "engine": "vLLM-Ascend，memcache/device_sdma，dram.size=10GB / dram_size_per_dp_GB=110",
+      "gain": "未查到倍数",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "跨层共享buffer=3",
+        "consist": "PYTHONHASHSEED",
+        "block": "当前层等load",
+        "engine_change": "PD分离，仅Memcache；950PR/950DT不支持sparse decode",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/layerwise_and_sparse_kv_cache_offloading.md",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "A24",
+      "line": "ascend",
+      "name": "HiSparse on Ascend",
+      "scenario": [
+        "S4"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "vLLM-Ascend，HiSparseConnector，A5/950 + CANN9.2 SIMT",
+      "gain": "未查到倍数",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "resolver按选中行查NPU Resident/Hot/Host",
+        "consist": "host mirror",
+        "block": "attention前refill缺失行",
+        "engine_change": "V2 runner+flag，与sparse_kv_offload_config互斥",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/hisparse.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A25",
+      "line": "ascend",
+      "name": "PreemptOffloadConnector",
+      "scenario": [
+        "S4"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "vLLM-Ascend，PD解码端，recompute_scheduler",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "默认关闭prefix sharing",
+        "consist": "HBM→pinned CPU→H2D",
+        "block": "forward前restore",
+        "engine_change": "仅PD分离Decode，需shm-size=1024g；传输用基础torch copy未优化",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/preempt_offload_connector.md",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A26",
+      "line": "ascend",
+      "name": "Shared Engram over HIXL (远端DRAM按行)",
+      "scenario": [
+        "S4",
+        "S6"
+      ],
+      "layers": [
+        "L4"
+      ],
+      "engine": "vLLM-Ascend，A2 device RoCE / A5 UB-URMA",
+      "gain": "capacity 65536–262144行；benchmark未查到（官方拒用microbench推断）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "选中行",
+        "consist": "generation比对，无自动failover/崩溃回收",
+        "block": "lookup在decode graph replay前",
+        "engine_change": "独立owner进程+so",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/shared_engram_rdma.md",
+      "status": "已验证",
+      "flag": "沿用"
+    },
+    {
+      "id": "A27",
+      "line": "ascend",
+      "name": "UCM sparse attention (GSA/CacheBlend)",
+      "scenario": [
+        "S4"
+      ],
+      "layers": [
+        "L1",
+        "L3"
+      ],
+      "engine": "UCM，training-free",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "稀疏图/混合块",
+        "consist": "共享存储",
+        "block": "否",
+        "engine_change": "UCM配置",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/ucm_deployment.md",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "A28",
+      "line": "ascend",
+      "name": "Mooncake Layerwise Hybrid Attention",
+      "scenario": [
+        "S4"
+      ],
+      "layers": [
+        "L1",
+        "L5"
+      ],
+      "engine": "vLLM-Ascend，AscendStoreConnector multi cache group",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "每group对象",
+        "consist": "拓扑/PP层划分一致",
+        "block": "层等待",
+        "engine_change": "hybrid attention指南",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/mooncake_hybrid_attention.md",
+      "status": "候选",
+      "flag": "新增"
+    },
+    {
+      "id": "A29",
+      "line": "ascend",
+      "name": "Encoder Cache CPU Offload",
+      "scenario": [
+        "S5"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "vLLM-Ascend，encoder cache",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "encoder hash",
+        "consist": "LRU",
+        "block": "否",
+        "engine_change": "connector配置",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/encoder_cache_cpu_offload.md",
+      "status": "候选",
+      "flag": "新增"
+    },
+    {
+      "id": "A30",
+      "line": "ascend",
+      "name": "Qwen38 Mooncake basic pooling",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L5"
+      ],
+      "engine": "vLLM-Ascend，pooling",
+      "gain": "未查到（文档存在未展开正文）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "前缀",
+        "consist": "pool namespace",
+        "block": "否",
+        "engine_change": "pool配置",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/qwen38_mooncake_basic_pooling.md",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "A31",
+      "line": "ascend",
+      "name": "D2RH host mirror (RL/推理训练分离)",
+      "scenario": [
+        "S6"
+      ],
+      "layers": [
+        "L2",
+        "L4"
+      ],
+      "engine": "vLLM-Ascend，HIXL/RDMA",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "N/A",
+        "consist": "lease",
+        "block": "否",
+        "engine_change": "owner进程",
+        "active": "2026-11-18"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/main/docs/source/user_guide/feature_guide/shared_engram_rdma.md",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "A32",
+      "line": "ascend",
+      "name": "MindIE KV 分层/命中策略",
+      "scenario": [
+        "S1",
+        "S3"
+      ],
+      "layers": [
+        "L1",
+        "L5"
+      ],
+      "engine": "未查到",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "未查到：查过 vllm-ascend docs 全目录/atomgit memcache/昇腾社区，未找到公开一手 MindIE KV 分层 API/参数",
+        "consist": "未查到",
+        "block": "未查到",
+        "engine_change": "未查到",
+        "active": "未查到"
+      },
+      "url": "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/index.html",
+      "status": "候选",
+      "flag": "新增"
+    },
+    {
+      "id": "A33",
+      "line": "ascend",
+      "name": "昇腾 NVMe-oF 远端 KV 后端",
+      "scenario": [
+        "S4"
+      ],
+      "layers": [
+        "L3",
+        "L4"
+      ],
+      "engine": "未查到",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "空白：vllm-ascend fs tier 仅 POSIX/3FS/NFS，无 NVMe-oF 一手",
+        "consist": "未查到",
+        "block": "未查到",
+        "engine_change": "未查到",
+        "active": "未查到"
+      },
+      "url": "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/kv_cache_pool_ascend_store.html",
+      "status": "候选",
+      "flag": "新增"
+    },
+    {
+      "id": "A34",
+      "line": "ascend",
+      "name": "昇腾 GPUDirect-style 存储直读",
+      "scenario": [
+        "S4"
+      ],
+      "layers": [
+        "L1",
+        "L3"
+      ],
+      "engine": "未查到",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "空白：GDS 为 NVIDIA 专有，昇腾侧未见等价一手",
+        "consist": "未查到",
+        "block": "未查到",
+        "engine_change": "未查到",
+        "active": "未查到"
+      },
+      "url": "https://github.com/taco-project/FlexKV/blob/main/docs/gds/README_en.md",
+      "status": "候选",
+      "flag": "新增"
+    },
+    {
+      "id": "A35",
+      "line": "ascend",
+      "name": "300I DUO(310P) KV 卸载",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1"
+      ],
+      "engine": "未查到",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "空白：LMCache-Ascend 明确 300I DUO not supported；未找到 310P 上 A/B 级 KV 卸载方案",
+        "consist": "未查到",
+        "block": "未查到",
+        "engine_change": "未查到",
+        "active": "未查到"
+      },
+      "url": "https://github.com/LMCache/LMCache-Ascend/blob/main/README.md",
+      "status": "候选",
+      "flag": "新增"
+    },
+    {
+      "id": "N40",
+      "line": "nvidia",
+      "name": "SGLang HiCache 请求级 KV hints 透传到存储后端",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L5"
+      ],
+      "engine": "SGLang main (PR#51088, merged 2026-11-20)",
+      "gain": "映射开销 rough estimate 0.2 ms@8k tokens / 0.7 ms@32k / 2.6 ms@128k（原文明确 not benchmarked，无吞吐收益数字）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "orchestrator 提示哪些 block 已被别的 worker 发布，opt-in 默认关闭、in-tree 无后端消费",
+        "consist": "storage_key_to_event_hash 映射依赖同 rank 的 --kv-events-config 格式；kv_hints 未鉴权，后端须自校验",
+        "block": "namespaced 请求每轮 lookup/prefetch 重算 hash 链，decode 侧建两次映射",
+        "engine_change": "后端覆写 consumes_kv_hints()；prefetch_from_storage/query_storage_hit_length 签名加 keyword-only 参数，out-of-tree 需改",
+        "active": "2026-11-20"
+      },
+      "url": "https://github.com/sgl-project/sglang/pull/51088",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N41",
+      "line": "nvidia",
+      "name": "LMCache L1/L2 写回背压（In-Flight Budget）",
+      "scenario": [
+        "S1",
+        "S3"
+      ],
+      "layers": [
+        "L2",
+        "L4"
+      ],
+      "engine": "LMCache dev (PR#5863, merged 2026-11-20)",
+      "gain": "chunks written 160/400→390/400；failed to allocate 240→10；L1 usage 98%→76%；evictable chunks 0→14（32MB L1, evict 80%/free 20%, L2≈20s/batch）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "L2=S3/远端且变慢、盘忙、长 prompt 突发时 L1 被写锁占满，命中停摆",
+        "consist": "等待中的 chunk 可被驱逐，计入 l1_read_failure(during=l2_store,reason=not_found)",
+        "block": "写入超预算排队不加读锁；noop 策略无限制",
+        "engine_change": "store controller 改背压逻辑，无新配置项；阈值由现有 eviction 配置推导 trigger_watermark*(1-eviction_ratio)",
+        "active": "2026-11-20"
+      },
+      "url": "https://github.com/LMCache/LMCache/pull/5863",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N42",
+      "line": "nvidia",
+      "name": "Mooncake Store HA 设计与恢复边界（元数据复制/提升/快照/客户端 failover）",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L5"
+      ],
+      "engine": "Mooncake Store (PR#5695, 2026-11-20)",
+      "gain": "未查到",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "共享池命中依赖 master 元数据可用；HA 只覆盖元数据复制/提升/快照",
+        "consist": "明确记录恢复边界(recovery limits)，非无限故障切换；client failover 有界",
+        "block": "未查到",
+        "engine_change": "纯文档（HA design page）+更正 Store overview 保证措辞，无代码",
+        "active": "2026-11-20"
+      },
+      "url": "https://github.com/kvcache-ai/Mooncake/pull/5695",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "A36",
+      "line": "ascend",
+      "name": "HiSparse 支持 PCP prefill 与 PCP decode 请求分片（Ascend 950 MRV2）",
+      "scenario": [
+        "S4"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "vLLM-Ascend MRV2 / Ascend 950 (PR#21892, 2026-11-20)",
+      "gain": "whole-run output throughput 460.97→583.65 tokens/s with HiSparse；preemptions 2→0（C8, 32K input/8K output, 18.8 GiB KV pool；原文注：为先前 combined revision 的 C8 容量证据，非 BF16 性能结果）",
+      "evidence": "B",
+      "pitfalls": {
+        "hit": "resolver 按选中行查 NPU Resident/Hot 与 Host mirror，仅缺失行从 Host 回填",
+        "consist": "KV history 跨 PCP rank 复制；Host mirror 按 rank-major gathered rows 写",
+        "block": "attention 前 refill 缺失行；需 eager Host mirroring 与 per-rank Host pool",
+        "engine_change": "Ascend-only 无新算子/开关；DCP、MultiConnector、外部 P/D 分离仍在支持范围外",
+        "active": "2026-11-20"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/21892",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A37",
+      "line": "ascend",
+      "name": "Mooncake Store/TE 昇腾 standalone 单段路由（classic + TENT）",
+      "scenario": [
+        "S2",
+        "S3"
+      ],
+      "layers": [
+        "L4"
+      ],
+      "engine": "Mooncake Store/TE classic+TENT (PR#5417, 2026-11-20)",
+      "gain": "未查到（减少 client 连接扇出，无量化数字）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "多个 Ascend engine 共享一份 standalone Store 分配，减少连接扇出",
+        "consist": "按地址范围管理共享注册，含回滚与引用计数；用 ACL 物理 device rank 做反向均衡端点选择",
+        "block": "未查到",
+        "engine_change": "Store/TE 侧路由改动，classic 与 TENT 均支持；无引擎侧改动说明",
+        "active": "2026-11-20"
+      },
+      "url": "https://github.com/kvcache-ai/Mooncake/pull/5417",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "A38",
+      "line": "ascend",
+      "name": "Mooncake TransferEngine UBoE 走 URMA RM 模式（UB Transport）",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L4"
+      ],
+      "engine": "Mooncake TransferEngine UB Transport (PR#5644, 2026-11-20)",
+      "gain": "未查到（jfs/jfr 深度 cap 到 min(设备能力,2048)，UBoE 报 2047、RC 保持 2048）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "N/A（传输）",
+        "consist": "UBoE 需 URMA Reliable Message(RM) 模式，native UB 用 Reliable Connection(RC)；RM 通道仅用 urma_import_jetty，跳过 RC 专属 bind/unbind",
+        "block": "异步传输",
+        "engine_change": "MC_UB_TRANS_MODE=rm（默认 RC）；新增 ub_transport_test RM 覆盖",
+        "active": "2026-11-20"
+      },
+      "url": "https://github.com/kvcache-ai/Mooncake/pull/5644",
+      "status": "在读",
+      "flag": "新增"
+    }
   ]
 }
