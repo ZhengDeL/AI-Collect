@@ -1,293 +1,282 @@
 {
   "date": "2026-11-20",
-  "generated_at": "2026-11-20T09:39:22+08:00",
+  "generated_at": "2026-11-20T09:36:14+08:00",
   "items": [
     {
       "id": "20261120-001",
       "source": "英伟达",
-      "title": "NVIDIA 与微软在 Ignite 扩展 Azure 到 Windows PC 的加速计算合作：Vera Rubin NVL72 进 Azure，微软自用 Dynamo 做 RL 后训练",
+      "title": "NVIDIA 与微软在 Ignite 扩大全栈合作：Vera Rubin NVL72 进 Azure、Nemotron 进 Foundry、AI 下沉 Windows PC",
       "url": "https://blogs.nvidia.com/blog/microsoft-ignite-accelerated-computing-azure-windows-pcs/",
       "time": "2026-11-19",
       "points": [
-        "事件：11-19 NVIDIA 官方博客发布，Ignite 大会宣布 Vera Rubin NVL72 系统已在 Azure 数据中心运行，并把机密计算扩展到裸金属与机架级 AI 基础设施，双方在 MaxLPS 电源效率上合作。",
-        "要点：Microsoft Foundry 上线 Nemotron 3.5 系列（Super/Lightning/Embed/Rerank/Parse/Content Safety）；Azure Local 将支持 RTX PRO 6000 Blackwell 与 Jetson Thor/Orin；微软 AI 自用 Dynamo 支撑 RL 后训练 rollout 推理、用 RTX PRO 6000 跑 Bing 搜索模型；EY 用 Foundry 定制 Nemotron 使分类准确率 +55%、成本降 15 倍（厂商案例口径）。",
-        "判断：生态与部署事件、非调优方法；关注 Vera Rubin 上云节奏与 Dynamo 在微软生产环境的落地，供跟踪硬件/软件栈部署动向。"
+        "事件：11-19 20:00 GMT NVIDIA 官方博客（同步进 Newsroom）宣布在 Microsoft Ignite 与微软扩大全栈合作，Vera Rubin NVL72 已在 Azure 数据中心运行，开放模型与定制能力进入 Microsoft Foundry，并新增边缘与 Windows PC 侧部署选项。",
+        "规模：MLPerf Training v6.1 中 Azure 用 10240 块 GB200 NVL72 跑 DeepSeek-V3，为该轮最大规模；MLPerf Inference v6.1 中 GB300 NVL72 在 DeepSeek-R1 交互吞吐上领先云侧提交超 10%（Signal65）。",
+        "判断：生态合作与云侧算力供给事件、非调优方法；EY 用 Foundry 适配 Nemotron 分类采购记录，官方称准确率高 55%、成本降 15 倍，供判断企业模型定制路径。"
       ],
-      "verdict": "观察",
-      "credibility": "高（NVIDIA 官方博客）",
+      "verdict": "值得",
+      "credibility": "高（NVIDIA 官方博客 / Newsroom）",
       "tags": [
         "官方博客",
-        "AI",
-        "行业动向"
+        "行业动向",
+        "AI"
       ]
     },
     {
       "id": "20261120-002",
       "source": "英伟达",
-      "title": "NVIDIA DAQIRI v2026.11.00：GPU 原生数据采集新增 ConnectX-7 硬件包重排、ibverbs 引擎与直接轮询，小包吞吐近翻倍",
-      "url": "https://developer.nvidia.com/blog/enabling-real-time-ai-for-scientific-instruments-with-gpu-native-data-acquisition/",
+      "title": "NVIDIA 发布 Into the Omniverse 系列：前沿 AI Agent 结合 Omniverse 做工业数字孪生与机器人仿真",
+      "url": "https://blogs.nvidia.com/blog/developers-simulation-frontier-ai-agents/",
       "time": "2026-11-19",
       "points": [
-        "事件：11-19 NVIDIA 开发者博客发布 DAQIRI（Holoscan 平台库）新版本，把高带宽仪器/传感器数据直接收进 GPU 显存、边采集边处理，无需先落盘。",
-        "要点：新增把包重排卸载到 ConnectX-7 及以上 NIC 的硬件重排（省去软件重排拷贝）；ibverbs 引擎在 ≤1024 字节小包、>200Gbps 下每核吞吐约为旧 DPDK 后端的两倍；直接轮询模式实测发送-接收延迟 2–4 微秒。配合劳伦斯伯克利实验室 >500Gbps 电子能量损失谱相机做在采集中分析。数字为 NVIDIA 单方基准测试。",
-        "判断：发布条带可复用做法（NIC 硬件重排 + ibverbs + 直接轮询三段式）；属科学仪器采集域，与我们 LLM 推理栈关系弱，供了解 CUDA-X 数据入口演进。"
+        "事件：11-19 17:00 GMT NVIDIA 官方博客发布 Into the Omniverse 系列，展示开发者用 GPT-6 Astra / Sol 等前沿模型加 Omniverse 库把仿真想法做成应用。",
+        "案例：Falkor（KONGSBERG）用 GPT-6 Astra 把 CAD 转设施级数字孪生、跑在 Azure 的 RTX PRO 6000 Server 上；另有 SimReady 资产做机器人抓取仿真、语音控制 VR 仿真（Claude Code 约跑 8 小时、一个周末完成）。",
+        "判断：物理 AI 与仿真生态案例合集、非调优方法；供观察前沿模型切入工业数字孪生与机器人仿真的落地方式。"
       ],
       "verdict": "观察",
-      "credibility": "高（NVIDIA 官方技术博客，性能数字为厂商基准测试）",
+      "credibility": "高（NVIDIA 官方博客）",
       "tags": [
         "官方博客",
-        "通信优化",
-        "其他领域"
+        "Agent",
+        "多模态"
       ]
     },
     {
       "id": "20261120-003",
       "source": "英伟达",
-      "title": "NVIDIA 开源 frontend-crates：用共享 Conformance Corpus 让 AI agent 为任意模型生成 Rust tool-call 解析器",
-      "url": "https://developer.nvidia.com/blog/build-tool-calling-parsers-in-rust-with-ai-agents/",
+      "title": "NVIDIA 技术博客：用 Dynamo 缓解强化学习 rollout 阶段瓶颈",
+      "url": "https://developer.nvidia.com/blog/reducing-rollout-bottlenecks-in-reinforcement-learning-with-nvidia-dynamo/",
       "time": "2026-11-19",
       "points": [
-        "事件：11-19 NVIDIA 开发者博客发布 Dynamo 工具调用解析器底座 frontend-crates 与一套语言无关的 Conformance Corpus，并用 AI agent 演示为新模型 day-0 造解析器。",
-        "要点：解析器按文档化恢复规则处理畸形/截断/流式 tool call，不猜模型意图、不泄漏模型专属标记；UNIFIED.* 用例把同一期望输出（GOLDEN）映射到 Beam/GPT-OSS/Muse Spark/Nemotron 3 各自语法，做跨模型回归；guided decoding 约束生成到模型标记与参数 schema，但保留解析器恢复检查。CPU 上用固定夹具即可测，端到端才需 Dynamo/GPU。",
-        "判断：发布条带可复用做法——「模型无关行为测试集 + 人工审 GOLDEN + agent 迭代」范式可直接搬到我们的工具调用/输出解析测试；不依赖 NVIDIA 硬件。"
+        "事件：11-19 20:28Z NVIDIA 技术博客发布《Reducing Rollout Bottlenecks in Reinforcement Learning with NVIDIA Dynamo》。",
+        "内容：聚焦 RL 训练中 rollout（生成轨迹）阶段的推理瓶颈，用 Dynamo 跨大规模 GPU 集群编排推理，并处理请求调度、模型更新与故障恢复；微软 AI 已用 Dynamo 支撑后训练 RL rollout。",
+        "判断：按官方博客发布事件收，points 只写发布了什么、不搬调优配方；属 RL 推理基础设施方向，供判断 Dynamo 在 RL 后训练中的定位。"
       ],
-      "verdict": "值得",
+      "verdict": "观察",
       "credibility": "高（NVIDIA 官方技术博客）",
       "tags": [
         "官方博客",
-        "Agent",
-        "可复用",
-        "开源"
+        "推理",
+        "训练"
       ]
     },
     {
       "id": "20261120-004",
       "source": "英伟达",
-      "title": "NVIDIA 发布 Frontier AI Agents × Omniverse 案例集：GPT-6 Astra/Sol 驱动的仿真应用与 agent 校验方法",
-      "url": "https://blogs.nvidia.com/blog/developers-simulation-frontier-ai-agents/",
+      "title": "NVIDIA 技术博客：GPU 原生数据采集让科学仪器实现实时 AI",
+      "url": "https://developer.nvidia.com/blog/enabling-real-time-ai-for-scientific-instruments-with-gpu-native-data-acquisition/",
       "time": "2026-11-19",
       "points": [
-        "事件：11-19 NVIDIA 官方博客汇集多个用前沿模型 + Omniverse 库构建仿真应用的开发者案例（数字孪生、机器人、VR、自动驾驶测试等）。",
-        "要点：可复用的是 agent 校验做法——多位作者强调「给 agent 渲染结果与日志去检查、再由人直接验证体验」：VR 案例靠人发现抓取抖动、把抓取控制改为每帧更新解决；256 间病房跑 768 个机器人 14 秒后 766 个仍站立；仓库仿真把物理、渲染、视频准备并发执行以恢复规模下降后的性能。案例数字多为个人/团队自述。",
-        "判断：生态案例条、非调优方法；「agent 产出必须有可观测反馈 + 人工闭环验收」与我们验证制度同源，供创新/开发参考。"
+        "事件：11-19 17:00Z NVIDIA 技术博客发布《Enabling Real-Time AI for Scientific Instruments with GPU-Native Data Acquisition》，属 SC26 相关技术文章。",
+        "内容：面向电子能量损失谱等科学仪器，指出数据搬运与处理速度限制仪器设计，用 GPU 原生数据采集缩短延迟，使 AI 可实时调节流程、引导实验。",
+        "判断：科研仪器加 GPU 采集的应用案例、非调优方法；供观察 GPU 原生 DAQ 在科学仪器方向的落地。"
       ],
       "verdict": "观察",
-      "credibility": "高（NVIDIA 官方博客，案例数据为开发者自报）",
+      "credibility": "高（NVIDIA 官方技术博客）",
       "tags": [
         "官方博客",
-        "Agent",
         "其他领域"
       ]
     },
     {
       "id": "20261120-005",
-      "source": "其他",
-      "title": "NVIDIA 发布 Dynamo 的 RL rollout 服务层方案：KV-aware 路由 + ModelExpress 增量权重分发 + 故障恢复",
-      "url": "https://developer.nvidia.com/blog/reducing-rollout-bottlenecks-in-reinforcement-learning-with-nvidia-dynamo/",
+      "source": "英伟达",
+      "title": "NVIDIA 技术博客：用 AI Agent 在 Rust 中构建工具调用解析器",
+      "url": "https://developer.nvidia.com/blog/build-tool-calling-parsers-in-rust-with-ai-agents/",
       "time": "2026-11-19",
       "points": [
-        "事件：11-19 NVIDIA 开发者博客发布 Dynamo 面向强化学习 rollout 的服务层方案，定位在 RL 框架与推理 worker 之间，负责路由、worker 管理与遥测；已接通 verl、NeMo RL、Slime、prime-rl。",
-        "要点：KV-aware 路由在缓存复用与 worker 负载间平衡，减少同一 prompt 多次采样的重复 prefill；ModelExpress 用 NIXL 从其他 GPU 显存直接拷权重、并只传压缩增量（delta）而非全量 checkpoint；恢复机制检测 worker 失败、重路由并用 checkpoint + delta 让替补追上。属方案/架构发布，原文未给统一加速比，数字未给。",
-        "判断：跨线通用的 rollout 服务方案（事件条），可复用的三点设计（KV 感知路由、GPU 间增量权重、可恢复 worker）值得架构师看；按分工方法细节交调优情报，此处只报发布事实。"
+        "事件：11-19 16:30Z NVIDIA 技术博客发布《Build Tool-Calling Parsers in Rust with AI Agents》。",
+        "内容：针对工具调用分片到达、参数截断、模型标记泄漏等问题，讲前端解析器如何把 token 或解码文本转成可见文本、推理与工具调用，并用 AI agent 为新模型构建 Rust 解析器。",
+        "判断：偏工程教程的官方发布、非性能调优方法；属 Agent 工具调用前端解析方向，供观察。"
       ],
       "verdict": "观察",
       "credibility": "高（NVIDIA 官方技术博客）",
       "tags": [
-        "Agent",
-        "训练",
-        "推理",
-        "KV Cache"
+        "官方博客",
+        "Agent"
       ]
     },
     {
       "id": "20261120-006",
-      "source": "昇腾",
-      "title": "vLLM-Ascend 合入：A5 镜像的 cannbot wheels 升级（cannbotdsl 0.6.0→0.8.2、arena-net-ops 0.1.0→0.3.0）",
-      "url": "https://github.com/vllm-project/vllm-ascend/commit/a38556f69529595e70598d0d6203009f5ac3293e",
+      "source": "英伟达",
+      "title": "NVIDIA 公告：将参加 12 月 1 日第 30 届 UBS 全球科技与 AI 大会",
+      "url": "https://nvidianews.nvidia.com/news/nvidia-announces-upcoming-event-for-financial-community-6929322",
       "time": "2026-11-19",
       "points": [
-        "事件：11-19（UTC 15:38）合入 PR #22522，升级 A5 镜像使用的 cannbot 依赖包版本，改动 Dockerfile.a5 与 Dockerfile.a5.openEuler。",
-        "要点：cannbotdsl 0.6.0+g91e7c8f→0.8.2、cannbot-arena-net-ops 0.1.0→0.3.0，从昇腾稳定镜像安装（仅 aarch64）；属镜像依赖 pin 升级，CI 验证、需在昇腾 NPU 上构建验证。",
-        "判断：纯依赖版本事件，无加速配方；供跟踪 A5 镜像 cannbot 工具链节奏，A5 部署需连带确认兼容性。"
+        "事件：11-19 22:00 GMT NVIDIA Newsroom 发布公告，将在 12 月 1 日 6:35 a.m. PT 的第 30 届 UBS Global Technology and AI Conference 做面向金融界的演示。",
+        "内容：投资者可在 investor.nvidia.com 收听直播，回放保留 90 天。",
+        "判断：纯 IR 日程公告、非技术情报；仅作事件留档，供跟踪公司财报与对外沟通节奏。"
       ],
       "verdict": "观察",
-      "credibility": "高（官方仓库合并提交，开发分支）",
+      "credibility": "高（NVIDIA Newsroom 官方公告）",
       "tags": [
-        "vLLM-Ascend",
-        "CANN",
-        "开源"
+        "公告",
+        "站点"
       ]
     },
     {
       "id": "20261120-007",
-      "source": "昇腾",
-      "title": "vLLM-Ascend 合入：修复 A5 全图投机解码（DSpark/DFlash）在 padding batch 下的注意力元数据不匹配",
-      "url": "https://github.com/vllm-project/vllm-ascend/commit/2f41be5d8f579cab1cf6c1b09b1b1c55ccea8eb1",
-      "time": "2026-11-19",
+      "source": "英伟达",
+      "title": "TensorRT-LLM 发布 v1.4.0rc4 候选版本",
+      "url": "https://github.com/NVIDIA/TensorRT-LLM/releases/tag/v1.4.0rc4",
+      "time": "2026-11-18",
       "points": [
-        "事件：11-19（UTC 13:57）合入 PR #22156，修复 FULL-graph 投机解码中 padding batch 导致的 Q/KV 段数不一致（N 个 Q 段对 N+1 个 KV 长度项），原报错 aclnnFusedInferAttentionScoreV5 561002。",
-        "要点：在 DSpark/DFlash 的 _update_draft_attn_metadata 里把 KV 长度与 block table 同步裁剪到 num_reqs_padded；A5（Ascend950DT）TP4 实测 DSpark、DFlash 各 60/60 通过，GSM8K 前 300 例精度与 draft 接受率修复前后一致（95.33%）。",
-        "判断：bugfix 事件、无吞吐基准；供判断 A5 上投机解码稳定性，我们若在 A5 跑 FULL_DECODE_ONLY + 投机需包含此修复。"
+        "事件：11-18 19:16Z NVIDIA 在 GitHub 发布 TensorRT-LLM v1.4.0rc4。",
+        "内容：属 v1.4.0 正式版前的候选迭代，上一版 rc3 于 11-06 发布；本条只作版本节点记录，具体改动不在本条展开。",
+        "判断：版本发布事件、非调优方法；供跟踪 TensorRT-LLM 1.4.0 正式版临近节奏。"
       ],
       "verdict": "观察",
-      "credibility": "高（官方仓库合并提交，含 A5 硬件验证记录）",
+      "credibility": "高（NVIDIA GitHub 官方 Release）",
       "tags": [
-        "vLLM-Ascend",
-        "推理",
-        "开源"
+        "Release Notes",
+        "TensorRT-LLM"
       ]
     },
     {
       "id": "20261120-008",
-      "source": "昇腾",
-      "title": "vLLM-Ascend 合入：移除过时的 MiniMax-M2 config monkey-patch",
-      "url": "https://github.com/vllm-project/vllm-ascend/commit/49f8682bd6783734d11f0378d6c1be261a19d411",
-      "time": "2026-11-19",
+      "source": "英伟达",
+      "title": "FlashInfer 发布 v0.7.5 正式版，结束 rc1–rc3 候选",
+      "url": "https://github.com/flashinfer-ai/flashinfer/releases/tag/v0.7.5",
+      "time": "2026-11-18",
       "points": [
-        "事件：11-19（UTC 13:51）合入 PR #22056（取代 #16569），整体删除 patch_minimax_m2_config.py。",
-        "要点：两处 config 期 monkey-patch 已过时——强制 quantization=None 的钩子在 #13782 移除 fp8→bf16 反量化后反而挡住原生 block-FP8 路径；HCCL_OP_EXPANSION_MODE=AIV 默认值官方启动脚本已设置。",
-        "判断：清理类事件，反映 MiniMax-M2 走原生 block-FP8 路径；供跟踪该模型 NPU 支持走向，非可直接复用调优手法。"
+        "事件：11-18 23:03Z FlashInfer 发布 v0.7.5 正式版，此前 rc3（11-17）、rc2（11-16）、rc1（11-12）依次放出。",
+        "内容：FlashInfer 是面向 LLM 推理的注意力算子库，本条只记录稳定版节点，不展开算子层改动。",
+        "判断：版本发布事件、非调优方法；其是 vLLM / SGLang 等主流推理框架的关键 attention 后端，供跟踪稳定版节奏。"
       ],
       "verdict": "观察",
-      "credibility": "高（官方仓库合并提交）",
+      "credibility": "高（FlashInfer GitHub 官方 Release）",
       "tags": [
-        "vLLM-Ascend",
-        "量化",
+        "Release Notes",
+        "推理",
         "开源"
       ]
     },
     {
       "id": "20261120-009",
-      "source": "昇腾",
-      "title": "vLLM-Ascend 合入：Ascend recipe 配置校验改为检查实际生效值（含 PD 预设），而非强制禁用特性的基线命令",
-      "url": "https://github.com/vllm-project/vllm-ascend/commit/f2af76799794c31ab0385e56801988adeaa141ce",
-      "time": "2026-11-19",
+      "source": "其他",
+      "title": "HF 博客：FLOPs 估不准微调时长，272 次生产 SFT 任务上 CatBoost 把 MAE 从 12.41h 降到 1.71h",
+      "url": "https://huggingface.co/blog/Dharma-AI/predicting-fine-tuning-time",
+      "time": "2026-11-18",
       "points": [
-        "事件：11-19（UTC 08:40）合入 PR #22288，修正 Ascend recipe 的 CI 检查器逻辑。",
-        "要点：旧逻辑对受限硬件强制基线命令、对继承变体误报 fallback，且漏掉 recipe 声明的 Ascend PD 预设；新逻辑按 builder/API 可见性规则、用官方严格渲染器检查每个声明的 preset/point（含实际镜像、特性、frontend、router、connector），把自动 fallback 降为 warning、把不兼容安装说明/畸形 KV 配置/非法角色设备等仍列为阻塞。34 规则测试 + 43 集成测试通过。",
-        "判断：CI 工具事件、无 NPU 推理执行；可复用的是「检查实际生效配置而非名义基线」的校验思路，供自建 CI 参考。"
+        "事件：11-18 18:53 GMT Hugging Face 博客发布《Why your fine-tuning job takes longer than the FLOPs say》（Dharma-AI 团队，预告同名论文将上 arXiv）。",
+        "数据：272 个真实 SFT 任务、约 7382 GPU 小时的 H200 集群；FLOP 基线 R²=0.31 / MAE 12.41h，只用调度前可得信息的 CatBoost 达 R²=0.98、MAE 1.71h、中位误差 0.51h。",
+        "判断：带数字的官方博客发布事件（论文预览），实现细节待 arXiv；结论指向评估频次与检查点 I/O 等非算力开销主导端到端时长，供集群调度参考。"
       ],
-      "verdict": "观察",
-      "credibility": "高（官方仓库合并提交）",
+      "verdict": "值得",
+      "credibility": "高（Hugging Face 官方博客，含实测数据）",
       "tags": [
-        "vLLM-Ascend",
-        "评测",
-        "开源"
+        "官方博客",
+        "训练",
+        "评测"
       ]
     },
     {
       "id": "20261120-010",
-      "source": "昇腾",
-      "title": "vLLM-Ascend 合入：DFlash/DFlash2 draft 加载时保留 target 的 MegaMoE 状态",
-      "url": "https://github.com/vllm-project/vllm-ascend/commit/575bafa3f0cf9c63052b11a2c4b6b0cc1f74e6b3",
+      "source": "其他",
+      "title": "Google 官方博客发布 Gemini API Tool Retrieval，面向 Agent 规模化",
+      "url": "https://blog.google/innovation-and-ai/technology/developers-tools/gemini-api-tool-retrieval/",
       "time": "2026-11-19",
       "points": [
-        "事件：11-19（UTC 08:26）合入 PR #22108，修复 GLM-5.3 Prefill + DFlash2 + PCP=8 + enable_fused_mc2=2 时 draft 验证用 PCP=1 覆盖 target 状态、导致 CANN MegaMoE 回退的问题。",
-        "要点：DFlash/DFlash2 改用 draft_config_context()，draft 构建与验证用 draft 自身拓扑和 MegaMoE 模式，只有 target 初始化才发布 _ASCEND_CONFIG 等并失效缓存；原回退算子只接受 512 token、拒绝 16384 token 的 profiling batch。当前版本仍需 NPU 复跑。",
-        "判断：bugfix 事件、无新配置；供跟踪 GLM-5.3 + DFlash2 上 MegaMoE 路径的稳定性。"
+        "事件：11-19 18:00 GMT Google 官方博客发布 Gemini API tool retrieval for efficient agent scaling。",
+        "内容：面向 Agent 规模化场景的 API 工具检索能力；官方已确认标题与时间，正文细节本条不展开。",
+        "判断：官方产品与 API 发布事件、非调优方法；供跟踪 Gemini API 在 Agent 工具调用方向的更新。"
       ],
       "verdict": "观察",
-      "credibility": "高（官方仓库合并提交，当前版待 NPU 验证）",
+      "credibility": "高（Google 官方博客）",
       "tags": [
-        "vLLM-Ascend",
-        "MoE",
-        "开源"
+        "官方博客",
+        "Agent",
+        "AI"
       ]
     },
     {
       "id": "20261120-011",
-      "source": "昇腾",
-      "title": "vLLM-Ascend 合入：Qwen3.8-Next 的 GDN cache 分组由连续层改为按 num_groups 间隔交错",
-      "url": "https://github.com/vllm-project/vllm-ascend/commit/821ba9f6abdf9f9789d4218add6ff0858d4e5222",
+      "source": "其他",
+      "title": "OpenAI 发布 Performance Factory：用 Codex 驱动工作流自动发现并修复性能问题",
+      "url": "https://openai.com/index/how-openai-performance-factory-keeps-chatgpt-fast",
       "time": "2026-11-19",
       "points": [
-        "事件：11-19（UTC 08:25）合入 PR #22327，调整 Qwen4（Qwen3.8-Next）GDN 层的 cache 分组方式。",
-        "要点：原先按连续层分组（group 0: 0,1,2…），改为按 num_groups 间隔入队（group 0: 0,4,8…）；PR 自述无用户可见变更、未附基准或边界测试。",
-        "判断：内部布局调整事件；供跟踪 Qwen3.8-Next 在昇腾上的 GDN 实现走向，收益未经量化、不盲目照搬。"
+        "事件：11-19 08:00 GMT OpenAI 官方（Engineering 类）发布《How OpenAI's Performance Factory keeps ChatGPT fast》。",
+        "内容：介绍其内部 Performance Factory——一套 Codex 驱动的工作流，用于自动发现并修复性能问题、保持 ChatGPT 响应速度；页面正文受限，points 基于官方 RSS 描述。",
+        "判断：官方工程博客发布事件；不展开内部实现细节，供了解其性能治理思路。"
       ],
       "verdict": "观察",
-      "credibility": "高（官方仓库合并提交）",
+      "credibility": "高（OpenAI 官方 RSS 描述）",
       "tags": [
-        "vLLM-Ascend",
-        "KV Cache",
-        "开源"
+        "官方博客",
+        "AI"
       ]
     },
     {
       "id": "20261120-012",
-      "source": "昇腾",
-      "title": "vLLM-Ascend 合入：修正 Qwen-VL-Dense 基准教程里的无效 --random-input 参数",
-      "url": "https://github.com/vllm-project/vllm-ascend/commit/a41e2ff8ba274328f9ef2ff27d15653df1d2e8ee",
+      "source": "其他",
+      "title": "OpenAI 发布 Deploying Daybreak Red 参考架构指南",
+      "url": "https://openai.com/business/learn/deploying-daybreak-red",
       "time": "2026-11-19",
       "points": [
-        "事件：11-19（UTC 07:53）合入 PR #22170，文档修订。",
-        "要点：把 vllm bench serve 命令中的 --random-input 改为正确的 --random-input-len，与仓库其他模型教程保持一致；markdownlint 校验 0 error。",
-        "判断：文档类事件、无运行时影响；可复用点是「benchmark 命令参数以 datasets.py 为准」的核对习惯，供复现基准时避坑。"
+        "事件：11-19 00:00 GMT OpenAI 官方（Guides 类）发布《Deploying Daybreak Red》。",
+        "内容：给出监督式安全调查的参考架构，覆盖安全控制、部署设置与监控；页面仅公开 RSS 一句话描述，不补编具体配置。",
+        "判断：官方指南发布事件；供跟踪 OpenAI 在安全调查场景的产品化动向。"
       ],
       "verdict": "观察",
-      "credibility": "高（官方仓库合并提交）",
+      "credibility": "高（OpenAI 官方 RSS 描述）",
       "tags": [
-        "vLLM-Ascend",
-        "评测",
-        "开源"
+        "官方博客",
+        "AI"
       ]
     },
     {
       "id": "20261120-013",
-      "source": "昇腾",
-      "title": "vLLM-Ascend 合入：缓解 matcher 注册偶发的 file-not-found（把注册移到 pre-commit 缓存恢复之后）",
-      "url": "https://github.com/vllm-project/vllm-ascend/commit/57b285355c582f2c276d4876e0560f85384494dd",
+      "source": "其他",
+      "title": "OpenAI 发布 See PR scans in action 产品演示",
+      "url": "https://openai.com/business/learn/pr-scans-demo",
       "time": "2026-11-19",
       "points": [
-        "事件：11-19（UTC 07:51）合入 PR #21944，CI 稳定性改动。",
-        "要点：把「Register problem matchers」步骤移到 pre-commit 缓存恢复之后、紧邻 Run pre-commit，用拉长拷贝与注册间隔来规避 mypy.json 偶发找不到；作者注明只是缓解、根因未确认。",
-        "判断：CI 事件、无运行时影响；可复用「用步骤重排替代固定 sleep 缓解同步竞态」的做法，供自建流水线参考。"
+        "事件：11-19 00:00 GMT OpenAI 官方（Demos 类）发布《See PR scans in action》。",
+        "内容：演示 PR 扫描流程，展示审查者在 pull request 工作流中如何查看扫描结果；页面仅公开 RSS 一句话描述。",
+        "判断：官方产品演示发布事件、价值较低，仅作留档；供跟踪 Codex PR 扫描能力动向。"
       ],
       "verdict": "观察",
-      "credibility": "高（官方仓库合并提交）",
+      "credibility": "高（OpenAI 官方 RSS 描述）",
       "tags": [
-        "vLLM-Ascend",
-        "开源",
-        "需复现"
+        "官方博客",
+        "AI"
       ]
     },
     {
       "id": "20261120-014",
-      "source": "昇腾",
-      "title": "vLLM-Ascend 合入：A5 DP2×TP2 all-gather EPLB 测试在创建通信器前先初始化 Ascend config",
-      "url": "https://github.com/vllm-project/vllm-ascend/commit/40dfdbc9d9235cb011765faf9955098c01e8d430",
+      "source": "其他",
+      "title": "OpenAI 发布 Codex Security Plugin 演示",
+      "url": "https://openai.com/business/learn/codex-security-plugin-demo",
       "time": "2026-11-19",
       "points": [
-        "事件：11-19（UTC 07:44）合入 PR #22367，修复 A5 EPLB 测试初始化顺序。",
-        "要点：通信器在 setup 时读取 all-reduce 设置，原先只设 vLLM config 导致 eager/full-graph 均报「Ascend config is not initialized」；改为每个 spawn worker 创建模型并行通信器前先 init_ascend_config；两个 A5 四卡用例 CI 通过。",
-        "判断：测试修复事件、不改生产行为；供跟踪 A5 DP2×TP2 专家负载均衡路径，做类似并行配置时需先初始化 Ascend config。"
+        "事件：11-19 00:00 GMT OpenAI 官方（Demos 类）发布《Explore the Codex Security Plugin》。",
+        "内容：演示 Codex Security Plugin 从入门到结果查看的完整工作流；页面仅公开 RSS 一句话描述。",
+        "判断：官方产品演示发布事件；供跟踪 Codex 安全插件方向，不补编演示细节。"
       ],
       "verdict": "观察",
-      "credibility": "高（官方仓库合并提交）",
+      "credibility": "高（OpenAI 官方 RSS 描述）",
       "tags": [
-        "vLLM-Ascend",
-        "并行策略",
-        "开源"
+        "官方博客",
+        "Agent",
+        "AI"
       ]
     },
     {
       "id": "20261120-015",
-      "source": "昇腾",
-      "title": "vLLM-Ascend 合入：INT8 GLM-5.3-Flash KPool indexer（managed scales）落到 A3，BF16 仍为默认",
-      "url": "https://github.com/vllm-project/vllm-ascend/commit/536f084ccb4b336bef7f4c0b8b2ab16d55b6af43",
+      "source": "其他",
+      "title": "OpenAI 发布 Get started with Daybreak Blue 上手演示",
+      "url": "https://openai.com/business/learn/daybreak-blue-onboarding-demo",
       "time": "2026-11-19",
       "points": [
-        "事件：11-19（UTC 15:13）合入 PR #22191，为 A3 上 GLM-5.3-Flash 新增可选 INT8 PoolKeyIndexer 路径。",
-        "要点：--attention-config.indexer_kv_dtype int8 用 FP16 每向量 scale 量化压缩后的 key/query，key 与 scale 共用 managed KV cache 页以便 P/D 传输；AIME26 准确率 90%→90% 不变；历史 prefill 算子采样显示 device 延迟降 6.01–18.94%（4K/1 与 128K/1，不同输入 dtype 与调用mix，非同输入 kernel 加速比，也非整模型收益）。",
-        "判断：特性合入事件，开关与精度/延迟细节交调优情报；此处只记「A3 新增 INT8 indexer KV 选项、BF16 仍默认、需配套 ops-transformer 版本」。"
+        "事件：11-19 00:00 GMT OpenAI 官方（Demos 类）发布《Get started with Daybreak Blue》。",
+        "内容：Daybreak Blue 的上手演示，聚焦设置体验与起步流程；页面仅公开 RSS 一句话描述。",
+        "判断：官方产品演示发布事件、价值较低，仅作留档；供跟踪 Daybreak 产品线动向。"
       ],
       "verdict": "观察",
-      "credibility": "高（官方仓库合并提交，性能为历史算子采样、厂商口径）",
+      "credibility": "高（OpenAI 官方 RSS 描述）",
       "tags": [
-        "vLLM-Ascend",
-        "量化",
-        "KV Cache",
-        "开源"
+        "官方博客",
+        "AI"
       ]
     },
     {
@@ -312,6 +301,45 @@
     },
     {
       "id": "20261120-017",
+      "source": "昇腾",
+      "title": "vLLM-Ascend 合入：INT8 GLM-5.3-Flash KPool indexer（managed scales）落到 A3，BF16 仍为默认",
+      "url": "https://github.com/vllm-project/vllm-ascend/commit/536f084ccb4b336bef7f4c0b8b2ab16d55b6af43",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19（UTC 15:13）合入 PR #22191，为 A3 上 GLM-5.3-Flash 新增可选 INT8 PoolKeyIndexer 路径。",
+        "要点：--attention-config.indexer_kv_dtype int8 用 FP16 每向量 scale 量化压缩后的 key/query，key 与 scale 共用 managed KV cache 页以便 P/D 传输；AIME26 准确率 90%→90% 不变；历史 prefill 算子采样显示 device 延迟降 6.01–18.94%（4K/1 与 128K/1，不同输入 dtype 与调用mix，非同输入 kernel 加速比，也非整模型收益）。",
+        "判断：特性合入事件，开关与精度/延迟细节交调优情报；此处只记「A3 新增 INT8 indexer KV 选项、BF16 仍默认、需配套 ops-transformer 版本」。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（官方仓库合并提交，性能为历史算子采样、厂商口径）",
+      "tags": [
+        "vLLM-Ascend",
+        "量化",
+        "KV Cache",
+        "开源"
+      ]
+    },
+    {
+      "id": "20261120-018",
+      "source": "昇腾",
+      "title": "vLLM-Ascend 合入：修复 A5 全图投机解码（DSpark/DFlash）在 padding batch 下的注意力元数据不匹配",
+      "url": "https://github.com/vllm-project/vllm-ascend/commit/2f41be5d8f579cab1cf6c1b09b1b1c55ccea8eb1",
+      "time": "2026-11-19",
+      "points": [
+        "事件：11-19（UTC 13:57）合入 PR #22156，修复 FULL-graph 投机解码中 padding batch 导致的 Q/KV 段数不一致（N 个 Q 段对 N+1 个 KV 长度项），原报错 aclnnFusedInferAttentionScoreV5 561002。",
+        "要点：在 DSpark/DFlash 的 _update_draft_attn_metadata 里把 KV 长度与 block table 同步裁剪到 num_reqs_padded；A5（Ascend950DT）TP4 实测 DSpark、DFlash 各 60/60 通过，GSM8K 前 300 例精度与 draft 接受率修复前后一致（95.33%）。",
+        "判断：bugfix 事件、无吞吐基准；供判断 A5 上投机解码稳定性，我们若在 A5 跑 FULL_DECODE_ONLY + 投机需包含此修复。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（官方仓库合并提交，含 A5 硬件验证记录）",
+      "tags": [
+        "vLLM-Ascend",
+        "推理",
+        "开源"
+      ]
+    },
+    {
+      "id": "20261120-019",
       "source": "快讯",
       "title": "Claude Fable 5.2 解决两个黑洞物理开放问题：20 年未解计算与模引导精确上限（HN 369 分）",
       "url": "https://www.anthropic.com/research/claude-black-hole-physics",
@@ -329,7 +357,7 @@
       ]
     },
     {
-      "id": "20261120-018",
+      "id": "20261120-020",
       "source": "快讯",
       "title": "180B MoE 塞进 32GB 内存：Transformers 加专家流式，解码追到 Strata 的 6% 以内",
       "url": "https://huggingface.co/blog/moe-expert-streaming",
@@ -353,7 +381,7 @@
       ]
     },
     {
-      "id": "20261120-019",
+      "id": "20261120-021",
       "source": "快讯",
       "title": "HubSpot Aviator：20 行 Java 建 agent，模型无关的 transcript 可中途换模型、每周合 2500+ PR",
       "url": "https://hubspot.engineering/blog/aviator-hubspots-agent-harness/",
@@ -373,7 +401,7 @@
       ]
     },
     {
-      "id": "20261120-020",
+      "id": "20261120-022",
       "source": "快讯",
       "title": "软件热力学：成功 coding run 约 80% token 是「热」，改动自由能仅占均值的 14–22%",
       "url": "https://arxiv.org/abs/2611.23375",
@@ -392,7 +420,7 @@
       ]
     },
     {
-      "id": "20261120-021",
+      "id": "20261120-023",
       "source": "快讯",
       "title": "QDA：用 agent 闭环设计量化方案，W4A16/W4A8/W3A16 平均涨 0.9/1.4/2.2 点",
       "url": "https://arxiv.org/abs/2611.23388",
@@ -413,7 +441,7 @@
       ]
     },
     {
-      "id": "20261120-022",
+      "id": "20261120-024",
       "source": "快讯",
       "title": "Tideway：把显存与主机内存当统一池，消费级设备跑大 MoE 延迟快 1.97×、TTFT 快 2.40×",
       "url": "https://arxiv.org/abs/2611.14848",
@@ -434,7 +462,7 @@
       ]
     },
     {
-      "id": "20261120-023",
+      "id": "20261120-025",
       "source": "快讯",
       "title": "Meta 用 AI agent 把 ML 技术传播到整个广告排序模型舰队：60%+ 由 agent 执行，算力降 4×",
       "url": "https://engineering.fb.com/2026/11/18/ml-applications/ai-agents-to-scale-ml-innovations-across-ads-ranking-models/",
@@ -453,7 +481,7 @@
       ]
     },
     {
-      "id": "20261120-024",
+      "id": "20261120-026",
       "source": "快讯",
       "title": "Modular 重做 MAX 的 Module API：加 Eager 层、PyTorch 风格语法，旧版 2027 Q1 移除",
       "url": "https://www.modular.com/blog/reintroducing-max-module",
@@ -473,7 +501,7 @@
       ]
     },
     {
-      "id": "20261120-025",
+      "id": "20261120-027",
       "source": "快讯",
       "title": "automodel：把「模型发现方法论」编成可移植 agent skill，通用 agent 即可发现新模型",
       "url": "https://arxiv.org/abs/2611.24347",
@@ -493,7 +521,7 @@
       ]
     },
     {
-      "id": "20261120-026",
+      "id": "20261120-028",
       "source": "快讯",
       "title": "Resolution Hypothesis：agent 自我进化的瓶颈不是提不出好改动，而是评测分不清好坏",
       "url": "https://arxiv.org/abs/2611.23068",
@@ -512,7 +540,7 @@
       ]
     },
     {
-      "id": "20261120-027",
+      "id": "20261120-029",
       "source": "快讯",
       "title": "Jeveration：System One 模型单次前向生成图像，512×512 用 78ms、比统一模型快最多 122×",
       "url": "https://arxiv.org/abs/2611.24738",
@@ -530,7 +558,7 @@
       ]
     },
     {
-      "id": "20261120-028",
+      "id": "20261120-030",
       "source": "快讯",
       "title": "Inference after coding agents：零效应数据上 AI agent 有 54–98% 报出显著 p 值",
       "url": "https://arxiv.org/abs/2611.23174",
@@ -549,7 +577,7 @@
       ]
     },
     {
-      "id": "20261120-029",
+      "id": "20261120-031",
       "source": "快讯",
       "title": "Frostbite：AI 端到端发现并验证全新 CPU 架构，25 项工作负载 perf/W 几何均值 4.59×（宣称）",
       "url": "https://architectlabs.com/blog/frostbite",
@@ -568,7 +596,7 @@
       ]
     },
     {
-      "id": "20261120-030",
+      "id": "20261120-032",
       "source": "星榜",
       "title": "obra/superpowers — 面向编码 agent 的技能框架与软件开发方法论",
       "url": "https://github.com/obra/superpowers",
@@ -586,7 +614,7 @@
       ]
     },
     {
-      "id": "20261120-031",
+      "id": "20261120-033",
       "source": "星榜",
       "title": "boykopovar/AnyPS5 — 把 PS5 可执行文件自动移植到 Linux/Windows 的工具",
       "url": "https://github.com/boykopovar/AnyPS5",
@@ -604,7 +632,7 @@
       ]
     },
     {
-      "id": "20261120-032",
+      "id": "20261120-034",
       "source": "星榜",
       "title": "elementalsouls/Claude-BugHunter — 给 Claude Code 用的漏洞猎杀技能包",
       "url": "https://github.com/elementalsouls/Claude-BugHunter",
@@ -622,7 +650,7 @@
       ]
     },
     {
-      "id": "20261120-033",
+      "id": "20261120-035",
       "source": "星榜",
       "title": "google-research/paper-orchestra — 自动写 AI 研究论文的多 agent 框架",
       "url": "https://github.com/google-research/paper-orchestra",
@@ -640,7 +668,7 @@
       ]
     },
     {
-      "id": "20261120-034",
+      "id": "20261120-036",
       "source": "星榜",
       "title": "affaan-m/ECC — 面向 agent harness 的性能优化系统",
       "url": "https://github.com/affaan-m/ECC",
@@ -658,7 +686,7 @@
       ]
     },
     {
-      "id": "20261120-035",
+      "id": "20261120-037",
       "source": "星榜",
       "title": "mvanhorn/last30days-skill — 跨多平台调研并综合结论的 agent 技能",
       "url": "https://github.com/mvanhorn/last30days-skill",
@@ -676,7 +704,7 @@
       ]
     },
     {
-      "id": "20261120-036",
+      "id": "20261120-038",
       "source": "星榜",
       "title": "HKUDS/CLI-Anything — 让所有软件变成 agent 原生的 CLI 方案",
       "url": "https://github.com/HKUDS/CLI-Anything",
@@ -694,7 +722,7 @@
       ]
     },
     {
-      "id": "20261120-037",
+      "id": "20261120-039",
       "source": "星榜",
       "title": "DietrichGebert/ponytail — 让编码 agent 少写代码的提示符技能",
       "url": "https://github.com/DietrichGebert/ponytail",
@@ -712,7 +740,7 @@
       ]
     },
     {
-      "id": "20261120-038",
+      "id": "20261120-040",
       "source": "星榜",
       "title": "firecrawl/firecrawl — 为 agent 提供搜索与抓取的统一数据 API",
       "url": "https://github.com/firecrawl/firecrawl",
@@ -730,7 +758,7 @@
       ]
     },
     {
-      "id": "20261120-039",
+      "id": "20261120-041",
       "source": "星榜",
       "title": "mattpocock/skills — 面向工程师的 agent 技能集",
       "url": "https://github.com/mattpocock/skills",
@@ -748,7 +776,7 @@
       ]
     },
     {
-      "id": "20261120-040",
+      "id": "20261120-042",
       "source": "星榜",
       "title": "Nutlope/hallmark — 给编码 agent 用的反 AI 味设计技能",
       "url": "https://github.com/Nutlope/hallmark",
@@ -766,7 +794,7 @@
       ]
     },
     {
-      "id": "20261120-041",
+      "id": "20261120-043",
       "source": "星榜",
       "title": "getarcaneapp/arcane — 面向所有人的现代 Docker 管理面板",
       "url": "https://github.com/getarcaneapp/arcane",
@@ -784,7 +812,7 @@
       ]
     },
     {
-      "id": "20261120-042",
+      "id": "20261120-044",
       "source": "星榜",
       "title": "solidjs/solid — 声明式、高效的 JavaScript UI 库",
       "url": "https://github.com/solidjs/solid",
@@ -802,7 +830,7 @@
       ]
     },
     {
-      "id": "20261120-043",
+      "id": "20261120-045",
       "source": "星榜",
       "title": "microsoft/markitdown — 把文件与 Office 文档转成 Markdown 的工具",
       "url": "https://github.com/microsoft/markitdown",
@@ -820,7 +848,7 @@
       ]
     },
     {
-      "id": "20261120-044",
+      "id": "20261120-046",
       "source": "星榜",
       "title": "cursor/plugins — Cursor 插件规范与官方插件集",
       "url": "https://github.com/cursor/plugins",
@@ -838,7 +866,7 @@
       ]
     },
     {
-      "id": "20261120-045",
+      "id": "20261120-047",
       "source": "星榜",
       "title": "mjmirza/app-store-compliance — 应用上架审核合规清单与提交前守卫",
       "url": "https://github.com/mjmirza/app-store-compliance",
@@ -856,7 +884,7 @@
       ]
     },
     {
-      "id": "20261120-046",
+      "id": "20261120-048",
       "source": "星榜",
       "title": "XiaoYouChR/Ghost-Downloader-3 — 集大成的开源下载器",
       "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3",
@@ -874,7 +902,7 @@
       ]
     },
     {
-      "id": "20261120-047",
+      "id": "20261120-049",
       "source": "星榜",
       "title": "appwrite/appwrite — 面向开发者与 agent 的开源云后端",
       "url": "https://github.com/appwrite/appwrite",
@@ -892,7 +920,7 @@
       ]
     },
     {
-      "id": "20261120-048",
+      "id": "20261120-050",
       "source": "星榜",
       "title": "sveltejs/svelte — 面向大众的 Web 前端框架",
       "url": "https://github.com/sveltejs/svelte",
@@ -910,7 +938,7 @@
       ]
     },
     {
-      "id": "20261120-049",
+      "id": "20261120-051",
       "source": "星榜",
       "title": "codecrafters-io/build-your-own-x — 从零重造经典技术的学习合集",
       "url": "https://github.com/codecrafters-io/build-your-own-x",
@@ -928,7 +956,7 @@
       ]
     },
     {
-      "id": "20261120-050",
+      "id": "20261120-052",
       "source": "英伟达",
       "title": "vLLM 官方自测（GB300/GB200，无第三方复现）：GLM-5.3-Flash 的 KDA 层改走 FlashInfer 融合算子，decode 1.9–2.1×、GB300 C1024 吞吐 +24.9%",
       "url": "https://github.com/vllm-project/vllm/pull/63544",
@@ -949,7 +977,7 @@
       ]
     },
     {
-      "id": "20261120-051",
+      "id": "20261120-053",
       "source": "英伟达",
       "title": "vLLM 官方自测（H20/SM90，无第三方复现）：Qwen4Exp 的 HyperConnection 上投影与 gate mix 融合进单核，长 prefill TTFT −2.4~2.8%",
       "url": "https://github.com/vllm-project/vllm/pull/66791",
@@ -970,7 +998,7 @@
       ]
     },
     {
-      "id": "20261120-052",
+      "id": "20261120-054",
       "source": "英伟达",
       "title": "vLLM 官方实测（H100）：GDN chunk_scaled_dot_kkt 把 beta 移到 K 循环后，消除 Triton 流水竞态、autotune kernel 提速 4–6%",
       "url": "https://github.com/vllm-project/vllm/pull/67812",
@@ -991,7 +1019,7 @@
       ]
     },
     {
-      "id": "20261120-053",
+      "id": "20261120-055",
       "source": "英伟达",
       "title": "SGLang 官方自测（SM120/GB300，无第三方复现）：DeepSeek-V4.1 decode scoring 从 dense-slot 改 paged，单卡峰值 5.48→1.04 GB，TP8/EP8 才能启动",
       "url": "https://github.com/sgl-project/sglang/pull/45261",
@@ -1012,7 +1040,7 @@
       ]
     },
     {
-      "id": "20261120-054",
+      "id": "20261120-056",
       "source": "昇腾",
       "title": "vLLM-Ascend 官方 A3 实测：Qwen4Exp QSA 四处准备算子融合，LightningIndexerV2 准备 8.4→2.24 µs（3.57–3.78×）、kernel 数 7→1",
       "url": "https://github.com/vllm-project/vllm-ascend/pull/22086",
@@ -1033,7 +1061,7 @@
       ]
     },
     {
-      "id": "20261120-055",
+      "id": "20261120-057",
       "source": "昇腾",
       "title": "vLLM-Ascend 官方 recipe（16×910B A2 真机）：DeepSeek-V4.1-Flash W4A8 PD 分离可照抄配置——1P(DP2×TP1×PCP4)+1D(DP8×TP1)+Mooncake+DSpark5",
       "url": "https://github.com/vllm-project/vllm-ascend/pull/21852",
@@ -1055,7 +1083,7 @@
       ]
     },
     {
-      "id": "20261120-056",
+      "id": "20261120-058",
       "source": "昇腾",
       "title": "vLLM-Ascend 官方 A3 实测：GLM5.3-Flash 的 KPool indexer 走 INT8（--attention-config.indexer_kv_dtype int8），算子 profiling 延迟降 6.01–18.94%、AIME 90% 持平",
       "url": "https://github.com/vllm-project/vllm-ascend/pull/22191",
@@ -1076,7 +1104,7 @@
       ]
     },
     {
-      "id": "20261120-057",
+      "id": "20261120-059",
       "source": "昇腾",
       "title": "vLLM-Ascend 官方 950DT 实测：MiniMax-M3 indexer 采用 CANN MsaIndexScore 融合 TopK（return_choice=1），省掉独立 TopK+排序、GPQA 87.88% 在噪声内",
       "url": "https://github.com/vllm-project/vllm-ascend/pull/22235",
@@ -1097,7 +1125,7 @@
       ]
     },
     {
-      "id": "20261120-058",
+      "id": "20261120-060",
       "source": "昇腾",
       "title": "vLLM-Ascend 官方 A5：按实际 KV 可见性准备 MLA plan，共享 replay 元数据、只备 decoder cut 之后用到的 ratio（634 CPU 全过、A5 171 过，无加速数字）",
       "url": "https://github.com/vllm-project/vllm-ascend/pull/20508",
@@ -1118,7 +1146,7 @@
       ]
     },
     {
-      "id": "20261120-059",
+      "id": "20261120-061",
       "source": "其他",
       "title": "vLLM 官方 ROCm 实测（MI355X，无第三方复现）：GLM-5.3-Flash kpool indexer 去掉 int32/int64 拷贝与填充，每步少 66 次 kernel、TPOT −1.7~4.4%",
       "url": "https://github.com/vllm-project/vllm/pull/63910",
@@ -1139,7 +1167,7 @@
       ]
     },
     {
-      "id": "20261120-060",
+      "id": "20261120-062",
       "source": "其他",
       "title": "arXiv 2611.24891（Meta 生产 A/B，无外部复现）：Cap-and-Track 用拒绝信号做 LLM 推理准入，同流量下少用 43% H100",
       "url": "https://arxiv.org/abs/2611.24891",
@@ -1160,7 +1188,7 @@
       ]
     },
     {
-      "id": "20261120-061",
+      "id": "20261120-063",
       "source": "其他",
       "title": "SGLang 官方 H200 实测：Qwen-Image 的 DiT 在显存不足时按层流式加载，24/32 GiB 空闲下从 0/4 OOM 变 4/4 可用",
       "url": "https://github.com/sgl-project/sglang/pull/50440",
@@ -1178,26 +1206,6 @@
         "推理",
         "其他领域",
         "可复用"
-      ]
-    },
-    {
-      "id": "20261120-062",
-      "source": "其他",
-      "title": "HF 博客（Dharma-AI，272 个生产 SFT run 实测，论文预览）：用 CatBoost 从提交配置预测端到端微调时长，R² 0.31→0.98、MAE 12.41→1.71 h",
-      "url": "https://huggingface.co/blog/Dharma-AI/predicting-fine-tuning-time",
-      "time": "2026-11-19",
-      "points": [
-        "是什么：把端到端微调（SFT）时长当作监督回归问题，只用派发前已知信息（超参、数据量、模型 ID、GPU 分配）构造特征，另把固定 MFU=0.45 的 FLOP 估算作为 baseline_time 特征；对比 Linear/Ridge/XGBoost/CatBoost，最终 CatBoost 用 24 个特征。发布于 2026-11-18T18:53:43Z（窗口内），为即将发表的论文预览。",
-        "为什么有效：272 个 H200 生产 SFT run（7382 GPU-h、1.6–172.4 h）的 5 折交叉验证里，纯 FLOP 估算 R²=0.31/MAE 12.41 h、Calculon R²=−0.51，而 CatBoost R²=0.98±0.01、MAE 1.71±0.33 h、中位误差 0.51 h；特征重要性首位是 num_eval_data（评估总量），其次 num_trainable_params、batch_eval_size_percent、num_params_saved——说明评估/检查点 I/O 才是时长主导项。",
-        "代价与限制：数据来自单一公司 H200 集群的 Transformers/Unsloth 栈，换成昇腾集群或其他栈需重新采样本训练预测器；是时长预测（调度辅助）而非直接加速，feature importance 非因果；论文尚未正式发表、无开源模型权重。升级为值得的条件：我们在自己集群积累足量 SFT run 日志并复现 5 折 R² 明显优于 FLOP 基线，且能接入派发调度。"
-      ],
-      "verdict": "观察",
-      "credibility": "论文预览 + HF 博客实测（272 个生产 SFT run，5 折交叉验证）",
-      "tags": [
-        "业界调优",
-        "训练",
-        "其他领域",
-        "论文"
       ]
     },
     {
