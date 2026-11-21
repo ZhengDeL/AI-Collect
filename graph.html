@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KV Cache 知识关联图谱 · AI 情报站</title>
+<meta name="description" content="从 KV Cache 出发的知识关联图谱：机制、系统、硬件与缓存层级，可点节点看定义与关系。">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/graph.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕸️</text></svg>">
+<style>
+.header-actions { display: flex; align-items: center; gap: 12px; }
+.header-link { color: var(--ink-2); text-decoration: none; font-size: 13.5px; font-weight: 600; white-space: nowrap; transition: .16s; }
+.header-link:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <div class="brand">
+      <span class="logo">🕸️</span>
+      <div>
+        <h1>知识关联图谱</h1>
+        <p class="tagline">从一个主题，看清它牵扯的机制 · 系统 · 硬件 · 层级</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <a class="header-link" href="index.html">← 回到情报站</a>
+      <button id="theme-toggle" class="icon-btn" aria-label="切换主题" title="切换主题">◐</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="graph-intro">
+    <h2 id="gtitle">知识关联图谱</h2>
+    <p class="g-sub" id="gsub">加载中…</p>
+    <div class="g-stats">
+      <span class="g-stat">节点 <b id="gstat-node">—</b></span>
+      <span class="g-stat">关系 <b id="gstat-edge">—</b></span>
+      <span class="g-stat">中心 <b>kv-cache</b></span>
+    </div>
+  </section>
+
+  <section class="graph-toolbar">
+    <div id="gfilters" class="filters" role="tablist" aria-label="按节点类型筛选"></div>
+    <div class="search-box">
+      <input id="gsearch" type="search" placeholder="搜索节点名称…" aria-label="搜索图谱节点">
+    </div>
+  </section>
+
+  <div class="graph-layout" id="glayout">
+    <section class="graph-stage" aria-label="知识关联图">
+      <div class="g-loading" id="gloading">图谱加载中…</div>
+      <svg id="gsvg" viewBox="0 0 1200 1100" role="img" aria-label="KV Cache 知识关联图，可拖拽平移、滚轮缩放、点击节点">
+        <g id="vp">
+          <g id="gedges"></g>
+          <g id="gnodes"></g>
+        </g>
+      </svg>
+      <div class="graph-zoom">
+        <button id="zin" aria-label="放大" title="放大">+</button>
+        <button id="zout" aria-label="缩小" title="缩小">−</button>
+        <button id="zreset" aria-label="重置视图" title="重置视图">重置</button>
+      </div>
+      <div class="g-empty" id="gempty" hidden><b>没有找到匹配的节点</b></div>
+    </section>
+
+    <aside class="graph-panel" id="gpanel" aria-label="节点详情" hidden></aside>
+  </div>
+
+  <details class="graph-legend" id="glegend">
+    <summary>图例：节点颜色 = 类型，边的颜色 / 线型 = 关系类型（点开看中文说明）</summary>
+    <div class="leg-body" id="glegendbody"></div>
+  </details>
+</main>
+
+<script src="assets/graph.js"></script>
+</body>
+</html>

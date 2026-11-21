@@ -1,0 +1,213 @@
+{
+  "version": 1,
+  "generated_at": "2026-11-21T16:10:00+08:00",
+  "title": "KV Cache 知识关联图谱",
+  "subtitle": "从 KV Cache 出发，看它牵扯到的机制、系统、硬件与缓存层级。点节点看定义与关系。",
+  "center": "kv-cache",
+  "node_types": {
+    "topic": "主题",
+    "tech": "技术 / 机制",
+    "layer": "缓存层级",
+    "system": "系统 / 框架",
+    "hardware": "硬件 / 传输"
+  },
+  "edge_types": {
+    "runs_on": "实现在 / 承载于",
+    "needs": "依赖",
+    "relieves": "缓解",
+    "compresses": "压缩",
+    "tradeoff": "权衡 / 相互影响",
+    "related": "相关"
+  },
+  "nodes": [
+    {
+      "id": "kv-cache",
+      "label": "KV Cache",
+      "type": "topic",
+      "desc": "自回归推理时缓存每层注意力的 Key/Value，避免重复计算；它的大小随上下文长度线性增长，因此成为显存与吞吐的主要瓶颈。"
+    },
+    {
+      "id": "paged-attention",
+      "label": "分页注意力 PagedAttention",
+      "type": "tech",
+      "desc": "把 KV Cache 切成固定大小的 block 再按需映射，像操作系统分页一样消除显存碎片、支持前缀共享。"
+    },
+    {
+      "id": "prefix-cache",
+      "label": "前缀缓存 Prefix Cache",
+      "type": "tech",
+      "desc": "相同前缀（system prompt、多轮对话历史、RAG 文档）只算一次 KV，后续请求直接复用，是当前收益最确定的一类缓存优化。"
+    },
+    {
+      "id": "pd-disagg",
+      "label": "PD 分离",
+      "type": "tech",
+      "desc": "把 prefill 与 decode 拆到不同实例/卡上，各自按计算或带宽特性优化；代价是必须把 KV 从 prefill 端传到 decode 端。"
+    },
+    {
+      "id": "kv-offload",
+      "label": "KV 卸载 / 分层缓存",
+      "type": "tech",
+      "desc": "把暂时用不到的 KV 从 HBM 逐级下沉到主机内存、本地盘、远端存储或集群共享池，需要时再拉回；本图画的就是这条线。"
+    },
+    {
+      "id": "kv-quant",
+      "label": "KV 量化",
+      "type": "tech",
+      "desc": "把 KV 从 FP16/BF16 压到 FP8/INT8 等低精度，直接减半甚至更少的显存占用；代价是精度与 kernel 支持。"
+    },
+    {
+      "id": "kv-sparse",
+      "label": "稀疏 / 分层保留 KV",
+      "type": "tech",
+      "desc": "只保留注意力真正关心的历史 token（滑窗、注意力汇聚、稀疏索引），其余丢弃或按重要性分层管理。"
+    },
+    {
+      "id": "chunked-prefill",
+      "label": "分块预填充",
+      "type": "tech",
+      "desc": "把长 prompt 的 prefill 切成多块与 decode 交错执行，降低首 token 延迟并让长请求不至于饿死其他请求。"
+    },
+    {
+      "id": "spec-decode",
+      "label": "投机解码 Speculative Decoding",
+      "type": "tech",
+      "desc": "用便宜的小模型或检索猜若干 token，大模型一次性并行验证；接受率越高加速越多，但候选 token 也会额外占用 KV。"
+    },
+    {
+      "id": "attention-sink",
+      "label": "注意力汇聚 Attention Sink",
+      "type": "tech",
+      "desc": "序列开头的少数 token 会吸收大量注意力，保留它们可以让滑动窗口在长上下文里不崩，等价于减少必须常驻的 KV。"
+    },
+    {
+      "id": "L1-hbm",
+      "label": "L1 HBM",
+      "type": "layer",
+      "desc": "加速卡自带的显存，带宽最高、容量最小；KV 默认就住在这里。"
+    },
+    {
+      "id": "L2-dram",
+      "label": "L2 主机 DRAM",
+      "type": "layer",
+      "desc": "服务器内存，容量远大于显存，通过 PCIe/NVLink C2C 与卡互通；最常见的卸载落点。"
+    },
+    {
+      "id": "L3-nvme",
+      "label": "L3 本地 NVMe",
+      "type": "layer",
+      "desc": "本地 SSD，容量大、延迟比内存高一到两个数量级，适合放冷前缀。"
+    },
+    {
+      "id": "L4-remote",
+      "label": "L4 远端内存 / 存储",
+      "type": "layer",
+      "desc": "跨节点访问的内存或对象存储，带宽受网络限制，适合放可复用的长前缀。"
+    },
+    {
+      "id": "L5-cluster",
+      "label": "L5 集群共享池",
+      "type": "layer",
+      "desc": "整个集群共享的 KV/前缀池，任何一个实例都能命中别人算过的结果，命中率换带宽。"
+    },
+    {
+      "id": "vllm",
+      "label": "vLLM",
+      "type": "system",
+      "desc": "最主流的开源推理引擎，PagedAttention、前缀缓存、KV 卸载都在这里有实现或插件。"
+    },
+    {
+      "id": "sglang",
+      "label": "SGLang",
+      "type": "system",
+      "desc": "高性能推理框架，前缀缓存与 HiCache 三级缓存（HBM/内存/盘）是它的招牌能力之一。"
+    },
+    {
+      "id": "lmcache",
+      "label": "LMCache",
+      "type": "system",
+      "desc": "面向 vLLM 的 KV 缓存层，把 KV 在 HBM、DRAM、本地盘、远端之间搬运与复用。"
+    },
+    {
+      "id": "mooncake",
+      "label": "Mooncake",
+      "type": "system",
+      "desc": "Kimi 团队开源的 KV 缓存池与传输引擎（Store / Transfer Engine），支撑 PD 分离与集群级共享。"
+    },
+    {
+      "id": "vllm-ascend",
+      "label": "vllm-ascend",
+      "type": "system",
+      "desc": "vLLM 的昇腾后端，把分页注意力、前缀缓存、HiSparse 等能力落到 910B/910_93/950 上。"
+    },
+    {
+      "id": "mindie",
+      "label": "MindIE",
+      "type": "system",
+      "desc": "华为官方推理套件，昇腾上的一站式服务化方案，含调度、批处理与 KV 管理。"
+    },
+    {
+      "id": "ub-urma",
+      "label": "UBoE / URMA",
+      "type": "hardware",
+      "desc": "昇腾的超节点总线与远端内存访问能力，KV 在节点间搬运时优先走它而不是通用 RDMA。"
+    },
+    {
+      "id": "rdma",
+      "label": "RDMA（IB / RoCE）",
+      "type": "hardware",
+      "desc": "通用高性能网络，跨机 KV 传输与集群共享池的底座。"
+    },
+    {
+      "id": "hbm-bw",
+      "label": "HBM 带宽",
+      "type": "hardware",
+      "desc": "决定 decode 阶段每步读 KV 的速度上限，是 KV 压缩、量化、稀疏化的根本动机。"
+    }
+  ],
+  "edges": [
+    { "from": "kv-cache", "to": "L1-hbm", "type": "runs_on", "note": "KV 默认常驻显存" },
+    { "from": "hbm-bw", "to": "L1-hbm", "type": "related", "note": "带宽决定 decode 每步读 KV 的耗时" },
+    { "from": "hbm-bw", "to": "kv-cache", "type": "related", "note": "KV 越大，每步读得越慢" },
+
+    { "from": "paged-attention", "to": "kv-cache", "type": "related", "note": "按 block 管理 KV，消除碎片" },
+    { "from": "prefix-cache", "to": "paged-attention", "type": "needs", "note": "靠 block 哈希/共享实现前缀复用" },
+    { "from": "prefix-cache", "to": "kv-cache", "type": "related", "note": "复用别人算过的 KV" },
+
+    { "from": "kv-offload", "to": "kv-cache", "type": "relieves", "note": "把冷 KV 挪走，缓解显存容量压力" },
+    { "from": "kv-offload", "to": "L2-dram", "type": "runs_on", "note": "一级下沉目标" },
+    { "from": "kv-offload", "to": "L3-nvme", "type": "runs_on", "note": "更冷的前缀落盘" },
+    { "from": "kv-offload", "to": "L4-remote", "type": "runs_on", "note": "跨节点共享" },
+    { "from": "kv-offload", "to": "L5-cluster", "type": "runs_on", "note": "集群级池化" },
+
+    { "from": "L4-remote", "to": "rdma", "type": "needs", "note": "远端访问要靠网络" },
+    { "from": "L5-cluster", "to": "rdma", "type": "needs", "note": "共享池跨机" },
+    { "from": "mooncake", "to": "L5-cluster", "type": "runs_on", "note": "Store 做池、TE 做搬运" },
+    { "from": "mooncake", "to": "rdma", "type": "needs", "note": "Transfer Engine 走 RDMA" },
+    { "from": "ub-urma", "to": "rdma", "type": "related", "note": "昇腾侧走 UB，不是通用 RDMA" },
+    { "from": "mooncake", "to": "ub-urma", "type": "needs", "note": "昇腾适配走 UBoE/URMA" },
+
+    { "from": "pd-disagg", "to": "mooncake", "type": "needs", "note": "prefill→decode 的 KV 传输" },
+    { "from": "pd-disagg", "to": "rdma", "type": "needs", "note": "跨实例传 KV" },
+    { "from": "chunked-prefill", "to": "pd-disagg", "type": "related", "note": "同为拆 prefill 与 decode 的思路" },
+
+    { "from": "kv-quant", "to": "kv-cache", "type": "compresses", "note": "降精度换容量" },
+    { "from": "kv-sparse", "to": "kv-cache", "type": "compresses", "note": "只留重要的历史 token" },
+    { "from": "attention-sink", "to": "kv-cache", "type": "relieves", "note": "保住开头 token 就能砍掉大部分历史 KV" },
+
+    { "from": "spec-decode", "to": "kv-cache", "type": "tradeoff", "note": "候选 token 会额外占 KV，投机越激进占用越大" },
+    { "from": "spec-decode", "to": "chunked-prefill", "type": "tradeoff", "note": "小 batch 下投机收益更明显" },
+
+    { "from": "vllm", "to": "paged-attention", "type": "runs_on", "note": "vLLM 的起点能力" },
+    { "from": "vllm", "to": "prefix-cache", "type": "runs_on", "note": "APC 自动前缀缓存" },
+    { "from": "vllm", "to": "lmcache", "type": "runs_on", "note": "LMCache 作为 KV 层接入" },
+    { "from": "sglang", "to": "prefix-cache", "type": "runs_on", "note": "RadixAttention 前缀树" },
+    { "from": "sglang", "to": "L3-nvme", "type": "runs_on", "note": "HiCache 可落到本地盘" },
+    { "from": "lmcache", "to": "L2-dram", "type": "runs_on", "note": "CPU 内存层" },
+    { "from": "lmcache", "to": "L3-nvme", "type": "runs_on", "note": "盘层" },
+    { "from": "vllm-ascend", "to": "prefix-cache", "type": "runs_on", "note": "昇腾侧的前缀复用" },
+    { "from": "vllm-ascend", "to": "kv-sparse", "type": "runs_on", "note": "HiSparse 分层保留" },
+    { "from": "vllm-ascend", "to": "ub-urma", "type": "needs", "note": "节点间 KV 搬运走 UB" },
+    { "from": "mindie", "to": "prefix-cache", "type": "runs_on", "note": "官方套件的缓存能力" }
+  ]
+}
