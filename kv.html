@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -16,21 +16,28 @@
 </head>
 <body>
 <header class="site-header">
-  <div class="wrap header-inner">
-    <div class="brand">
-      <span class="logo">🧠</span>
-      <div>
-        <h1>KV 卸载全景图</h1>
-        <p class="tagline">分层缓存 · 两条线 · 带证据分级的方案地图</p>
+  <div class="wrap">
+    <div class="header-inner">
+      <a class="brand" href="index.html" aria-label="回到首页">
+        <span class="logo">🧠</span>
+        <div>
+          <h1>KV 卸载全景图</h1>
+          <p class="tagline">分层缓存 · 两条线 · 带证据分级的方案地图</p>
+        </div>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="icon-btn" aria-label="切换主题" title="切换主题">◐</button>
       </div>
     </div>
-    <div class="header-actions">
-      <a class="header-link" href="index.html">← 回到情报站</a>
-      <button id="theme-toggle" class="icon-btn" aria-label="切换主题" title="切换主题">◐</button>
-    </div>
+    <nav class="main-nav" aria-label="主导航">
+      <a class="nav-link" href="index.html#overview">今日</a>
+      <a class="nav-link" href="index.html#list">情报</a>
+      <a class="nav-link is-active" href="kv.html">KV 卸载</a>
+      <a class="nav-link" href="graph.html">知识图谱</a>
+      <a class="nav-link" href="spec.html">投机解码</a>
+    </nav>
   </div>
 </header>
-
 <main class="wrap">
   <section id="kv-overview" class="kv-overview" aria-label="全景统计"></section>
 
@@ -56,5 +63,6 @@
 </footer>
 
 <script src="assets/kv.js"></script>
+<script src="assets/ui.js"></script>
 </body>
 </html>

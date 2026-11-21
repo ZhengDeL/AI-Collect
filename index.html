@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -13,13 +13,13 @@
 <header class="site-header">
   <div class="wrap">
     <div class="header-inner">
-      <div class="brand">
+      <a class="brand" href="index.html" aria-label="回到首页">
         <span class="logo">📡</span>
         <div>
           <h1>AI 情报站</h1>
           <p class="tagline">每天一份，看得懂、用得上</p>
         </div>
-      </div>
+      </a>
       <div class="header-actions">
         <button id="theme-toggle" class="icon-btn" aria-label="切换主题" title="切换主题">◐</button>
       </div>
@@ -27,8 +27,9 @@
     <nav class="main-nav" aria-label="主导航">
       <a class="nav-link" href="#overview" data-anchor="overview">今日</a>
       <a class="nav-link" href="#list" data-anchor="list">情报</a>
-      <a class="nav-link" href="kv.html">KV 卸载</a>
+      <a class="nav-link" href="#kv-block" data-anchor="kv-block">KV 卸载</a>
       <a class="nav-link" href="graph.html">知识图谱</a>
+      <a class="nav-link" href="spec.html">投机解码</a>
     </nav>
   </div>
 </header>
@@ -86,6 +87,32 @@
       <p>没有匹配的方案。</p>
     </section>
   </section>
+  <section class="topics" id="topics" aria-label="常驻专题">
+    <div class="topics-head">
+      <h2>常驻专题</h2>
+      <p>日报之外，三张可以反复查的地图</p>
+    </div>
+    <div class="topic-grid">
+      <a class="topic-card" href="kv.html">
+        <span class="topic-logo">🧠</span>
+        <span class="topic-name">KV 卸载全景</span>
+        <span class="topic-desc">分层缓存两条线，方案带证据分级与坑</span>
+        <span class="topic-meta"><b data-count-for="kv">—</b> 条方案</span>
+      </a>
+      <a class="topic-card" href="graph.html">
+        <span class="topic-logo">🕸️</span>
+        <span class="topic-name">知识关联图谱</span>
+        <span class="topic-desc">从一个技术，看清它牵扯的机制与系统</span>
+        <span class="topic-meta"><b data-count-for="graph">—</b> 个节点</span>
+      </a>
+      <a class="topic-card" href="spec.html">
+        <span class="topic-logo">⚡</span>
+        <span class="topic-name">投机解码全景</span>
+        <span class="topic-desc">draft / EAGLE / Medusa，可照抄的参数与实测</span>
+        <span class="topic-meta"><b data-count-for="spec">—</b> 条方案</span>
+      </a>
+    </div>
+  </section>
 </main>
 
 <footer class="site-footer">
@@ -97,5 +124,6 @@
 
 <script src="assets/app.js"></script>
 <script src="assets/kv.js"></script>
+<script src="assets/ui.js"></script>
 </body>
 </html>

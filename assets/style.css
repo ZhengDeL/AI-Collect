@@ -1,4 +1,4 @@
-/* AI 情报站 —— 纯静态样式，无 CDN、无构建；暗/亮双主题 */
+﻿/* AI 情报站 —— 纯静态样式，无 CDN、无构建；暗/亮双主题 */
 :root {
   /* 8px 栅格 */
   --sp: 8px;
@@ -107,6 +107,35 @@ body {
   transition: .16s;
 }
 .nav-link:hover { color: var(--accent); background: var(--accent-soft); }
+.nav-link.is-active { color: var(--accent); background: var(--accent-soft); }
+.brand { text-decoration: none; color: inherit; }
+
+/* ---------- 回到顶部（所有页面共用，由 assets/ui.js 注入） ---------- */
+.to-top {
+  position: fixed;
+  right: 18px;
+  bottom: 22px;
+  z-index: 40;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--ink-2);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity .18s, transform .18s, color .16s, border-color .16s;
+}
+.to-top.is-visible { opacity: 1; transform: none; pointer-events: auto; }
+.to-top:hover { color: var(--accent); border-color: var(--accent); }
 
 /* ---------- 首屏今日要点（从 title 自动生成，最多 3 条）---------- */
 .briefing {
@@ -583,7 +612,7 @@ body.focusing #topbox { display: none !important; }
 @media (max-width: 640px) {
   .wrap { padding: 0 16px; }
   .header-inner { padding-top: calc(var(--sp) * 1.5); padding-bottom: calc(var(--sp) * 1.5); }
-  .nav-link { padding: 9px 12px; font-size: 13px; }
+  .nav-link { padding: 9px 9px; font-size: 12.5px; letter-spacing: -.1px; }
   #toolbar { align-items: stretch; }
   .search-box { width: 100%; }
   .search-box input { width: 100%; max-width: none; }
@@ -626,4 +655,34 @@ body.focusing #topbox { display: none !important; }
   .top-title { flex-basis: 100%; order: 3; }
   .innov-band { padding: calc(var(--sp) * .75); }
   .innov-peek { flex-basis: 100%; }
+}
+
+/* ---------- 常驻专题（KV / 图谱 / 投机解码）---------- */
+.topics { margin-top: calc(var(--sp) * 4); }
+.topics-head h2 { margin: 0; font-size: 17px; }
+.topics-head p { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-3); }
+.topic-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(var(--sp) * 1.5);
+  margin-top: calc(var(--sp) * 1.5);
+}
+.topic-card {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: calc(var(--sp) * 2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  text-decoration: none; color: inherit;
+  transition: border-color .16s, transform .16s;
+}
+.topic-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.topic-logo { font-size: 20px; line-height: 1; }
+.topic-name { font-size: 14.5px; font-weight: 700; }
+.topic-desc { font-size: 12.5px; line-height: 1.6; color: var(--ink-3); }
+.topic-meta { margin-top: auto; font-size: 12px; color: var(--ink-3); }
+.topic-meta b { color: var(--accent); font-size: 13px; }
+@media (max-width: 720px) {
+  .topic-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .topic-card { padding: calc(var(--sp) * 1.6); }
 }

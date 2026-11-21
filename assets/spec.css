@@ -1,0 +1,113 @@
+﻿/* 投机解码专题页样式：与 style.css 的卡片/工具条体系保持一致，只补本页专有部分 */
+.spec-overview {
+  margin-top: calc(var(--sp) * 2);
+  padding: calc(var(--sp) * 2) calc(var(--sp) * 2.5);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+}
+.spec-overview .sp-eyebrow {
+  margin: 0 0 6px;
+  font-size: 12px;
+  letter-spacing: .12em;
+  color: var(--ink-3);
+}
+.spec-overview h2 { margin: 0 0 6px; font-size: 18px; }
+.spec-overview .sp-sub { margin: 0; font-size: 13px; color: var(--ink-3); line-height: 1.6; }
+.sp-totals { display: flex; align-items: baseline; gap: 18px; margin-top: 12px; flex-wrap: wrap; }
+.sp-total { display: flex; align-items: baseline; gap: 6px; }
+.sp-total b { font-size: 24px; font-weight: 700; }
+.sp-total span { font-size: 12.5px; color: var(--ink-3); }
+.sp-dist { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+.sp-dist .sp-dist-label { font-size: 12px; color: var(--ink-3); }
+.ev-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 12px; border: 1px solid var(--line); color: var(--ink-2);
+}
+.ev-chip b { font-weight: 700; }
+.ev-chip.ev-A b { color: #37b26c; }
+.ev-chip.ev-B b { color: #3f9bd8; }
+.ev-chip.ev-C b { color: #d8a03f; }
+.ev-chip.ev-D b { color: var(--ink-3); }
+
+/* 图例 */
+.sp-legend { margin-top: calc(var(--sp) * 2); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--card); }
+.sp-legend > summary {
+  list-style: none; cursor: pointer;
+  padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--ink-2);
+}
+.sp-legend > summary::-webkit-details-marker { display: none; }
+.sp-legend > summary::before { content: '▸ '; color: var(--ink-3); }
+.sp-legend[open] > summary::before { content: '▾ '; }
+.leg-body { padding: 4px 14px 14px; }
+.leg-sec h3 { margin: 10px 0 6px; font-size: 12.5px; letter-spacing: .06em; color: var(--ink-3); font-weight: 600; }
+.leg-row { display: grid; grid-template-columns: 148px 1fr; gap: 10px; padding: 3px 0; font-size: 13px; line-height: 1.55; }
+.leg-code {
+  display: inline-block; padding: 1px 8px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent);
+  font-size: 12px; font-weight: 600; justify-self: start;
+}
+.leg-note { color: var(--ink-2); }
+
+/* 列表与卡片 */
+.spec-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: calc(var(--sp) * 1.5); margin-top: calc(var(--sp) * 2); }
+@media (min-width: 860px) { .spec-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.spec-card { padding: calc(var(--sp) * 2); display: flex; flex-direction: column; gap: 8px; }
+.sc-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sc-top .sc-engine { font-size: 12px; color: var(--ink-3); }
+.sc-top .sc-status { margin-left: auto; font-size: 11.5px; color: var(--ink-3); }
+.ebadge {
+  display: inline-grid; place-items: center;
+  width: 20px; height: 20px; border-radius: 6px;
+  font-size: 12px; font-weight: 700; color: #fff; background: var(--ink-3);
+}
+.ebadge.ev-A { background: #37b26c; }
+.ebadge.ev-B { background: #3f9bd8; }
+.ebadge.ev-C { background: #d8a03f; }
+.ebadge.ev-D { background: #8c93a1; }
+.badge-line, .badge-fam {
+  font-size: 11.5px; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--ink-2);
+}
+.badge-line.line-nvidia { color: #76b900; border-color: color-mix(in srgb, #76b900 45%, var(--line)); }
+.badge-line.line-ascend { color: #e2453a; border-color: color-mix(in srgb, #e2453a 45%, var(--line)); }
+.badge-fam { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.sc-name { margin: 2px 0 0; font-size: 16px; line-height: 1.4; }
+.sc-mech { margin: 0; font-size: 13.5px; line-height: 1.7; color: var(--ink-2); }
+.sc-k { font-size: 11.5px; letter-spacing: .06em; color: var(--ink-3); margin-right: 6px; }
+.sc-config { font-size: 13px; line-height: 1.65; color: var(--ink-2); }
+.sc-config code {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  background: color-mix(in srgb, var(--ink-3) 12%, transparent);
+  font-size: 12.5px; word-break: break-all;
+}
+.sc-gain {
+  padding: 8px 10px; border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  font-size: 13px; line-height: 1.65; color: var(--ink);
+}
+.sc-gain .gain-label { font-size: 11.5px; letter-spacing: .06em; color: var(--accent); margin-right: 6px; }
+.sc-cost { font-size: 12.5px; line-height: 1.65; color: var(--ink-3); }
+.pit { border-top: 1px dashed var(--line); padding-top: 6px; font-size: 12.5px; }
+.pit > summary { cursor: pointer; color: var(--ink-2); }
+.pit-body { padding: 6px 0 2px; display: grid; gap: 4px; }
+.pit-row { display: grid; grid-template-columns: 34px 1fr; gap: 8px; line-height: 1.6; }
+.pit-k { color: var(--ink-3); }
+.sc-link { margin-top: 2px; font-size: 12.5px; color: var(--accent); text-decoration: none; }
+.sc-link:hover { text-decoration: underline; }
+.sc-nolink { font-size: 12.5px; color: var(--ink-3); }
+
+.empty { padding: 40px 0; text-align: center; color: var(--ink-3); font-size: 14px; }
+
+@media (max-width: 640px) {
+  .spec-list { gap: 12px; }
+  .spec-card { padding: calc(var(--sp) * 1.6); }
+  .leg-row { grid-template-columns: 1fr; gap: 2px; }
+  .sc-name { font-size: 15.5px; }
+}
+/* 窄屏下证据 chip 的「A 官方/源码 25」会被压断成两行，统一禁止换行 */
+#spec-filters .chip { white-space: nowrap; }
+#spec-filters .chip b { white-space: nowrap; }

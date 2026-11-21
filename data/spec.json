@@ -1,0 +1,491 @@
+{
+  "date": "2026-11-21",
+  "items": [
+    {
+      "line": "nvidia",
+      "family": "ngram",
+      "name": "vLLM · N-Gram 检索式草稿",
+      "mechanism": "不加载草稿模型，直接在 prompt 与已生成 token 里做 n-gram 匹配，命中就整段当草稿提交验证。",
+      "engine": "vLLM 0.16+",
+      "versions": "文档基于 main 分支，0.16 起统一用 --speculative-config",
+      "config": "vllm serve <target> --speculative-config '{\"method\":\"ngram\",\"num_speculative_tokens\":4,\"prompt_lookup_min\":2,\"prompt_lookup_max\":5}'",
+      "gain": "官方只给定性：低并发「低到中等」、高并发「中等」收益；不用额外模型，代码补全/日志/重复结构文本上最明显。具体倍数未查到，需自己 bench。",
+      "cost": "零草稿模型显存；收益强依赖 prompt 内重复度，开放闲聊几乎无效。",
+      "pitfalls": {
+        "hit": "仍用旧参数 --speculative-model / --num-speculative-tokens 启动，新版本不生效或直接报错。",
+        "fix": "--speculative-config 已取代旧参数，全部配置一次性放进这个 JSON；只看 prompt_lookup_min/max 控制匹配窗。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/en/latest/features/speculative_decoding/n_gram/",
+      "status": "可上生产"
+    },
+    {
+      "line": "nvidia",
+      "family": "draft",
+      "name": "vLLM · 外部小模型草稿（draft_model）",
+      "mechanism": "用同家族小模型（如 0.6B）先自回归出 K 个 token，大模型一次前向批量验证，接受则一次前进多 token。",
+      "engine": "vLLM 0.16+",
+      "versions": "vLLM<=0.10.0 不支持 draft model 投机，需升级",
+      "config": "vllm serve Qwen/Qwen3-4B-Thinking-2507 -tp 1 --max-model-len 2048 --speculative-config '{\"model\":\"Qwen/Qwen3-0.6B\",\"num_speculative_tokens\":5,\"method\":\"draft_model\"}'",
+      "gain": "官方定性：低并发高收益、高并发中等收益。具体倍数未查到；草稿越小、与目标越同分布，接受率越高。",
+      "cost": "多一份草稿权重显存（0.6B 约 1.2GB bf16）；并发高时每次验证要算 K 倍 token，可能反而拖慢 TPOT。",
+      "pitfalls": {
+        "hit": "草稿与目标词表不一致导致启动即报 tokenizer/vocab 不匹配。",
+        "fix": "选同家族同 tokenizer 的小模型（Qwen3-8B 配 Qwen3-0.6B）；并发高时把 num_speculative_tokens 调小或改用动态 K。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/en/latest/features/speculative_decoding/draft_model/",
+      "status": "可上生产"
+    },
+    {
+      "line": "nvidia",
+      "family": "eagle",
+      "name": "vLLM · EAGLE / EAGLE-2 草稿头",
+      "mechanism": "草稿模型吃目标模型的特征（hidden state）而不是原始文本，自回归几步后一次提交，验证时批量并行。",
+      "engine": "vLLM 0.16+",
+      "versions": "EAGLE 标准检查点直接加载；vllm<0.7.0 需先转换格式",
+      "config": "vllm serve meta-llama/Meta-Llama-3-8B-Instruct -tp 4 --speculative-config '{\"model\":\"yuhuili/EAGLE-LLaMA3-Instruct-8B\",\"draft_tensor_parallel_size\":1,\"num_speculative_tokens\":2,\"method\":\"eagle\"}'",
+      "gain": "论文（EAGLE）报 2.7–3.5×；vLLM 文档只给定性「低并发高收益」。NPU/GPU 上真实倍数必须自己测。",
+      "cost": "草稿头通常只占几百 MB，但 draft_tensor_parallel_size 受限（多为 1），草稿算力压在单卡。",
+      "pitfalls": {
+        "hit": "把 draft_tensor_parallel_size 设成 >1 或与目标 TP 不匹配，启动报并行度非法。",
+        "fix": "EAGLE 草稿固定 draft_tensor_parallel_size=1；EAGLE-3 才允许等于目标 TP。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/en/latest/features/speculative_decoding/eagle/",
+      "status": "可上生产"
+    },
+    {
+      "line": "nvidia",
+      "family": "eagle",
+      "name": "vLLM · EAGLE-3 草稿头",
+      "mechanism": "EAGLE-3 用多层特征融合训练草稿头，草稿 token 与目标分布更贴，长草稿也不掉接受率。",
+      "engine": "vLLM 0.16+",
+      "versions": "需 method=eagle3 且用 eagle3 检查点（普通 EAGLE 头不能混用）",
+      "config": "vllm serve meta-llama/Meta-Llama-3-8B-Instruct -tp 2 --speculative-config '{\"model\":\"RedHatAI/Llama-3.1-8B-Instruct-speculator.eagle3\",\"draft_tensor_parallel_size\":2,\"num_speculative_tokens\":2,\"method\":\"eagle3\"}'",
+      "gain": "论文（EAGLE-3）自报最高 6.5×；官方文档定性「低并发高收益、高并发中高收益」。以你的并发与接受率实测为准。",
+      "cost": "草稿可与目标同卡组共享 TP，显存增量约草稿权重；长 K 时验证算力成倍上升。",
+      "pitfalls": {
+        "hit": "拿 EAGLE-2 的检查点配 method=eagle3（或反过来），启动直接报 architecture 不匹配。",
+        "fix": "检查点文件名带 speculator.eagle3 才用 eagle3；纯 EAGLE 检查点用 method=eagle。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/en/latest/features/speculative_decoding/eagle/",
+      "status": "可上生产"
+    },
+    {
+      "line": "nvidia",
+      "family": "other",
+      "name": "vLLM · 原生 MTP 多头",
+      "mechanism": "目标模型自带多 token 预测头（DeepSeek、MiMo、Gemma4 assistant 等），不用外挂草稿模型，直接用自带头出草稿。",
+      "engine": "vLLM 0.16+",
+      "versions": "仅支持原生带 MTP 的模型族；Gemma4 assistant 需较新版本才走 mtp 路径",
+      "config": "vllm serve XiaomiMiMo/MiMo-7B-Base -tp 1 --speculative-config '{\"method\":\"mtp\",\"num_speculative_tokens\":1}'",
+      "gain": "省掉草稿模型显存与加载时间；官方建议 K 从 1 起。具体倍数未查到（强依赖模型自带头的训练质量）。",
+      "cost": "MTP 头与目标共享 KV/权重，显存增量小；bandwidth-bound 场景可加 \"draft_lm_head_quantization\":\"fp8\" 给草稿一份量化 lm_head。",
+      "pitfalls": {
+        "hit": "vLLM 把 Gemma4 assistant 当普通 draft_model 处理（日志出现 SpeculativeConfig(method='draft_model')），多模态目标初始化失败。",
+        "fix": "升级到支持 Gemma4 MTP 的版本；或显式写 \"method\":\"mtp\"。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/en/latest/features/speculative_decoding/mtp/",
+      "status": "可上生产"
+    },
+    {
+      "line": "nvidia",
+      "family": "ngram",
+      "name": "vLLM · Suffix decoding（后缀匹配 + 跨请求语料）",
+      "mechanism": "在「历史完成请求的语料 + 当前请求」里找最长后缀匹配，命中即草稿；比 n-gram 多一层跨请求复用。",
+      "engine": "vLLM 0.16+",
+      "versions": "支持 GPU 语料池，可设 0 退化为只在请求内匹配",
+      "config": "vllm serve <target> --speculative-config '{\"method\":\"suffix\",\"num_speculative_tokens\":8,\"suffix_decoding_max_tree_depth\":24,\"suffix_decoding_corpus_tokens\":1048576}'",
+      "gain": "官方定性「低到中等收益」，无草稿模型；模板化输出（JSON/SQL/代码）上收益最高。具体倍数未查到。",
+      "cost": "语料池占显存（默认 1M token 容量）；开放域对话收益小。",
+      "pitfalls": {
+        "hit": "suffix_decoding_max_spec_factor / min_token_prob 是老参数，写了也没用（已废弃），却以为在调优。",
+        "fix": "改用 max_tree_depth 与 corpus_tokens 两个有效参数；先把语料容量按显存预算调。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/en/latest/features/speculative_decoding/suffix/",
+      "status": "可上生产"
+    },
+    {
+      "line": "nvidia",
+      "family": "other",
+      "name": "vLLM · DFlash 块扩散并行草稿",
+      "mechanism": "一次前向并行出一整块草稿 token（block diffusion），不像自回归草稿那样串行 K 步，草稿开销与 K 基本无关。",
+      "engine": "vLLM 0.16+",
+      "versions": "需要 DFlash 检查点（如 z-lab/Qwen3-8B-DFlash-b16），num_speculative_tokens = 块大小 -1",
+      "config": "vllm serve Qwen/Qwen3-8B -tp 1 --max-num-seqs 16 --no-enable-prefix-caching --compilation-config '{\"cudagraph_mode\":\"FULL_DECODE_ONLY\"}' --speculative-config '{\"method\":\"dflash\",\"model\":\"z-lab/Qwen3-8B-DFlash-b16\",\"num_speculative_tokens\":7}'",
+      "gain": "官方定性同 EAGLE 系；并行草稿让长 K 的边际成本更低（K=7 仍一次前向）。具体倍数未查到。",
+      "cost": "需要关闭前缀缓存（文档示例 --no-enable-prefix-caching）；块草稿占额外显存。",
+      "pitfalls": {
+        "hit": "cudagraph 捕获尺寸没按 n*(K+1) 设，开局即报 capture size 不匹配或直接退化成 eager。",
+        "fix": "capture sizes 必须是 (K+1) 的整数倍，例如 K=7、批 1 就设 [8]。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/speculative_decoding.html",
+      "status": "实验性"
+    },
+    {
+      "line": "nvidia",
+      "family": "batch",
+      "name": "vLLM · 动态 K（按并发调草稿长度）",
+      "mechanism": "按当前并发落在哪个区间，动态选 K；并发一高就自动降 K 甚至关掉投机，避免 BS*K 把 TPOT 拖垮。",
+      "engine": "vLLM 0.16+",
+      "versions": "已在 Eagle / Eagle-3 / DFlash 上测过；MoE + DP 会退回静态 K",
+      "config": "vllm serve meta-llama/Llama-3.1-8B-Instruct --speculative-config '{\"method\":\"eagle3\",\"model\":\"yuhuili/EAGLE3-LLaMA3.1-Instruct-8B\",\"num_speculative_tokens\":3,\"num_speculative_tokens_per_batch_size\":[[1,16,5],[17,32,4],[33,64,3],[65,128,1],[129,512,0]]}'",
+      "gain": "官方表述：并发波动大（RL rollout、长尾请求）时比固定 K 更稳，避免高并发下的负收益。绝对倍数未查到。",
+      "cost": "分档表要按自己的接受率标定，拍脑袋分档等于没调。",
+      "pitfalls": {
+        "hit": "MoE 模型开 DP 后各 rank 选不同 K，集合通信发散/死锁。",
+        "fix": "MoE+DP 下 vLLM 会自动禁用该参数回退静态 K；要动态 K 就别同时开 DP>1。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/en/latest/features/speculative_decoding/dynamic_speculative_decoding/",
+      "status": "可上生产"
+    },
+    {
+      "line": "nvidia",
+      "family": "other",
+      "name": "vLLM · 自适应验证（按存活概率剪枝）",
+      "mechanism": "启动时对各 shape 的步骤成本做 profile，运行时按每个 (请求,位置) 草稿的存活概率择优验证，把预算花在最可能被接受的位置上。",
+      "engine": "vLLM 0.16+",
+      "versions": "需要 full cudagraph；与 LoRA / PP 不兼容，--enforce-eager 会被拒",
+      "config": "vllm serve <target> --speculative-config '{\"method\":\"eagle3\",\"model\":\"<eagle3>\",\"num_speculative_tokens\":7,\"enable_adaptive_verification\":true}'  # 长上下文可加 export VLLM_ADAPTIVE_VERIFICATION_PROFILE_CONTEXT_LEN=131072",
+      "gain": "官方表述：一套配置能在整个负载区间成立，省掉按部署调 K 的活。绝对倍数未查到（依负载而定）。",
+      "cost": "启动要多跑一遍成本 profile；没有 confidence head 时要用在线接受率估计器（多一次小模型前向）。",
+      "pitfalls": {
+        "hit": "开了 --enforce-eager 或用了非 full-graph 的 attention 后端，启动直接被拒。",
+        "fix": "保持 full cudagraph、去掉 enforce-eager；LoRA/PP 场景直接用固定 K。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/en/latest/features/speculative_decoding/adaptive_verification/",
+      "status": "实验性"
+    },
+    {
+      "line": "nvidia",
+      "family": "other",
+      "name": "vLLM · 每请求接受率指标（调参依据）",
+      "mechanism": "把每个请求的投机统计（平均接受长度、接受率、逐位置直方图）直接放进响应 metrics，用来定 K 和分档，而不是猜。",
+      "engine": "vLLM 0.16+",
+      "versions": "实验性字段，结构可能变；n>1 时为 null",
+      "config": "vllm serve <target> --speculative-config '{\"method\":\"ngram\",\"num_speculative_tokens\":3,\"prompt_lookup_min\":1,\"prompt_lookup_max\":3}' --per-request-spec-decode-metrics summary",
+      "gain": "不直接提速，但把「K 设多少」从拍脑袋变成可算：mean_acceptance_length 直接告诉你每个验证步平均出几个 token。",
+      "cost": "要开 stream_options.include_usage 才会在流式响应里带；detailed 档会多存每步数组。",
+      "pitfalls": {
+        "hit": "打开后从 usage 里找不到字段——因为没开 include_usage，或请求 n>1。",
+        "fix": "流式请求显式传 stream_options.include_usage=true；调参只跑单序列（n=1）。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/en/latest/features/speculative_decoding/acceptance_metrics/",
+      "status": "可上生产"
+    },
+    {
+      "line": "nvidia",
+      "family": "eagle",
+      "name": "SGLang · EAGLE-3（--speculative-algorithm EAGLE3）",
+      "mechanism": "SGLang 原生把 EAGLE-3 草稿与树形验证编进调度，参数留空时自动调优 steps/topk/draft tokens。",
+      "engine": "SGLang 0.5+",
+      "versions": "EAGLE-3 需独立草稿权重；EAGLE-2 用 --speculative-algorithm EAGLE",
+      "config": "python -m sglang.launch_server --model meta-llama/Llama-3.1-8B-Instruct --speculative-algorithm EAGLE3 --speculative-draft-model-path <eagle3-checkpoint>",
+      "gain": "官方文档给的是「最佳速度/质量」推荐路线；具体倍数未查到（文档只放吞吐曲线图）。",
+      "cost": "草稿模型显存；树形验证要额外算力，并发高时要收 steps/topk。",
+      "pitfalls": {
+        "hit": "三个参数只填了一部分（num-steps / eagle-topk / num-draft-tokens），自动调优不生效、性能反而更差。",
+        "fix": "要么三个都不填走自动调优，要么三个一起显式设；--speculative-token-map 对 EAGLE-3 无效。"
+      },
+      "evidence": "A",
+      "url": "https://docs.sglang.ai/advanced_features/speculative_decoding.html",
+      "status": "可上生产"
+    },
+    {
+      "line": "nvidia",
+      "family": "ngram",
+      "name": "SGLang · NGRAM（无草稿模型，仅 CUDA）",
+      "mechanism": "和 vLLM 的 n-gram 同思路：prompt 内匹配重复片段当草稿，不占额外显存。",
+      "engine": "SGLang 0.5+",
+      "versions": "文档明示 CUDA-only；NPU 上不可用",
+      "config": "python -m sglang.launch_server --model <target> --speculative-algorithm NGRAM",
+      "gain": "零草稿模型开销；官方定位「没有额外模型可用时」的兜底。倍数未查到。",
+      "cost": "只在高度重复的 prompt 上有效；NPU 不支持。",
+      "pitfalls": {
+        "hit": "在 Ascend 上照抄这条命令，直接起不来。",
+        "fix": "昇腾线改用 vllm-ascend 的 ngram（同一思路，NPU 侧有实现）。"
+      },
+      "evidence": "A",
+      "url": "https://docs.sglang.ai/advanced_features/speculative_decoding.html",
+      "status": "可上生产"
+    },
+    {
+      "line": "nvidia",
+      "family": "batch",
+      "name": "SGLang · 自适应投机（acceptance 变化时自动收放）",
+      "mechanism": "在 EAGLE（topk=1 链式草稿）之上按实时接受率调草稿长度，接受率掉下去就收，避免白算。",
+      "engine": "SGLang 0.5+",
+      "versions": "需配 --speculative-eagle-topk 1 走链式草稿",
+      "config": "python -m sglang.launch_server --model <target> --speculative-algorithm EAGLE --speculative-eagle-topk 1 --speculative-draft-model-path <eagle2-checkpoint>  # 再按文档打开自适应开关",
+      "gain": "官方场景：同一部署里各请求接受率差异大。绝对倍数未查到。",
+      "cost": "自适应用采样/统计换稳定，低并发下收益可能不如固定长草稿。",
+      "pitfalls": {
+        "hit": "配了 topk>1 的树形草稿再开自适应，语义不匹配。",
+        "fix": "自适应只配 topk=1 的链式草稿；树形场景用固定 steps/topk。"
+      },
+      "evidence": "A",
+      "url": "https://docs.sglang.ai/advanced_features/speculative_decoding.html",
+      "status": "实验性"
+    },
+    {
+      "line": "nvidia",
+      "family": "eagle",
+      "name": "TensorRT-LLM · EAGLE-3 + 动态树",
+      "mechanism": "EAGLE-3 草稿每层展开多个候选构成树，一次验证整棵树，接受率比单链高，代价是每步算力更大。",
+      "engine": "TensorRT-LLM 1.x",
+      "versions": "动态树要求 use_dynamic_tree=True；MTP 路径只支持单层 MTP-Eagle 且仅 greedy",
+      "config": "from tensorrt_llm.llmapi import Eagle3DecodingConfig\nspeculative_config = Eagle3DecodingConfig(max_draft_len=6, speculative_model=\"yuhuili/EAGLE3-LLaMA3.1-Instruct-8B\", use_dynamic_tree=True, dynamic_tree_max_topK=<topk>, max_total_draft_tokens=<budget>)",
+      "gain": "官方表述：比线性草稿接受率更高；预算受 max_draft_len ≤ max_total_draft_tokens ≤ topK*max_draft_len 约束。倍数未查到。",
+      "cost": "每步算力随树宽上升，高并发下更吃算力；采样场景树路径受限。",
+      "pitfalls": {
+        "hit": "max_total_draft_tokens 越界（大于 topK*max_draft_len）直接配置报错。",
+        "fix": "先把 max_draft_len 与 topK 定死，再让 max_total_draft_tokens 落在区间内。"
+      },
+      "evidence": "A",
+      "url": "https://nvidia.github.io/TensorRT-LLM/features/speculative-decoding.html",
+      "status": "可上生产"
+    },
+    {
+      "line": "nvidia",
+      "family": "ngram",
+      "name": "TensorRT-LLM · Suffix Automaton（NGram 的替代）",
+      "mechanism": "用后缀自动机在 prompt + 已生成序列里匹配最长后缀当草稿；官方已把 NGram 标记为弃用，SA 是长期路线。",
+      "engine": "TensorRT-LLM 1.x",
+      "versions": "NGram 计划 2027 年 1 月移除，新项目直接用 SADecodingConfig",
+      "config": "from tensorrt_llm.llmapi import SADecodingConfig\nspeculative_config = SADecodingConfig(max_draft_len=<K>)",
+      "gain": "零草稿模型；适合模板化/重复结构输出。倍数未查到。",
+      "cost": "依赖文本重复度；SA 的匹配结构有内存开销（随历史增长）。",
+      "pitfalls": {
+        "hit": "继续用 NGramDecodingConfig 并在 2027 后升级版本，接口直接消失。",
+        "fix": "现在就迁到 SADecodingConfig，max_draft_len 语义与 NGram 一致。"
+      },
+      "evidence": "A",
+      "url": "https://nvidia.github.io/TensorRT-LLM/features/speculative-decoding.html",
+      "status": "可上生产"
+    },
+    {
+      "line": "nvidia",
+      "family": "medusa",
+      "name": "Medusa · 多头并行草稿",
+      "mechanism": "在目标模型最后一层挂多个解码头，一次前向并行产出多个候选，再用树形注意力一次验证。",
+      "engine": "Medusa 框架 / vLLM 的 medusa 方法",
+      "versions": "需要与目标模型配对的 Medusa 头（FasterDecoding/Medusa 提供训练脚本）",
+      "config": "vllm serve <target> --speculative-config '{\"method\":\"medusa\",\"model\":\"<medusa-head>\",\"num_speculative_tokens\":3}'",
+      "gain": "论文自报 2.2–3.6×（论文口径，需在你环境复测）。",
+      "cost": "多个解码头 ≈ 每头一份 lm_head 参数（词表大时显存可观）；树验证吃算力。",
+      "pitfalls": {
+        "hit": "用 EAGLE 头配 method=medusa（或反之），加载即报结构不匹配。",
+        "fix": "按检查点类型选 method（medusa/eagle/eagle3）；词表大时优先 EAGLE-3。"
+      },
+      "evidence": "C",
+      "url": "https://arxiv.org/abs/2401.10774",
+      "status": "可上生产"
+    },
+    {
+      "line": "nvidia",
+      "family": "lookahead",
+      "name": "Lookahead Decoding · 无草稿模型的并行猜测",
+      "mechanism": "同时维护一条 Jacobi 迭代轨迹和一条 n-gram 池，从两条流里抽候选做并行验证，不需要任何草稿模型。",
+      "engine": "LookaheadDecoding（hao-ai-lab）/ vLLM 生态",
+      "versions": "无需草稿权重；窗口参数需按任务调",
+      "config": "参考仓储：https://github.com/hao-ai-lab/LookaheadDecoding（window/ngram_size/guess_size 三个窗口参数）",
+      "gain": "论文自报 1.5–2.3×（论文口径）。",
+      "cost": "窗口越大越吃算力；高并发下容易变成负收益。",
+      "pitfalls": {
+        "hit": "窗口参数按论文默认直接上生产，实际接受率很低。",
+        "fix": "先在小流量上扫 window × guess_size，用接受长度指标定档；高并发时降窗口或关掉。"
+      },
+      "evidence": "C",
+      "url": "https://arxiv.org/abs/2402.02057",
+      "status": "实验性"
+    },
+    {
+      "line": "ascend",
+      "family": "other",
+      "name": "vllm-ascend · 通用配置与 16 token 硬上限",
+      "mechanism": "昇腾侧用 proposer + rejection sampler 架构实现同一套投机解码，配置接口与 vLLM 上游一致（--speculative-config）。",
+      "engine": "vllm-ascend（配套 vLLM）",
+      "versions": "配套 CANN 版本按 vllm-ascend 发布说明；方法集合见官方表",
+      "config": "vllm serve <target> --speculative-config '{\"method\":\"eagle3\",\"model\":\"<draft>\",\"num_speculative_tokens\":3}'  # 关键：num_speculative_tokens + 1 ≤ 16",
+      "gain": "不直接给倍数；但把「能不能开、开多大」定死了：NPU 的 npu_fused_infer_attention_score 每轮最多 16 token，所以 K ≤ 15。",
+      "cost": "K 上限 15；draft_tensor_parallel_size 只能 1 或等于目标 TP。",
+      "pitfalls": {
+        "hit": "K 设成 16 及以上，直接踩算子上限报错或结果异常。",
+        "fix": "K ≤ 15（常用 3–7）；要更长草稿只能改架构（块式草稿），不能硬加 K。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/speculative_decoding.html",
+      "status": "可上生产"
+    },
+    {
+      "line": "ascend",
+      "family": "eagle",
+      "name": "vllm-ascend · EAGLE/EAGLE-3（A2/A3）",
+      "mechanism": "EAGLE 草稿在 NPU 上按 draft_tensor_parallel_size=1 跑，目标模型照常用 TP；EAGLE-3 必须写 method=eagle3。",
+      "engine": "vllm-ascend",
+      "versions": "EAGLE 检查点直接加载（PR #4893 起）；旧版本需升级",
+      "config": "vllm serve meta-llama/Meta-Llama-3.1-8B-Instruct --tensor-parallel-size 4 --enforce-eager --speculative-config '{\"method\":\"eagle\",\"model\":\"yuhuili/EAGLE-LLaMA3.1-Instruct-8B\",\"draft_tensor_parallel_size\":1,\"num_speculative_tokens\":2}'",
+      "gain": "官方文档给可用性与参数约束，未给 NPU 实测倍数——必须自己 vllm bench latency 对比。",
+      "cost": "全图模式下要把 cudagraph_capture_sizes 按 n*(K+1) 设，否则捕获失败；草稿强制 TP=1。",
+      "pitfalls": {
+        "hit": "K=4 时 capture sizes 仍按老值配，全图模式启动报 capturing 尺寸不匹配。",
+        "fix": "capture sizes = [n*(K+1)]，例如 K=4、批 1–4 设 [5,10,15,20]。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/speculative_decoding.html",
+      "status": "可上生产"
+    },
+    {
+      "line": "ascend",
+      "family": "other",
+      "name": "vllm-ascend · MTP（DeepSeek-V3.2 W8A8，TP16+EP）",
+      "mechanism": "DeepSeek 系模型自带 MTP 层，昇腾侧可直接开 mtp，不额外加载草稿模型；官方给了 TP16 + 专家并行的完整启动示例。",
+      "engine": "vllm-ascend",
+      "versions": "DeepSeek-V3.2-Exp-W8A8；quantization=ascend；FULL_DECODE_ONLY",
+      "config": "vllm serve /deepseek-ai/DeepSeek-V3.2-Exp-W8A8 --port 20004 --tensor-parallel-size 16 --enable-expert-parallel --max-model-len 36768 --max-num-batched-tokens 5000 --max-num-seqs 10 --quantization ascend --trust-remote-code --gpu-memory-utilization 0.9 --compilation-config '{\"cudagraph_mode\":\"FULL_DECODE_ONLY\"}' --speculative-config '{\"method\":\"mtp\",\"num_speculative_tokens\":2,\"disable_padded_drafter_batch\":false}'",
+      "gain": "官方只给可跑通的配置与约束，NPU 实测倍数未给；DeepSeek 只暴露一层 MTP 权重，K>1（尤其 ≥3）精度与性能都不保证。",
+      "cost": "MTP 共享权重显存增量小，但全图模式下 capture size 必须是 (K+1) 的整数倍。",
+      "pitfalls": {
+        "hit": "K 设 3 以上仍期待正收益：单层 MTP 权重撑不住，接受率与精度都会掉。",
+        "fix": "K 从 1–2 起；要更长草稿改用外部草稿（EAGLE-3/DFlash），别硬拉 MTP 的 K。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/speculative_decoding.html",
+      "status": "可上生产"
+    },
+    {
+      "line": "ascend",
+      "family": "ngram",
+      "name": "vllm-ascend · N-Gram（无草稿模型）",
+      "mechanism": "prompt 内 n-gram 匹配当草稿，NPU 上同样可用；适合代码、日志、模板化输出这类高重复文本。",
+      "engine": "vllm-ascend",
+      "versions": "method=ngram 已在官方支持表内",
+      "config": "vllm serve <target> --speculative-config '{\"method\":\"ngram\",\"num_speculative_tokens\":5,\"prompt_lookup_max\":4}'",
+      "gain": "零草稿模型、零额外显存；NPU 实测倍数未查到，需 bench。",
+      "cost": "开放域对话收益接近 0；prompt 越长匹配机会越多但匹配本身有开销。",
+      "pitfalls": {
+        "hit": "以为 ngram 不用设 num_speculative_tokens，启动报缺参数。",
+        "fix": "ngram 也必须给 num_speculative_tokens（且 ≤15）。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/speculative_decoding.html",
+      "status": "可上生产"
+    },
+    {
+      "line": "ascend",
+      "family": "other",
+      "name": "vllm-ascend · DFlash2（候选格 + 路径选择）",
+      "mechanism": "并行块草稿的升级版：每个位置给 top-k 候选，候选选择头在格子上走最优路径，比单点 argmax 接受率更高。",
+      "engine": "vllm-ascend",
+      "versions": "method 仍写 dflash；检查点架构是 DFlash2DraftModel 时自动选中",
+      "config": "vllm serve Qwen/Qwen3.8-27B --tensor-parallel-size 2 --max-model-len 2048 --max-num-seqs 16 --gpu-memory-utilization 0.9 --no-enable-prefix-caching --compilation-config '{\"cudagraph_mode\":\"PIECEWISE\",\"cudagraph_capture_sizes\":[9]}' --speculative-config '{\"method\":\"dflash\",\"model\":\"z-lab/Qwen3.8-27B-DFlash2\",\"num_speculative_tokens\":8}'",
+      "gain": "官方表述：接受率比 DFlash 单点草稿更高；NPU 倍数未查到。",
+      "cost": "草稿必须用目标未量化的 lm_head（降词表草稿不支持）；capture size 必须 n*(K+1)。",
+      "pitfalls": {
+        "hit": "给草稿配了量化/裁剪词表，启动报「draft must use target's unquantized LM head」。",
+        "fix": "保持草稿 lm_head 与目标共享未量化权重；K=8 时 capture sizes 写 [9]。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/speculative_decoding.html",
+      "status": "实验性"
+    },
+    {
+      "line": "ascend",
+      "family": "other",
+      "name": "vllm-ascend · DSpark + 自适应验证（950DT / GLM）",
+      "mechanism": "半自回归块草稿（带马尔可夫 logit-bias 头）+ 置信度头驱动的自适应验证，在 950DT 上可用 CANN FlashAttn/FlashMLA 后端。",
+      "engine": "vllm-ascend",
+      "versions": "950DT 产品；GLM(GQA/MLA) 目标 + Qwen3DSpark/Glm5DSpark 草稿；FP16/BF16 查询、未量化草稿 KV",
+      "config": "vllm serve Qwen/Qwen3-8B --compilation-config '{\"cudagraph_mode\":\"FULL_DECODE_ONLY\"}' --speculative-config '{\"method\":\"dspark\",\"model\":\"deepseek-ai/dspark_qwen3_8b_block7\",\"num_speculative_tokens\":7,\"enable_adaptive_verification\":true}'",
+      "gain": "官方给了明确的负向结论：低延迟场景开自适应**可能变慢**，高吞吐下若瓶颈在 host/代理也无效；接受率极高的负载也没有额外收益。",
+      "cost": "自适应不能与 PP/PCP/DCP/LoRA 组合；目标模型不能 enforce_eager 或纯 PIECEWISE。",
+      "pitfalls": {
+        "hit": "低延迟业务开自适应后 TPOT 反而上升。",
+        "fix": "低并发低延迟就别开自适应，用固定 K；要开就按官方建议先在真实并发下 profile。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/speculative_decoding.html",
+      "status": "实验性"
+    },
+    {
+      "line": "ascend",
+      "family": "other",
+      "name": "vllm-ascend · Block 验证（联合验证一整块草稿）",
+      "mechanism": "用累积的目标/草稿概率比对整块草稿联合判定，接受长度通常比逐 token 拒绝更高，同时保持目标分布。",
+      "engine": "vllm-ascend",
+      "versions": "rejection_sample_method=block；不能与 synthetic 组合",
+      "config": "vllm serve <target> --speculative-config '{\"method\":\"eagle3\",\"model\":\"<draft>\",\"num_speculative_tokens\":3,\"rejection_sample_method\":\"block\"}'",
+      "gain": "官方表述：可提升接受草稿长度；收益依草稿与负载而定，NPU 倍数未查到。",
+      "cost": "温度=0 仍是贪心验证；联合验证的算子开销略高。",
+      "pitfalls": {
+        "hit": "同时写了 synthetic_acceptance_rates 与 block，启动报冲突。",
+        "fix": "block 与 synthetic 二选一；要压测吞吐用 synthetic，要上生产用 block/standard。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/speculative_decoding.html",
+      "status": "可上生产"
+    },
+    {
+      "line": "ascend",
+      "family": "other",
+      "name": "vllm-ascend · Entropy Verify（接受阈值随熵自适应）",
+      "mechanism": "按目标分布熵调接受阈值：高熵放宽、低熵收紧，用极小的精度代价换接受率与吞吐。",
+      "engine": "vllm-ascend",
+      "versions": "additional_config.rejection_sampler_config.enable_entropy_verify=true；与 block 互斥",
+      "config": "vllm serve <model> --speculative-config '{\"method\":\"mtp\",\"num_speculative_tokens\":3,\"rejection_sample_method\":\"standard\"}' --additional-config '{\"rejection_sampler_config\":{\"enable_entropy_verify\":true,\"posterior_threshold\":0.95,\"posterior_alpha\":0.4}}'",
+      "gain": "官方明示是「用一点精度换吞吐」：posterior_alpha 越大接受率越高、精度损失越大；具体吞吐提升未给数字。",
+      "cost": "改变接受判据，输出 token 可能与标准拒绝采样不同；需要按业务评估质量。",
+      "pitfalls": {
+        "hit": "贪心请求以为也会变——实际贪心仍走原行为；synthetic 模式下该开关也不生效。",
+        "fix": "只在 standard + 采样场景评估；alpha 从 0.2 起小步调，盯住评测分数。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/speculative_decoding.html",
+      "status": "实验性"
+    },
+    {
+      "line": "ascend",
+      "family": "other",
+      "name": "vllm-ascend · Synthetic 拒绝采样（压测专用）",
+      "mechanism": "按给定接受率序列模拟接受/拒绝，把验证路径的吞吐与延迟单独压出来，不依赖草稿质量。",
+      "engine": "vllm-ascend",
+      "versions": "rejection_sample_method=synthetic；必须给 rates 或 acceptance_length 之一",
+      "config": "vllm serve <target> --speculative-config '{\"method\":\"eagle3\",\"model\":\"<draft>\",\"num_speculative_tokens\":3,\"rejection_sample_method\":\"synthetic\",\"synthetic_acceptance_rates\":[0.9,0.6,0.3]}'",
+      "gain": "用来测「验证 kernel + sampler + 拼 token」这条链在不同接受率下的上限；官方明确生成结果**语义不正确**，只能压测。",
+      "cost": "不能上生产；rates 必须长度=K 且单调不增。",
+      "pitfalls": {
+        "hit": "拿 synthetic 的结果当业务吞吐承诺，或直接放到线上。",
+        "fix": "仅用于 benchmark / kernel 校验；生产一律 standard 或 block。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/speculative_decoding.html",
+      "status": "仅压测"
+    },
+    {
+      "line": "ascend",
+      "family": "batch",
+      "name": "vllm-ascend · 动态 K（按并发分档，NPU 侧）",
+      "mechanism": "NPU 侧同样支持按并发区间选 K，避免 BS*K 超过临界点后 TPOT 变差；支持 MTP/EAGLE-3/DFlash/ngram。",
+      "engine": "vllm-ascend",
+      "versions": "DSpark 与 MTP+DCP+DSD 暂不支持该路径",
+      "config": "vllm serve <target> --speculative-config '{\"method\":\"eagle3\",\"model\":\"<draft>\",\"num_speculative_tokens\":3,\"num_speculative_tokens_per_batch_size\":[[1,16,5],[17,32,4],[33,64,3],[65,128,1],[129,512,0]]}'",
+      "gain": "官方表述：并发波动大时比固定 K 稳；NPU 实测倍数未查到。",
+      "cost": "分档要按 NPU 自己的接受率标定（和 GPU 不一样，不能照抄）。",
+      "pitfalls": {
+        "hit": "直接把 GPU 上调好的分档表搬到 NPU，接受率不同导致档位全错。",
+        "fix": "在目标 NPU 上用 vllm bench latency 扫 K∈{1,3,5,7} × 并发，再填分档表。"
+      },
+      "evidence": "A",
+      "url": "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/speculative_decoding.html",
+      "status": "可上生产"
+    }
+  ]
+}

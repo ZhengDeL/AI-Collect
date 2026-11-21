@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>投机解码全景图 · AI 情报站</title>
+<meta name="description" content="投机解码（speculative decoding）全景：draft 模型、EAGLE、Medusa、Lookahead、n-gram 检索、树形验证，NVIDIA 与昇腾两条线的实测与坑。">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/spec.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <div class="header-inner">
+      <a class="brand" href="index.html" aria-label="回到首页">
+        <span class="logo">⚡</span>
+        <div>
+          <h1>投机解码全景图</h1>
+          <p class="tagline">draft 怎么选 · 接受率怎么调 · 两条线实测与坑</p>
+        </div>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="icon-btn" aria-label="切换主题" title="切换主题">◐</button>
+      </div>
+    </div>
+    <nav class="main-nav" aria-label="主导航">
+      <a class="nav-link" href="index.html#overview">今日</a>
+      <a class="nav-link" href="index.html#list">情报</a>
+      <a class="nav-link" href="index.html#kv-block">KV 卸载</a>
+      <a class="nav-link" href="graph.html">知识图谱</a>
+      <a class="nav-link is-active" href="spec.html">投机解码</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="spec-overview" class="spec-overview" aria-label="全景统计"></section>
+
+  <section class="toolbar spec-toolbar">
+    <div id="spec-filters" class="filters" role="tablist" aria-label="筛选"></div>
+    <div class="search-box">
+      <input id="spec-search" type="search" placeholder="搜索方案、引擎、参数、收益、坑…" aria-label="搜索">
+    </div>
+  </section>
+
+  <section id="spec-list" class="spec-list" aria-live="polite"></section>
+  <section id="spec-empty" class="empty" hidden></section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>由团队每日整理 · 数字与结论以原文链接为准 · 只有证据 A/B 才写「建议上」</p>
+    <p class="muted">仓库：<a href="https://github.com/ZhengDeL/AI-Collect" target="_blank" rel="noopener">ZhengDeL/AI-Collect</a></p>
+  </div>
+</footer>
+
+<script src="assets/spec.js"></script>
+<script src="assets/ui.js"></script>
+</body>
+</html>
