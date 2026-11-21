@@ -20,6 +20,8 @@
     empty: document.getElementById('empty'),
     topbox: document.getElementById('topbox'),
     overview: document.getElementById('overview'),
+    briefing: document.getElementById('briefing'),
+    header: document.querySelector('.site-header'),
     dateLabel: document.getElementById('current-date'),
     summary: document.getElementById('summary'),
     prev: document.getElementById('prev-day'),
@@ -312,21 +314,36 @@
       return '<span class="ov-stat" data-src="' + esc(n) + '"><span class="dot"></span>' +
         '<em>' + esc(n) + '</em> <b>' + counts[n] + '</b> 条</span>';
     }).join('');
-    var picks = items.filter(function (it) { return verdictClass(it.verdict) === 'yes'; }).slice(0, 2);
-    var picksHtml = picks.length ? picks.map(function (it, i) {
-      return '<div class="ov-pick"><span class="rank">' + (i + 1) + '</span>' +
-        '<span class="badge ' + esc(it.source || '其他') + '">' + esc(it.source || '其他') + '</span>' +
-        '<a href="' + esc(it.url || '#') + '" target="_blank" rel="noopener">' + esc(it.title) + '</a></div>';
-    }).join('') : '<div class="ov-pick"><span class="rank">—</span>本期暂无「值得」条目</div>';
-
     el.overview.innerHTML =
       '<p class="ov-eyebrow">今日概览 · DAILY BRIEF</p>' +
       '<div class="ov-top">' +
         '<h2 class="ov-date">' + esc(fmtDate(state.date)) + '</h2>' +
         '<div class="ov-total"><b>' + items.length + '</b><span>条情报 · 已分类整理</span></div>' +
       '</div>' +
-      '<div class="ov-stats">' + stats + '</div>' +
-      '<div class="ov-picks"><h3>今日最值得看</h3>' + picksHtml + '</div>';
+      '<div class="ov-stats">' + stats + '</div>';
+  }
+
+  // 首屏「今日要点」：从本期 title 自动生成最多 3 条摘要，不写死文案。
+  // 取评分最高的 3 条可见卡（已去重、排除折叠隐藏项），标题即要点，让人 3 秒看懂今天发生了什么。
+  function renderBriefing(allItems) {
+    if (!el.briefing) return;
+    if (!allItems || !allItems.length) { el.briefing.hidden = true; el.briefing.innerHTML = ''; return; }
+    var fold = foldMapOf(allItems);
+    var visible = allItems.filter(function (it) { return !(it.id && fold.hidden[String(it.id)]); });
+    var picks = visible.slice().sort(byScore).slice(0, 3);
+    el.briefing.hidden = false;
+    el.briefing.innerHTML =
+      '<p class="brief-eyebrow">今日要点 · 3 秒看懂</p>' +
+      '<ol class="brief-list">' + picks.map(function (it, i) {
+        return '<li class="brief-item"><span class="brief-num">' + (i + 1) + '</span>' +
+          '<span class="brief-text">' + esc(it.title || '') + '</span></li>';
+      }).join('') + '</ol>';
+  }
+
+  // 顶栏（品牌行 + 导航行）实际高度 → CSS 变量，供 sticky 工具条定位；窄屏两行会变高
+  function syncHeaderHeight() {
+    if (!el.header) return;
+    document.documentElement.style.setProperty('--header-h', Math.ceil(el.header.getBoundingClientRect().height) + 'px');
   }
 
   // 单张卡片：首条要点常显，其余收进 <details>；verdict/可信度做成有色徽标；链接收成「原文 ↗」
@@ -335,20 +352,24 @@
   function cardHTML(it, i, rank, folded, focused) {
     var src = it.source || '其他';
     var pts = it.points || [];
-    var lead = pts.length ? '<div class="point-lead"><span class="pdot">①</span><span>' + esc(pts[0]) + '</span></div>' : '';
-    var more = pts.length > 1
-      ? '<details class="points-more"><summary>展开其余 ' + (pts.length - 1) + ' 条要点</summary>' +
-          '<ul class="points">' + pts.slice(1).map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') +
+    // 每条要点都是独立 li；常显前 2 条，其余收进「展开」，避免长卡片把首屏撑爆
+    var keep = pts.slice(0, 2);
+    var rest = pts.slice(2);
+    var leadList = keep.length
+      ? '<ul class="points">' + keep.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ul>' : '';
+    var more = rest.length
+      ? '<details class="points-more"><summary>展开其余 ' + rest.length + ' 条要点</summary>' +
+          '<ul class="points">' + rest.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') +
         '</ul></details>'
       : '';
     var tags = (it.tags || []).map(function (t) {
       return '<span class="tag' + (t === '业界调优' ? ' tag-tune' : '') + '">' + esc(t) + '</span>';
     }).join('');
-    var time = it.time ? '<span>🕒 ' + esc(it.time) + '</span>' : '';
+    // 来源 / 时间 / 可信度合成标题下一行小灰字，不再散落在 card-top 与 card-foot 多处
+    var time = it.time ? '<span class="meta-time">🕒 ' + esc(it.time) + '</span>' : '';
+    var cred = it.credibility ? '<span class="meta-cred">' + esc(it.credibility) + '</span>' : '';
     var verdict = it.verdict
       ? '<span class="vbadge vbadge-' + verdictClass(it.verdict) + '">' + esc(it.verdict) + '</span>' : '';
-    var cred = it.credibility
-      ? '<span class="cbadge cbadge-' + credClass(it.credibility) + '">可信度 ' + esc(it.credibility) + '</span>' : '';
     var origin = '<a class="origin" href="' + esc(it.url || '#') + '" target="_blank" rel="noopener">原文 ↗</a>';
     var rankHtml = rank > 0
       ? '<span class="rankbadge' + (rank === 1 ? ' rank-1' : '') + '">#' + rank + '</span>' : '';
@@ -370,13 +391,12 @@
     return '<article class="card' + (focused ? ' focused' : '') + '" id="' + esc(cardDomId(it)) + '" data-id="' + esc(it.id || '') + '" style="--i:' + i + '">' +
       '<div class="card-top">' +
         '<span class="badge ' + esc(src) + '">' + esc(src) + '</span>' +
-        time + origin +
+        origin +
       '</div>' +
       '<h2>' + rankHtml + '<a href="' + esc(it.url || '#') + '" target="_blank" rel="noopener">' + esc(it.title) + '</a></h2>' +
-      (lead || more ? '<div class="points-box">' + lead + more + '</div>' : '') +
-      '<div class="card-foot">' + verdict + cred +
-        (tags ? '<span class="tags">' + tags + '</span>' : '') +
-      '</div>' +
+      '<div class="card-meta">' + verdict + time + cred + '</div>' +
+      (leadList || more ? '<div class="points-box">' + leadList + more + '</div>' : '') +
+      (tags ? '<div class="card-tags">' + tags + '</div>' : '') +
       foldHtml +
     '</article>';
   }
@@ -501,8 +521,10 @@
     el.prev.disabled = idx >= state.index.dates.length - 1;
     el.next.disabled = idx <= 0;
     renderOverview((state.day && state.day.items) || []);
+    renderBriefing((state.day && state.day.items) || []);
     renderFilters();
     renderList();
+    syncHeaderHeight();
   }
 
   function goto(date) {
@@ -557,6 +579,7 @@
 
     window.addEventListener('hashchange', syncFromHash);
     window.addEventListener('popstate', syncFromHash);
+    window.addEventListener('resize', syncHeaderHeight);
 
     loadJSON('data/index.json').then(function (index) {
       if (!index || !index.dates || !index.dates.length) throw new Error('还没有任何一期内容');

@@ -2,6 +2,7 @@
 :root {
   /* 8px 栅格 */
   --sp: 8px;
+  --header-h: 92px; /* 由 app.js syncHeaderHeight() 按实际顶栏高度同步 */
   --radius: 16px;
   --radius-sm: 10px;
 
@@ -82,6 +83,50 @@ body {
 .logo { font-size: 26px; line-height: 1; }
 .brand h1 { margin: 0; font-size: 19px; letter-spacing: .2px; }
 .tagline { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-3); }
+
+/* ---------- 顶部主导航（今日 / 情报 / KV 卸载 / 知识图谱）---------- */
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  border-top: 1px solid var(--line);
+}
+.main-nav::-webkit-scrollbar { display: none; }
+.nav-link {
+  flex: none;
+  padding: 9px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: .16s;
+}
+.nav-link:hover { color: var(--accent); background: var(--accent-soft); }
+
+/* ---------- 首屏今日要点（从 title 自动生成，最多 3 条）---------- */
+.briefing {
+  margin-top: calc(var(--sp) * 2);
+  padding: calc(var(--sp) * 2) calc(var(--sp) * 2.5);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, var(--accent-soft), transparent 85%);
+}
+.brief-eyebrow { margin: 0 0 var(--sp); font-size: 12px; letter-spacing: 1px; color: var(--ink-3); }
+.brief-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.brief-item { display: flex; align-items: flex-start; gap: 10px; font-size: 14.5px; line-height: 1.6; }
+.brief-num {
+  flex: none; width: 20px; height: 20px; margin-top: 2px;
+  display: grid; place-items: center;
+  border-radius: 6px; background: var(--accent); color: var(--bg);
+  font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.brief-text { min-width: 0; overflow-wrap: anywhere; color: var(--ink); }
 
 /* ---------- 今日概览 ---------- */
 .overview {
@@ -165,6 +210,19 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: calc(var(--sp) * 3) 0 calc(var(--sp) * 1.5);
+}
+/* 主列表工具条 sticky 吸顶：滚到哪都能搜。吸在顶栏下方（--header-h 由 JS 同步），
+   半透明背景 + backdrop-filter；只作用于 #toolbar，不影响 KV 区块的同名工具条。 */
+#toolbar {
+  position: sticky;
+  top: var(--header-h);
+  z-index: 8;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+  padding-top: calc(var(--sp) * 1.5);
+  padding-bottom: calc(var(--sp) * 1.5);
 }
 .filters { display: flex; flex-wrap: wrap; gap: var(--sp); }
 .chip {
@@ -282,21 +340,17 @@ body {
 
 .card {
   background: var(--card);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line); /* 一张卡只留一条细边，去掉叠加阴影 */
   border-radius: var(--radius);
   padding: calc(var(--sp) * 2.5) calc(var(--sp) * 3);
-  transition: transform .18s, background .18s, border-color .18s, box-shadow .18s;
+  transition: border-color .18s;
   animation: rise .38s ease both;
   animation-delay: calc(var(--i, 0) * 16ms);
   overflow-wrap: anywhere;
   min-width: 0;
 }
-.card:hover {
-  background: var(--card-hover);
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
-  box-shadow: var(--shadow-soft);
-  transform: translateY(-2px);
-}
+/* hover 只提亮边框，不再位移、不再叠阴影 */
+.card:hover { border-color: var(--accent); }
 
 .card-top {
   display: flex;
@@ -321,9 +375,22 @@ body {
 .badge.其他 { background: var(--accent-soft); color: var(--accent); }
 .badge.星榜 { background: var(--violet-soft); color: var(--violet); }
 
-.card h2 { margin: 0 0 calc(var(--sp) * 1.25); font-size: 17.5px; line-height: 1.45; }
+.card h2 {
+  margin: 0 0 calc(var(--sp) * .75);
+  font-size: 17px; font-weight: 600; line-height: 1.4;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  line-clamp: 2; overflow: hidden;
+}
 .card h2 a { color: var(--ink); text-decoration: none; }
 .card h2 a:hover { color: var(--accent); }
+/* 来源/时间/可信度合成标题下一行小灰字 */
+.card-meta {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 4px 12px; margin-bottom: calc(var(--sp) * 1.25);
+  font-size: 12.5px; color: var(--ink-3);
+}
+.card-meta .meta-time, .card-meta .meta-cred { color: var(--ink-3); }
+.card-meta .cbadge { display: none; } /* 旧结构残留保险：统一走 meta-cred 灰字 */
 
 /* 组内 TOP3 名次徽章：accent 描边，#1 实心 */
 .rankbadge {
@@ -358,10 +425,8 @@ body {
 .innov-peek { flex: 1 1 160px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .innov-body { margin-top: var(--sp); overflow-wrap: anywhere; }
 
-/* 3 条要点：首条常显，其余折叠 */
-.points-box { margin: 0 0 calc(var(--sp) * 1.5); }
-.point-lead { display: flex; gap: var(--sp); color: var(--ink-2); font-size: 14px; }
-.point-lead .pdot { color: var(--accent); flex: none; font-weight: 700; }
+/* 要点：每条独立成行，正文 15.5px / 行高 1.7；常显前 2 条，其余折叠 */
+.points-box { margin: 0 0 calc(var(--sp) * 1.25); }
 .points-more { margin-top: calc(var(--sp) * .5); }
 .points-more > summary {
   list-style: none;
@@ -379,10 +444,11 @@ body {
 .points-more[open] > summary::before { transform: rotate(90deg); }
 .points-more > summary:hover { text-decoration: underline; }
 .points {
-  margin: var(--sp) 0 0;
+  margin: 0;
   padding-left: calc(var(--sp) * 2.5);
   color: var(--ink-2);
-  font-size: 14px;
+  font-size: 15.5px;
+  line-height: 1.7;
 }
 .points li { margin: calc(var(--sp) * .5) 0; }
 .points li::marker { color: var(--accent); }
@@ -424,7 +490,8 @@ body {
 .cbadge-mid { background: var(--blue-soft); color: var(--accent); }
 .cbadge-low { background: var(--red-soft); color: var(--red); }
 
-.tags { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.card-tags { margin-top: calc(var(--sp) * 1.25); }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .tag {
   background: var(--bg-soft);
   border: 1px solid var(--line);
@@ -451,6 +518,7 @@ body {
 /* ---------- 聚焦查看（TOP 点击 / #card-<id> 分享）---------- */
 /* 聚焦态隐藏概览/TOP/筛选/日期/搜索，列表从页首开始，只留聚焦条 + 目标卡 */
 body.focusing #overview,
+body.focusing #briefing,
 body.focusing .toolbar,
 body.focusing .meta-bar,
 body.focusing #topbox { display: none !important; }
@@ -514,16 +582,45 @@ body.focusing #topbox { display: none !important; }
 
 @media (max-width: 640px) {
   .wrap { padding: 0 16px; }
-  .toolbar { align-items: stretch; }
+  .header-inner { padding-top: calc(var(--sp) * 1.5); padding-bottom: calc(var(--sp) * 1.5); }
+  .nav-link { padding: 9px 12px; font-size: 13px; }
+  #toolbar { align-items: stretch; }
   .search-box { width: 100%; }
   .search-box input { width: 100%; max-width: none; }
+  /* chips 横向滚动 + 右侧渐隐提示，避免换行把首屏撑高 */
+  .filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 24px; /* 给渐隐遮罩留位 */
+    mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent 100%);
+  }
+  .filters::-webkit-scrollbar { display: none; }
+  .chip { flex: none; }
   .overview { padding: calc(var(--sp) * 2); margin-top: calc(var(--sp) * 2); }
+  /* 来源统计横滑一行，别用两三行把首屏撑高 */
+  .ov-stats {
+    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 20px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 20px), transparent 100%);
+  }
+  .ov-stats::-webkit-scrollbar { display: none; }
+  .ov-stat { flex: none; }
   .ov-date { font-size: 18px; }
   .ov-total b { font-size: 28px; }
+  .briefing { padding: calc(var(--sp) * 1.5); }
+  .brief-item { font-size: 15px; line-height: 1.6; }
+  /* 窄屏要点最多两行，避免首屏被长标题撑满 */
+  .brief-text {
+    display: -webkit-box; -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2; overflow: hidden;
+  }
   .card { padding: calc(var(--sp) * 2); border-radius: var(--radius-sm); }
-  .card h2 { font-size: 16px; }
-  .group-cards { gap: calc(var(--sp) * 1.5); }
-  .tags { margin-left: 0; }
+  .card h2 { font-size: 17px; }
+  .points { font-size: 15px; line-height: 1.65; }
+  .group-cards { gap: 12px; } /* 375px 卡片间距 12px */
   .topbox { padding: calc(var(--sp) * 2); }
   .top-item a { flex-wrap: wrap; }
   .top-title { flex-basis: 100%; order: 3; }
