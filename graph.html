@@ -1,18 +1,13 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KV Cache 知识关联图谱 · AI 情报站</title>
-<meta name="description" content="从 KV Cache 出发的知识关联图谱：机制、系统、硬件与缓存层级，可点节点看定义与关系。">
+<title>推理技术知识图谱 · AI 情报站</title>
+<meta name="description" content="大模型推理技术全景图谱：按引擎分区、NVIDIA 与昇腾双栈对照，点开每个节点都有原理、实现、实测与维护信息。">
 <link rel="stylesheet" href="assets/style.css">
 <link rel="stylesheet" href="assets/graph.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕸️</text></svg>">
-<style>
-.header-actions { display: flex; align-items: center; gap: 12px; }
-.header-link { color: var(--ink-2); text-decoration: none; font-size: 13.5px; font-weight: 600; white-space: nowrap; transition: .16s; }
-.header-link:hover { color: var(--accent); }
-</style>
 </head>
 <body>
 <header class="site-header">
@@ -21,8 +16,8 @@
       <a class="brand" href="index.html" aria-label="回到首页">
         <span class="logo">🕸️</span>
         <div>
-          <h1>知识关联图谱</h1>
-          <p class="tagline">从一个主题，看清它牵扯的机制 · 系统 · 硬件 · 层级</p>
+          <h1>推理技术知识图谱</h1>
+          <p class="tagline">按引擎分区 · NVIDIA / 昇腾双栈对照 · 点开有真材实料</p>
         </div>
       </a>
       <div class="header-actions">
@@ -33,53 +28,83 @@
       <a class="nav-link" href="index.html#overview">今日</a>
       <a class="nav-link" href="index.html#list">情报</a>
       <a class="nav-link" href="index.html#kv-block">KV 卸载</a>
-      <a class="nav-link is-active" href="graph.html">知识图谱</a>
+      <a class="nav-link is-active" href="graph.html">推理图谱</a>
       <a class="nav-link" href="spec.html">投机解码</a>
     </nav>
   </div>
 </header>
-<main class="wrap">
-  <section class="graph-intro">
-    <h2 id="gtitle">知识关联图谱</h2>
-    <p class="g-sub" id="gsub">加载中…</p>
-    <div class="g-stats">
-      <span class="g-stat">节点 <b id="gstat-node">—</b></span>
-      <span class="g-stat">关系 <b id="gstat-edge">—</b></span>
-      <span class="g-stat">中心 <b>kv-cache</b></span>
+
+<main class="wrap g-app">
+  <section class="g-head">
+    <div>
+      <h2>推理技术知识图谱 <span class="g-ver" id="gver">v1 · P0 骨架</span></h2>
+      <p class="g-meta" id="gmeta">加载中…</p>
     </div>
+    <div class="g-statline" id="gstatline"></div>
   </section>
 
-  <section class="graph-toolbar">
-    <div id="gfilters" class="filters" role="tablist" aria-label="按节点类型筛选"></div>
-    <div class="search-box">
-      <input id="gsearch" type="search" placeholder="搜索节点名称…" aria-label="搜索图谱节点">
-    </div>
-  </section>
-
-  <div class="graph-layout" id="glayout">
-    <section class="graph-stage" aria-label="知识关联图">
-      <div class="g-loading" id="gloading">图谱加载中…</div>
-      <svg id="gsvg" viewBox="0 0 1200 1100" role="img" aria-label="KV Cache 知识关联图，可拖拽平移、滚轮缩放、点击节点">
-        <g id="vp">
-          <g id="gedges"></g>
-          <g id="gnodes"></g>
-        </g>
-      </svg>
-      <div class="graph-zoom">
-        <button id="zin" aria-label="放大" title="放大">+</button>
-        <button id="zout" aria-label="缩小" title="缩小">−</button>
-        <button id="zreset" aria-label="重置视图" title="重置视图">重置</button>
+  <div class="g-grid" id="ggrid">
+    <!-- 左栏：搜索 / 视图 / 筛选 / 覆盖率矩阵 / 简版图例 -->
+    <aside class="g-side" aria-label="检索与筛选">
+      <div class="g-side-block">
+        <label class="g-label" for="gsearch">搜索节点</label>
+        <input id="gsearch" class="g-search" type="search" placeholder="名称 / 别名 / 文件 / 参数…" aria-label="搜索图谱节点">
+        <p class="g-hint">支持中文名、英文名、别名、模块路径、参数名</p>
       </div>
-      <div class="g-empty" id="gempty" hidden><b>没有找到匹配的节点</b></div>
+
+      <div class="g-side-block">
+        <h3 class="g-block-title">四种视图</h3>
+        <div id="gviews" class="g-views" role="tablist" aria-label="视图切换"></div>
+      </div>
+
+      <div class="g-side-block">
+        <h3 class="g-block-title">多维筛选 <small>跨维度取交集</small></h3>
+        <div id="gfilters" class="g-filters" aria-label="多维筛选"></div>
+      </div>
+
+      <div class="g-side-block">
+        <h3 class="g-block-title">覆盖率矩阵 <small>引擎 × 技术域</small></h3>
+        <div class="g-matrix-scroll">
+          <table id="gmatrix" class="g-matrix" aria-label="引擎与技术域覆盖率矩阵"></table>
+        </div>
+        <button id="gmatrix-clear" class="g-clear" hidden>✕ 清除交叉筛选</button>
+      </div>
+
+      <div class="g-side-block g-side-legend">
+        <h3 class="g-block-title">颜色速查</h3>
+        <div id="glegend-short" class="g-legend-short"></div>
+      </div>
+    </aside>
+
+    <!-- 中央画布 -->
+    <section class="g-main" aria-label="图谱画布">
+      <div class="g-stage" id="gstage">
+        <div class="g-loading" id="gloading">图谱加载中…</div>
+        <svg id="gsvg" viewBox="0 0 1000 620" role="img" aria-label="推理技术知识图谱，可拖拽平移、滚轮缩放、点击节点">
+          <g id="vp">
+            <g id="gedges"></g>
+            <g id="gnodes"></g>
+          </g>
+        </svg>
+        <div class="g-zoom" role="group" aria-label="缩放控件">
+          <button id="zin" aria-label="放大" title="放大">+</button>
+          <button id="zout" aria-label="缩小" title="缩小">−</button>
+          <button id="zfit" aria-label="适应窗口" title="适应窗口">适应</button>
+          <button id="zreset" aria-label="复位" title="双击画布也可复位">复位</button>
+        </div>
+        <div class="g-view-badge" id="gviewbadge"></div>
+        <div class="g-empty" id="gempty" hidden><b>没有找到匹配的节点</b><span>换个关键词，或清除筛选再试。</span></div>
+      </div>
+
+      <details class="g-legend-full" id="glegend">
+        <summary>图例：节点颜色 / 图标 = 类型，边颜色 / 线型 = 关系（逐条中文说明，点开看）</summary>
+        <div class="g-legend-body" id="glegendbody"></div>
+      </details>
     </section>
 
-    <aside class="graph-panel" id="gpanel" aria-label="节点详情" hidden></aside>
+    <!-- 右侧详情面板（固定九分区），窄屏落到图下方 -->
+    <aside class="g-panel" id="gpanel" aria-label="节点详情" hidden></aside>
   </div>
-
-  <details class="graph-legend" id="glegend">
-    <summary>图例：节点颜色 = 类型，边的颜色 / 线型 = 关系类型（点开看中文说明）</summary>
-    <div class="leg-body" id="glegendbody"></div>
-  </details>
 </main>
 
 <script src="assets/graph.js"></script>
