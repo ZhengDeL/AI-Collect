@@ -1,6 +1,6 @@
 {
  "schema_version": "1.0",
- "generated_at": "2026-11-22T17:43:41+08:00",
+ "generated_at": "2026-11-22T18:01:49+08:00",
  "counts": {
   "nodes": 214,
   "edges": 225
@@ -188,7 +188,7 @@
      "source": "https://www.hiascend.com/doc_center/source/zh/mindie/10RC3/mindieservice/servicedev/mindie_service0285.html"
     }
    ],
-   "gain_note": "未查到。310P3 EmbeddingGemma2 首次调用 ATB 的错误与替代路径均有记录，但 ATB 臂失败，没有同负载的有效吞吐、延迟或精度对照。MindIE 1.0.RC3 文档给出后端开关，未报告同模型、同卡数、同批长的 atb/ms 对照。",
+   "gain_note": "未查到。310P3 EmbeddingGemma2 首次调用 ATB 的错误与替代路径均有记录，但 ATB 臂失败，没有同负载的有效吞吐、延迟或精度对照。MindIE 1.0.RC3 文档给出后端开关，未报告同模型、同卡数、同批长的 atb/ms 对照。 2026-11-22 真机复测未产出延迟或吞吐。获准的 Atlas A2（910B3）主机从工作机及 D01 到 SSH TCP 22 均连接超时，未进入认证，设备状态及 CANN、ATB、torch_npu 版本未核实。计划的单卡 FP16 128×4096 乘 4096×4096、ATB Linear 对 torch_npu torch.mm(out=...) 未执行。 2026-11-22 18:00 追加：D01 镜像内 ATB 的 Python 包为 `torch_atb-0.0.1+abi1-cp311-none-any.whl`，容器主环境 Python 3.12.16，无 3.11 解释器，该 whl 无法安装加载；ATB Linear vs torch_npu A/B 仍未执行，故本节点无实测数字。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -232,6 +232,20 @@
     "vllm-ascend"
    ],
    "maturity": "mainstream",
+   "gain": [
+    {
+     "metric": "跨卡 all_reduce 大消息可达带宽（HCCS_SW）",
+     "value": "256 MiB fp16 单次 2.656 ms、bus bandwidth 101.06 GB/s；16 MiB 0.195 ms、85.99 GB/s；1 MiB 0.110 ms、9.50 GB/s。",
+     "source": "D:\\001_DSH\\001_DSH_project\\graph\\daily\\hccl-measured-20261122.md",
+     "evidence": "A"
+    },
+    {
+     "metric": "跨卡 all_reduce 小消息延迟",
+     "value": "1 KiB 0.122 ms、64 KiB 0.114 ms，两者与消息大小几乎无关，由约 0.11 ms 的固定延迟主导，带宽利用率不足 1%。",
+     "source": "D:\\001_DSH\\001_DSH_project\\graph\\daily\\hccl-measured-20261122.md",
+     "evidence": "A"
+    }
+   ],
    "cost": [
     "通信组不一致会挂起或超时。",
     "网络与设备互联的带宽会限制多节点扩展。"
@@ -244,6 +258,10 @@
     {
      "hit": "HCCL function error: hcclGetRootInfo(&hcclID), error code is 19 (call network api fail)",
      "fix": "触发版本：vLLM Ascend v0.30.0rc1 镜像，Atlas 800I A2 上以 TP2 启动 Qwen3.8-27B-W8A8。按原报错作者验证的规避法，为各 rank 显式指定可达且 UP 的 HCCL_SOCKET_IFNAME，重启后检查建组成功。"
+    },
+    {
+     "hit": "容器内 npu-smi info 报 `npu get board type failed. ret is -9005`，torch.npu.device_count() 返回 0（Atlas A3，宿主驱动 26.1.1，镜像 vllm-ascend:v0.32.0rc1-a3）。",
+     "fix": "必须同时满足两点：①docker run 加 `--runtime=ascend`（Ascend Docker Runtime）；②把宿主机设备重命名映射成容器内从 0 开始的序号，如 `--device /dev/davinci3:/dev/davinci0 --device /dev/davinci4:/dev/davinci1`，且不要设 ASCEND_RT_VISIBLE_DEVICES。只挂设备节点或只加 runtime 都会 device_count=0；修正后 torch.npu 正常（device_count=2、is_available=True），容器内 npu-smi 仍报 -9005 但不影响使用。另：torchrun --standalone 在容器内会因主机名无法解析卡在 TCPStore 300 s，改用 MASTER_ADDR=127.0.0.1 + 每 rank 独立进程启动。"
     }
    ],
    "hardware_scope": [
@@ -272,10 +290,10 @@
      "source": "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/vllm_ascend/worker/worker.py#L1498"
     }
    ],
-   "gain_note": "未查到。#5591 有 TP16 集合通信相关端到端实验，精确 DeepSeek checkpoint、Ascend 插件版本和卡子型号未公开，且不同实验臂同时切了多个通信/调度开关。需在固定 NPU 型号、模型、batch 和序列长下独立切换目标集合通信路径。",
+   "gain_note": "2026-11-22 18:00 于 D01（Atlas A3，8 卡 × 2 die）实测：宿主机驱动 26.1.1，一次性容器内 CANN/HCCL 9.2.1、PyTorch 2.10.0+cpu、torch_npu 2.10.0.post7；物理 die 3 与 die 4，npu-smi 拓扑表标 HCCS_SW（跨卡）；world_size=2，torch.distributed backend=hccl，all_reduce fp16 SUM，warmup 5 次、计时 20 次取平均，两次独立复测一致（256 MiB 为 100.95 与 101.06 GB/s）。bus bandwidth = 2×字节数×(ws−1)/ws/耗时。 覆盖范围有限：只有 2 die 跨卡、只测 all_reduce fp16、未测 ring/HD 算法差异、未测 8 卡与多机扩展，不能外推为整机集群效率；同卡两 die（SIO）未测。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
-   "updated_by": "架构师",
+   "updated_by": "正德（实测）",
    "changelog": [
     {
      "date": "2026-11-22",
@@ -288,6 +306,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "补 D01 跨卡 HCCL all_reduce 实测（5 档消息大小、两次复测一致）与容器 -9005 修法。"
     }
    ],
    "tags": [
