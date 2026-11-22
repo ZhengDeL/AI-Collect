@@ -110,6 +110,14 @@
   function typeMeta(t) { return TYPE_META[t] || { name: t, ico: '•', color: 'var(--ink-3)' }; }
   function nodeMap() { var m = {}; state.doc.nodes.forEach(function (n) { m[n.id] = n; }); return m; }
   function shortName(n, limit) { var L = limit || 9; return n.name.length > L ? n.name.slice(0, L) + '…' : n.name; }
+  // 卡片内标签：impl/tech 的名字常是「模块 | 职责」结构，截前 9 字会得到一整列
+  // 一模一样的「LLM Manag…」，等于没标签。取最后一个分隔符之后的差异部分。
+  function cardName(n) {
+    var s = String(n.name || '');
+    var parts = s.split(/\s*[|｜·•]\s*/);
+    if (parts.length > 1) { var tail = parts[parts.length - 1]; if (tail.length >= 3) s = tail; }
+    return s.length > 11 ? s.slice(0, 11) + '…' : s;
+  }
 
   /* ---------- 视口：viewBox 恒等于舞台像素（v0 教训二） ---------- */
   function fit() {
@@ -121,15 +129,10 @@
     // 引擎卡片看板：画布高度由 layout 算出的内容高度决定（12 张卡纵排），页面纵向滚动
     if (state.view === 'engine' && state.needH) {
       h = Math.max(baseH, state.needH);
-      svg.style.height = h + 'px';
-      state.h = h;
-      svg.setAttribute('viewBox', '0 0 ' + state.w + ' ' + state.h);
-      return;
-    }
-    // 窄屏（<700px）：画布改成「纵向长卷」——节点摊开在更高的画布里，页面纵向滚动去看，
-    // 而不是把 170 个节点压进 360px 高的舞台（v1 窄屏 domain/timeline 重叠的根因）。
-    // 标签仍是屏幕像素级大小，viewBox 与画布像素保持 1:1，不靠缩放蒙混。
-    if (state.w < 700 && state.doc && state.doc.nodes.length) {
+    } else if (state.w < 700 && state.doc && state.doc.nodes.length) {
+      // 窄屏（<700px）：画布改成「纵向长卷」——节点摊开在更高的画布里，页面纵向滚动去看，
+      // 而不是把 170 个节点压进 360px 高的舞台（v1 窄屏 domain/timeline 重叠的根因）。
+      // 标签仍是屏幕像素级大小，viewBox 与画布像素保持 1:1，不靠缩放蒙混。
       var per = Math.max(4, Math.floor((state.w - 92) / 28));
       var rows = Math.ceil(state.doc.nodes.length / per) + 6;
       h = Math.max(baseH, rows * 40 + 70);
@@ -137,8 +140,14 @@
     } else if (svg.style.height) {
       svg.style.height = '';
     }
+    h = Math.round(h);
+    // 只在自己算的 h 与当前高度不同时才写 style.height：写高度会改变 #gstage 尺寸，
+    // 触发 ResizeObserver → schedule → 又 fit，形成无限重排（用户看到的「一直闪」）。
+    if ((state.w < 700 || (state.view === 'engine' && state.needH)) && svg.style.height !== h + 'px') {
+      svg.style.height = h + 'px';
+    }
     state.h = h;
-    svg.setAttribute('viewBox', '0 0 ' + state.w + ' ' + state.h);
+    svg.setAttribute('viewBox', '0 0 ' + state.w + ' ' + h);
   }
   function radius(n) {
     if (n.type === 'engine') return state.w < 640 ? 12 : 15;
@@ -173,15 +182,16 @@
     var padL = (view === 'engine' && state.w >= 640) ? 112 : 74, padR = 18, padT = 34, padB = 22;
     if (view === 'engine') {
       // 卡片看板：每个引擎一张圆角卡片，卡片内节点排成整齐网格、标签水平排在圆点右侧。
-      // 214 个节点按散点铺开怎么调都是「一堆点」；卡片给了结构、留白和层级。
+      // 宽屏两列并排（一屏能看到 4–6 张卡），窄屏一列。
       var narrow = state.w < 640;
+      var cardCols = narrow ? 1 : 2;
       var cardX = narrow ? 10 : 20;
-      var cardW = w - cardX * 2;
       var cardGap = narrow ? 10 : 14;
+      var cardW = (w - cardX * 2 - cardGap * (cardCols - 1)) / cardCols;
       var titleH = narrow ? 24 : 30;
       var cellH = narrow ? 30 : 32;
-      var cols = narrow ? 2 : Math.max(2, Math.floor(cardW / 175));
-      var cellW = (cardW - 24) / cols;
+      var innerCols = narrow ? 2 : Math.max(2, Math.floor((cardW - 24) / 160));
+      var cellW = (cardW - 24) / innerCols;
       var groups = {};
       ENGINES.forEach(function (en) { groups[en[0]] = []; });
       nodes.forEach(function (n) {
@@ -192,29 +202,45 @@
         if (!groups[key]) key = ENGINES.length ? ENGINES[Math.abs(hash(n.id)) % ENGINES.length][0] : null;
         if (key) groups[key].push(n);
       });
-      var y = 40, geom = [];
-      ENGINES.forEach(function (en, li) {
+      var cards = ENGINES.map(function (en, li) {
         var all = groups[en[0]];
         var g = all.filter(function (n) { return n.type !== 'engine'; });
-        g.sort(function (a, b) { return (a.domains[0] || '').localeCompare(b.domains[0] || '') || a.name.localeCompare(b.name); });
-        var rows = Math.max(1, Math.ceil(g.length / cols));
-        var cardH = titleH + rows * cellH + 8;
-        geom.push({ name: en[1], y: y, h: cardH, n: all.length });
-        // 引擎节点当卡片 logo，固定在标题行左侧；不占网格格位（网格格位留给技术/实现/案例）
-        var engNode = all.filter(function (n) { return n.type === 'engine'; })[0];
-        if (engNode) out[engNode.id] = { x: cardX + 22, y: y + (narrow ? 15 : 18), lane: li };
-        g.forEach(function (n, j) {
-          var r = Math.floor(j / cols), c = j % cols;
-          out[n.id] = {
-            x: cardX + 12 + c * cellW + 10,
-            y: y + titleH + r * cellH + cellH / 2,
-            lane: li
-          };
+        var rank = { tech: 0, impl: 1, case: 2, hardware: 3, community: 4 };
+        g.sort(function (a, b) {
+          var ra = rank[a.type] == null ? 9 : rank[a.type], rb = rank[b.type] == null ? 9 : rank[b.type];
+          return ra - rb || (a.domains[0] || '').localeCompare(b.domains[0] || '') || a.name.localeCompare(b.name);
         });
-        y += cardH + cardGap;
+        return { en: en, li: li, all: all, g: g, h: titleH + Math.max(1, Math.ceil(g.length / innerCols)) * cellH + 8 };
+      });
+      // 瀑布式两列：每张卡放进当前较矮的那一列，避免 23 节点的卡片旁边留一大片空白
+      var colBags = [], colHeights = [];
+      for (var ci = 0; ci < cardCols; ci++) { colBags.push([]); colHeights.push(40); }
+      cards.forEach(function (cd) {
+        var k = 0;
+        for (var z = 1; z < cardCols; z++) if (colHeights[z] < colHeights[k]) k = z;
+        colBags[k].push(cd);
+        colHeights[k] += cd.h + cardGap;
+      });
+      var geom = [];
+      colBags.forEach(function (bag, k) {
+        var cx = cardX + k * (cardW + cardGap), cy = 40;
+        bag.forEach(function (cd) {
+          geom.push({ name: cd.en[1], x: cx, y: cy, w: cardW, h: cd.h, n: cd.all.length });
+          var engNode = cd.all.filter(function (n) { return n.type === 'engine'; })[0];
+          if (engNode) out[engNode.id] = { x: cx + 22, y: cy + (narrow ? 15 : 18), lane: cd.li };
+          cd.g.forEach(function (n, j) {
+            var r = Math.floor(j / innerCols), c = j % innerCols;
+            out[n.id] = {
+              x: cx + 12 + c * cellW + 10,
+              y: cy + titleH + r * cellH + cellH / 2,
+              lane: cd.li
+            };
+          });
+          cy += cd.h + cardGap;
+        });
       });
       state.laneGeom = geom;
-      state.needH = y + 8;
+      state.needH = Math.max.apply(null, colHeights) + 8;
     } else if (view === 'domain') {
       // 12 个域 = tech 节点 domains[] 并集；impl 经 implements 边挂到对应 tech 的域
       var cols = w < 640 ? 2 : 4, rows = Math.ceil(DOMAINS.length / cols);
@@ -421,13 +447,14 @@
     if (state.view !== 'engine') return '';
     var geom = state.laneGeom || [];
     if (!geom.length) return '';
-    var narrow = state.w < 640, cardX = narrow ? 10 : 20, cardW = state.w - cardX * 2;
+    var narrow = state.w < 640;
     var s = '';
     geom.forEach(function (ln) {
-      s += '<rect class="g-card-bg" x="' + cardX + '" y="' + ln.y.toFixed(1) + '" width="' + cardW.toFixed(1) + '" height="' + ln.h.toFixed(1) + '" rx="12"/>';
+      var x = ln.x, wd = ln.w;
+      s += '<rect class="g-card-bg" x="' + x.toFixed(1) + '" y="' + ln.y.toFixed(1) + '" width="' + wd.toFixed(1) + '" height="' + ln.h.toFixed(1) + '" rx="12"/>';
       var nm = (narrow ? LANE_SHORT_NARROW[ln.name] : LANE_SHORT[ln.name]) || ln.name;
-      s += '<text class="g-card-title" x="' + (cardX + 44) + '" y="' + (ln.y + (narrow ? 17 : 20)).toFixed(1) + '">' + esc(nm) + '</text>';
-      s += '<text class="g-card-count" x="' + (cardX + cardW - 14) + '" y="' + (ln.y + (narrow ? 17 : 20)).toFixed(1) + '" text-anchor="end">' + ln.n + ' 个节点</text>';
+      s += '<text class="g-card-title" x="' + (x + 44) + '" y="' + (ln.y + (narrow ? 17 : 20)).toFixed(1) + '">' + esc(nm) + '</text>';
+      s += '<text class="g-card-count" x="' + (x + wd - 14) + '" y="' + (ln.y + (narrow ? 17 : 20)).toFixed(1) + '" text-anchor="end">' + ln.n + ' 个节点</text>';
     });
     return s;
   }
@@ -455,12 +482,15 @@
     state.positions = layout(state.view);
     // 引擎卡片看板的总高由内容决定（12 张卡片纵排），画布跟着长高、页面滚动；
     // 不把 12 张卡硬压进一屏，那正是之前「一堆点」的来源。
-    if (state.needH && state.needH > state.h) {
-      state.h = state.needH;
-      var svgEl = $('gsvg');
-      if (svgEl) {
-        svgEl.setAttribute('viewBox', '0 0 ' + state.w + ' ' + state.h);
-        svgEl.style.height = state.h + 'px';
+    if (state.needH) {
+      var needH = Math.round(state.needH);
+      if (needH !== state.h) {
+        state.h = needH;
+        var svgEl = $('gsvg');
+        if (svgEl) {
+          svgEl.setAttribute('viewBox', '0 0 ' + state.w + ' ' + state.h);
+          if (svgEl.style.height !== needH + 'px') svgEl.style.height = needH + 'px';
+        }
       }
     }
     var t1 = performance.now();
@@ -484,7 +514,7 @@
       // 只保留鼠标悬停/选中时才出现的标签（CSS .node.hov .node-label）。
       // 引擎卡片视图：标签水平排在圆点右侧，一行一个节点（卡片网格的行高刚好容下一行）
       var horiz = (state.view === 'engine');
-      var label = (horiz && n.type === 'engine') ? '' : shortName(n, horiz && state.w >= 640 ? 12 : 9);
+      var label = (horiz && n.type === 'engine') ? '' : (horiz ? cardName(n) : shortName(n, 9));
       var isAsc = nodeStack(n) === 'ascend';
       nodesS += '<g class="node t-' + esc(n.type) + (isAsc ? ' s-ascend' : '') + (state.selected === n.id ? ' selected' : '') + '" data-id="' + esc(n.id) +
         '" transform="translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ')">' +
@@ -1193,6 +1223,10 @@
         clearTimeout(rt);
         rt = setTimeout(function () {
           if (!state.doc) return;
+          // 只在「宽度」变化时重排。高度变化是本视图自己写 svg.style.height 造成的，
+          // 若也触发重排就会 fit→写高度→ResizeObserver→fit 无限循环（页面一直闪）。
+          var w = Math.round($('gstage').getBoundingClientRect().width || 0);
+          if (w === state.w) return;
           var keep = state.selected;
           fit(); buildScene(); if (keep && nodeMap()[keep]) selectNode(keep, false);
         }, 140);
