@@ -1,8 +1,8 @@
 {
  "schema_version": "1.0",
- "generated_at": "2026-11-22T17:23:58+08:00",
+ "generated_at": "2026-11-22T17:26:50+08:00",
  "counts": {
-  "nodes": 213,
+  "nodes": 215,
   "edges": 221
  },
  "views": [
@@ -10994,6 +10994,38 @@
    ],
    "evidence": "A",
    "status": "verified",
+   "repo": "vllm-project/vllm",
+   "stars": 97328,
+   "last_push": "2026-11-22",
+   "contributors": "≈4175",
+   "top_maintainers": [
+    {
+     "login": "DarkLight1337",
+     "contributions": 920
+    },
+    {
+     "login": "WoosukKwon",
+     "contributions": 903
+    },
+    {
+     "login": "mgoin",
+     "contributions": 681
+    },
+    {
+     "login": "hmellor",
+     "contributions": 661
+    },
+    {
+     "login": "njhill",
+     "contributions": 558
+    }
+   ],
+   "release_cadence_days": 12.4,
+   "latest_release": {
+    "tag": "v0.34.0",
+    "date": "2026-11-16"
+   },
+   "data_source": "GitHub REST API 2026-11-22",
    "type": "community",
    "stack": [
     "nvidia"
@@ -11016,6 +11048,38 @@
    ],
    "evidence": "A",
    "status": "verified",
+   "repo": "sgl-project/sglang",
+   "stars": 38922,
+   "last_push": "2026-11-22",
+   "contributors": "≈2335",
+   "top_maintainers": [
+    {
+     "login": "hnyls2002",
+     "contributions": 1460
+    },
+    {
+     "login": "merrymercy",
+     "contributions": 1270
+    },
+    {
+     "login": "mickqian",
+     "contributions": 1031
+    },
+    {
+     "login": "fzyzcjy",
+     "contributions": 851
+    },
+    {
+     "login": "zhyncs",
+     "contributions": 784
+    }
+   ],
+   "release_cadence_days": 12.7,
+   "latest_release": {
+    "tag": "v0.5.23",
+    "date": "2026-11-02"
+   },
+   "data_source": "GitHub REST API 2026-11-22",
    "type": "community",
    "stack": [
     "nvidia"
@@ -11033,12 +11097,44 @@
     "dynamo",
     "triton-inference-server"
    ],
-   "license": "Apache-2.0",
+   "license": "NOASSERTION",
    "urls": [
     "https://github.com/NVIDIA"
    ],
    "evidence": "A",
    "status": "verified",
+   "repo": "NVIDIA/TensorRT-LLM",
+   "stars": 15115,
+   "last_push": "2026-11-22",
+   "contributors": "≈535",
+   "top_maintainers": [
+    {
+     "login": "trtllm-agent",
+     "contributions": 565
+    },
+    {
+     "login": "tensorrt-cicd",
+     "contributions": 564
+    },
+    {
+     "login": "xinhe-nv",
+     "contributions": 333
+    },
+    {
+     "login": "EmmaQiaoCh",
+     "contributions": 223
+    },
+    {
+     "login": "kaiyux",
+     "contributions": 212
+    }
+   ],
+   "release_cadence_days": 7.9,
+   "latest_release": {
+    "tag": "v1.3.0",
+    "date": "2026-11-20"
+   },
+   "data_source": "GitHub REST API 2026-11-22",
    "type": "community",
    "stack": [
     "nvidia"
@@ -11056,12 +11152,45 @@
     "MindIE",
     "vllm-ascend 由 vllm-project 托管、昇腾团队主维护"
    ],
-   "license": "混合（部分组件闭源）",
+   "license": "Apache-2.0",
    "urls": [
     "https://www.hiascend.com/"
    ],
    "evidence": "A",
    "status": "verified",
+   "repo": "vllm-project/vllm-ascend",
+   "stars": 3129,
+   "last_push": "2026-11-22",
+   "contributors": "≈835",
+   "top_maintainers": [
+    {
+     "login": "wangxiyuan",
+     "contributions": 409
+    },
+    {
+     "login": "zhangxinyuehfad",
+     "contributions": 216
+    },
+    {
+     "login": "Potabk",
+     "contributions": 203
+    },
+    {
+     "login": "MrZ20",
+     "contributions": 141
+    },
+    {
+     "login": "MengqingCao",
+     "contributions": 124
+    }
+   ],
+   "release_cadence_days": 14.8,
+   "latest_release": {
+    "tag": "v0.32.0rc1",
+    "date": "2026-11-10"
+   },
+   "data_source": "GitHub REST API 2026-11-22",
+   "data_note": "repo HTTP 404",
    "type": "community",
    "stack": [
     "nvidia"
@@ -11083,6 +11212,38 @@
    ],
    "evidence": "A",
    "status": "verified",
+   "repo": "LMCache/LMCache",
+   "stars": 12409,
+   "last_push": "2026-11-22",
+   "contributors": "≈425",
+   "top_maintainers": [
+    {
+     "login": "maobaolong",
+     "contributions": 381
+    },
+    {
+     "login": "ApostaC",
+     "contributions": 307
+    },
+    {
+     "login": "chunxiaozheng",
+     "contributions": 166
+    },
+    {
+     "login": "sammshen",
+     "contributions": 161
+    },
+    {
+     "login": "deng451e",
+     "contributions": 158
+    }
+   ],
+   "release_cadence_days": 0.1,
+   "latest_release": {
+    "tag": "nightly-rocm",
+    "date": "2026-11-22"
+   },
+   "data_source": "GitHub REST API 2026-11-22",
    "type": "community",
    "stack": [
     "nvidia"
@@ -11104,6 +11265,38 @@
    ],
    "evidence": "A",
    "status": "verified",
+   "repo": "kvcache-ai/Mooncake",
+   "stars": 7104,
+   "last_push": "2026-11-22",
+   "contributors": "≈460",
+   "top_maintainers": [
+    {
+     "login": "Aionw",
+     "contributions": 143
+    },
+    {
+     "login": "stmatengss",
+     "contributions": 137
+    },
+    {
+     "login": "alogfans",
+     "contributions": 133
+    },
+    {
+     "login": "xiaguan",
+     "contributions": 107
+    },
+    {
+     "login": "staryxchen",
+     "contributions": 107
+    }
+   ],
+   "release_cadence_days": 18.2,
+   "latest_release": {
+    "tag": "v0.3.14",
+    "date": "2026-11-03"
+   },
+   "data_source": "GitHub REST API 2026-11-22",
    "type": "community",
    "stack": [
     "nvidia"
@@ -11126,6 +11319,38 @@
    ],
    "evidence": "A",
    "status": "verified",
+   "repo": "ggml-org/llama.cpp",
+   "stars": 135994,
+   "last_push": "2026-11-22",
+   "contributors": "≈2290",
+   "top_maintainers": [
+    {
+     "login": "ggerganov",
+     "contributions": 2104
+    },
+    {
+     "login": "ngxson",
+     "contributions": 704
+    },
+    {
+     "login": "JohannesGaessler",
+     "contributions": 407
+    },
+    {
+     "login": "CISC",
+     "contributions": 402
+    },
+    {
+     "login": "slaren",
+     "contributions": 362
+    }
+   ],
+   "release_cadence_days": 0.0,
+   "latest_release": {
+    "tag": "b12631",
+    "date": "2026-11-22"
+   },
+   "data_source": "GitHub REST API 2026-11-22",
    "type": "community",
    "stack": [
     "nvidia"
@@ -11147,6 +11372,140 @@
    ],
    "evidence": "A",
    "status": "verified",
+   "repo": "InternLM/lmdeploy",
+   "stars": 8155,
+   "last_push": "2026-11-20",
+   "contributors": "≈165",
+   "top_maintainers": [
+    {
+     "login": "lvhan028",
+     "contributions": 421
+    },
+    {
+     "login": "grimoire",
+     "contributions": 351
+    },
+    {
+     "login": "AllentDan",
+     "contributions": 190
+    },
+    {
+     "login": "irexyc",
+     "contributions": 184
+    },
+    {
+     "login": "RunningLeon",
+     "contributions": 176
+    }
+   ],
+   "release_cadence_days": 21.6,
+   "latest_release": {
+    "tag": "v0.18.0",
+    "date": "2026-09-28"
+   },
+   "data_source": "GitHub REST API 2026-11-22",
+   "type": "community",
+   "stack": [
+    "nvidia"
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "community/huggingface",
+   "name": "Hugging Face（TGI）",
+   "org": "huggingface",
+   "governance": "未查到（仓库无公开 governance 文件）",
+   "repos": "huggingface/text-generation-inference",
+   "license": "Apache-2.0",
+   "urls": [
+    "https://github.com/huggingface/text-generation-inference"
+   ],
+   "evidence": "A",
+   "status": "candidate",
+   "repo": "huggingface/text-generation-inference",
+   "stars": 10876,
+   "last_push": "2026-03-21",
+   "contributors": "≈150",
+   "top_maintainers": [
+    {
+     "login": "Narsil",
+     "contributions": 365
+    },
+    {
+     "login": "OlivierDehaene",
+     "contributions": 360
+    },
+    {
+     "login": "danieldk",
+     "contributions": 166
+    },
+    {
+     "login": "drbh",
+     "contributions": 143
+    },
+    {
+     "login": "sywangyi",
+     "contributions": 74
+    }
+   ],
+   "release_cadence_days": 28.6,
+   "latest_release": {
+    "tag": "v3.3.7",
+    "date": "2025-12-19"
+   },
+   "data_source": "GitHub REST API 2026-11-22",
+   "type": "community",
+   "stack": [
+    "nvidia"
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "community/ollama",
+   "name": "Ollama 社区",
+   "org": "ollama",
+   "governance": "未查到（仓库无公开 governance 文件）",
+   "repos": "ollama/ollama",
+   "license": "MIT",
+   "urls": [
+    "https://github.com/ollama/ollama"
+   ],
+   "evidence": "A",
+   "status": "candidate",
+   "repo": "ollama/ollama",
+   "stars": 187830,
+   "last_push": "2026-11-21",
+   "contributors": "≈630",
+   "top_maintainers": [
+    {
+     "login": "mxyng",
+     "contributions": 1294
+    },
+    {
+     "login": "dhiltgen",
+     "contributions": 1079
+    },
+    {
+     "login": "jmorganca",
+     "contributions": 931
+    },
+    {
+     "login": "BruceMacD",
+     "contributions": 364
+    },
+    {
+     "login": "jessegross",
+     "contributions": 315
+    }
+   ],
+   "release_cadence_days": 2.2,
+   "latest_release": {
+    "tag": "v0.40.17",
+    "date": "2026-11-10"
+   },
+   "data_source": "GitHub REST API 2026-11-22",
    "type": "community",
    "stack": [
     "nvidia"
@@ -12816,15 +13175,15 @@
   },
   {
    "from": "engine/ollama",
-   "to": "community/ggml",
+   "to": "community/ollama",
    "type": "maintained_by",
-   "note": "Ollama 由 ggml / llama.cpp 社区 维护"
+   "note": "Ollama 由 Ollama 社区 维护"
   },
   {
    "from": "engine/tgi",
-   "to": "community/ggml",
+   "to": "community/huggingface",
    "type": "maintained_by",
-   "note": "Text Generation Inference 由 ggml / llama.cpp 社区 维护"
+   "note": "Text Generation Inference 由 Hugging Face（TGI） 维护"
   },
   {
    "from": "engine/vllm-ascend",

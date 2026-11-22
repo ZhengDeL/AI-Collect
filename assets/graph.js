@@ -235,13 +235,22 @@
         else if (s === 'nvidia') cols2.nvidia.push(n);
         else cols2.cross.push(n);
       });
-      var bands = [
-        ['nvidia', padL, w * 0.40],
-        ['cross', w * 0.42, w * 0.58],
-        ['ascend', w * 0.60, w - padR]
-      ];
-      bands.forEach(function (band) {
-        packBox(cols2[band[0]], band[1], band[2], padT, h - padB, out);
+      // 三个列带按节点数动态分配宽度：每列先算需要几个子列（rowsMax = 可用高度/最小间距），
+      // 再按子列数比例分宽，保证任何一列塞满时都不会把节点压到画布底边重合。
+      var gap = state.w < 640 ? 28 : 34;
+      var rowsMax = Math.max(1, Math.floor((h - padT - padB) / gap));
+      var order = ['nvidia', 'cross', 'ascend'];
+      var need = {}, sumNeed = 0;
+      order.forEach(function (k) {
+        need[k] = Math.max(1, Math.ceil(cols2[k].length / rowsMax));
+        sumNeed += need[k];
+      });
+      var avail = Math.max(120, w - padL - padR);
+      var cur = padL;
+      order.forEach(function (k) {
+        var cw = avail * need[k] / sumNeed;
+        packStacked(cols2[k], cur, cur + cw, padT, h - padB, out, gap);
+        cur += cw;
       });
     } else { // timeline：按 maturity 五段（research→experimental→emerging→mainstream→legacy），段内按 updated_at
       var matOrder = ['research', 'experimental', 'emerging', 'mainstream', 'legacy'];
@@ -649,10 +658,31 @@
     }
     var govLink = cm && cm.governance_url
       ? ' <a class="gp-url" href="' + esc(cm.governance_url) + '" target="_blank" rel="noopener">治理说明 ↗</a>' : '';
+    // 真实规模与维护者（由 enrich_community.py 从 GitHub REST API 抓取；缺失就整行不显示，不填空话）
+    function num(v) { return (v === null || v === undefined || v === '') ? '' : String(v); }
+    var reposTxt = cm && cm.repos ? (Array.isArray(cm.repos) ? cm.repos.join('、') : String(cm.repos)) : '';
+    var scaleBits = [];
+    if (cm && cm.stars !== null && cm.stars !== undefined) scaleBits.push('★ ' + Number(cm.stars).toLocaleString());
+    if (cm && cm.contributors) scaleBits.push('贡献者 ' + cm.contributors);
+    if (cm && cm.last_push) scaleBits.push('最近提交 ' + cm.last_push);
+    var maintTxt = '';
+    if (cm && cm.top_maintainers && cm.top_maintainers.length) {
+      maintTxt = cm.top_maintainers.map(function (m) {
+        return esc(m.login) + (m.contributions ? ' <span class="gp-impl-meta">(' + m.contributions + ')</span>' : '');
+      }).join('、') + '<div class="gp-impl-meta">按公开 commit 数排序的前 ' + cm.top_maintainers.length + ' 位，来源 GitHub contributors API</div>';
+    }
+    var cadTxt = '';
+    if (cm && (cm.release_cadence_days !== null && cm.release_cadence_days !== undefined)) {
+      cadTxt = '平均 ' + cm.release_cadence_days + ' 天/版';
+      if (cm.latest_release && cm.latest_release.tag) cadTxt += '；最新 ' + esc(cm.latest_release.tag) + (cm.latest_release.date ? '（' + esc(cm.latest_release.date) + '）' : '');
+    }
     var cmHtml = cm ?
       '<dl class="gp-comm"><dt>组织</dt><dd>' + val(cm.org) + '</dd><dt>治理模式</dt><dd>' + val(cm.governance) + govLink + '</dd>' +
-      '<dt>仓库</dt><dd>' + val((cm.repos || []).join('、')) + '</dd>' +
-      '<dt>License</dt><dd>' + val(cm.license) + '</dd></dl>'
+      '<dt>仓库</dt><dd>' + val(reposTxt) + '</dd>' +
+      '<dt>License</dt><dd>' + val(cm.license) + '</dd>' +
+      (scaleBits.length ? '<dt>规模</dt><dd>' + esc(scaleBits.join(' · ')) + '</dd>' : '') +
+      (maintTxt ? '<dt>核心维护者</dt><dd>' + maintTxt + '</dd>' : '') +
+      (cadTxt ? '<dt>发版节奏</dt><dd>' + cadTxt + '</dd>' : '') + '</dl>'
       : '<p class="gp-none">未查到</p>';
     html += sec(8, '社区与维护者', cmHtml);
     // 9 出处与变更
