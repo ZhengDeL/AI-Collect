@@ -47,7 +47,7 @@
   DOMAINS.forEach(function (d) { DOMAIN_NAME[d[0]] = d[1]; });
   // 视图 key 与 data/graph.json 的 views 一致：engine / domain / stack / timeline
   var VIEWS = [
-    ['engine', '引擎视图'], ['domain', '技术域视图'], ['stack', '双栈对照'], ['timeline', '演进']
+    ['map', '总览地图'], ['engine', '引擎视图'], ['domain', '技术域视图'], ['stack', '双栈对照'], ['timeline', '演进']
   ];
   var VIEW_NAME = {};
   VIEWS.forEach(function (v) { VIEW_NAME[v[0]] = v[1]; });
@@ -126,8 +126,9 @@
     state.w = Math.max(320, Math.round(r.width || 1000));
     var baseH = Math.max(300, Math.round(r.height || 620));
     var h = baseH;
-    // 引擎卡片看板：画布高度由 layout 算出的内容高度决定（12 张卡纵排），页面纵向滚动
-    if (state.view === 'engine' && state.needH) {
+    var wantsTall = (state.view === 'engine' || state.view === 'domain') && state.needH;
+    // 引擎卡片看板 / 技术域球阵：画布高度由 layout 算出的内容高度决定，页面纵向滚动
+    if (wantsTall) {
       h = Math.max(baseH, state.needH);
     } else if (state.w < 700 && state.doc && state.doc.nodes.length) {
       // 窄屏（<700px）：画布改成「纵向长卷」——节点摊开在更高的画布里，页面纵向滚动去看，
@@ -143,13 +144,14 @@
     h = Math.round(h);
     // 只在自己算的 h 与当前高度不同时才写 style.height：写高度会改变 #gstage 尺寸，
     // 触发 ResizeObserver → schedule → 又 fit，形成无限重排（用户看到的「一直闪」）。
-    if ((state.w < 700 || (state.view === 'engine' && state.needH)) && svg.style.height !== h + 'px') {
+    if ((wantsTall || state.w < 700) && svg.style.height !== h + 'px') {
       svg.style.height = h + 'px';
     }
     state.h = h;
     svg.setAttribute('viewBox', '0 0 ' + state.w + ' ' + h);
   }
   function radius(n) {
+    if (state.view === 'domain') return state.w < 640 ? 4 : 4.5;
     if (n.type === 'engine') return state.w < 640 ? 12 : 15;
     if (n.type === 'tech') return state.w < 640 ? 8 : 9.5;
     if (n.type === 'case') return state.w < 640 ? 9 : 10.5;
@@ -180,6 +182,7 @@
   function layout(view) {
     var w = state.w, h = state.h, out = {}, nodes = state.doc.nodes, nm = nodeMap();
     var padL = (view === 'engine' && state.w >= 640) ? 112 : 74, padR = 18, padT = 34, padB = 22;
+    state.needH = 0;
     if (view === 'engine') {
       // 卡片看板：每个引擎一张圆角卡片，卡片内节点排成整齐网格、标签水平排在圆点右侧。
       // 宽屏两列并排（一屏能看到 4–6 张卡），窄屏一列。
@@ -250,9 +253,8 @@
       state.laneGeom = geom;
       state.needH = Math.max.apply(null, colHeights) + 8;
     } else if (view === 'domain') {
-      // 12 个域 = tech 节点 domains[] 并集；impl 经 implements 边挂到对应 tech 的域
-      var cols = w < 640 ? 2 : 4, rows = Math.ceil(DOMAINS.length / cols);
-      var cw = (w - padL - padR) / cols, ch = (h - padT - padB) / rows;
+      // 技术域 = 一组圆球：每个域一个球，球内节点按「中心 + 同心环」排，球半径随节点数长大。
+      // 之前的 4 列方格更像表格，用户要的是「圆球状」。
       var buckets = {};
       DOMAINS.forEach(function (d) { buckets[d[0]] = []; });
       nodes.forEach(function (n) {
@@ -267,23 +269,29 @@
         if (!key && DOMAINS.length) key = DOMAINS[Math.abs(hash(n.id)) % DOMAINS.length][0];
         if (key) (buckets[key] = buckets[key] || []).push(n);
       });
-      DOMAINS.forEach(function (d, di) {
-        var cx0 = padL + (di % cols) * cw, cy0 = padT + Math.floor(di / cols) * ch;
+      var narrowD = w < 700;
+      var colsD = narrowD ? 1 : 3;
+      var BALL_R = narrowD ? 58 : 54;   // 每球固定大小：球里只放 4 个代表节点（引擎 + 主要技术），其余点开看
+      var SHOW = 4;
+      var balls = DOMAINS.map(function (d, di) {
         var g = buckets[d[0]] || [];
-        if (w < 700) {
-          // 窄屏：每个域占整行（满宽），域内用 packBox 铺格子，而不是在几十像素的小格里硬塞
-          packBox(g, padL, w - padR, cy0, cy0 + ch - 4, out);
-          return;
-        }
-        var per = Math.max(1, Math.floor((cw - 24) / 46));
-        g.forEach(function (n, j) {
-          var col = j % per, row = Math.floor(j / per);
-          out[n.id] = {
-            x: Math.min(w - padR, cx0 + 24 + col * ((cw - 34) / per)),
-            y: Math.min(h - padB, cy0 + 24 + row * 40)
-          };
+        var orank = { engine: 0, tech: 1, case: 2, impl: 3, hardware: 4, community: 5 };
+        g.sort(function (a, b) { return (orank[a.type] == null ? 9 : orank[a.type]) - (orank[b.type] == null ? 9 : orank[b.type]); });
+        return { key: d[0], name: d[1], g: g, shown: g.slice(0, SHOW), R: BALL_R, di: di };
+      });
+      var cellW = (w - padL - padR) / colsD;
+      var cellH = BALL_R * 2 + (narrowD ? 44 : 34);
+      balls.forEach(function (it, i) {
+        var ccx = padL + (i % colsD) * cellW + cellW / 2;
+        var ccy = padT + Math.floor(i / colsD) * cellH + BALL_R + 14;
+        it.cx = Math.round(ccx); it.cy = Math.round(ccy);
+        // 球内竖排 4 行（点 + 标签），一行一个节点：比圆点阵看得懂，也不会互相压
+        it.shown.forEach(function (n, j) {
+          out[n.id] = { x: it.cx - BALL_R + 14, y: it.cy - 24 + j * 16 };
         });
       });
+      state.ballGeom = balls;
+      state.needH = padT + Math.ceil(balls.length / colsD) * cellH + padB;
     } else if (view === 'stack') {
       // 双栈对照：stack 含 nvidia / 含 ascend 分两列，cross 走中间。asc_equivalent 边跨列连线
       var cols2 = { nvidia: [], ascend: [], cross: [] };
@@ -471,6 +479,20 @@
     });
     return s;
   }
+  function domainDecor() {
+    if (state.view !== 'domain') return '';
+    var balls = state.ballGeom || [];
+    var s = '';
+    balls.forEach(function (b) {
+      var more = b.g.length - b.shown.length;
+      s += '<circle class="g-ball" cx="' + b.cx + '" cy="' + b.cy + '" r="' + b.R + '" data-ball="' + esc(b.key) + '"/>';
+      s += '<text class="g-ball-name" x="' + b.cx + '" y="' + (b.cy - b.R - 8) + '" text-anchor="middle">' + esc(b.name) + ' · ' + b.g.length + '</text>';
+      if (more > 0) {
+        s += '<text class="g-ball-more" data-ball="' + esc(b.key) + '" x="' + b.cx + '" y="' + (b.cy + b.R - 10) + '" text-anchor="middle">+' + more + ' 个 · 点开看</text>';
+      }
+    });
+    return s;
+  }
   function dualDecor() {
     if (state.view !== 'stack') return '';
     return '<line class="g-lane-rule" x1="' + (state.w * 0.5).toFixed(1) + '" y1="24" x2="' + (state.w * 0.5).toFixed(1) + '" y2="' + (state.h - 12) + '"/>' +
@@ -507,7 +529,7 @@
       }
     }
     var t1 = performance.now();
-    var edgesS = laneDecor() + dualDecor() + evoDecor();
+    var edgesS = laneDecor() + dualDecor() + evoDecor() + domainDecor();
     // 卡片看板不画关系线：节点已按引擎归位，跨卡片的长斜线只会变成噪声；
     // 关系在「技术域/双栈对照」视图和详情面板的「关系」分区里看。
     if (state.view !== 'engine') doc.edges.forEach(function (e) {
@@ -526,13 +548,13 @@
       // 引擎视图里泳道名已经写在左上角，engine 节点再挂一个同名标签就是重复；
       // 只保留鼠标悬停/选中时才出现的标签（CSS .node.hov .node-label）。
       // 引擎卡片视图：标签水平排在圆点右侧，一行一个节点（卡片网格的行高刚好容下一行）
-      var horiz = (state.view === 'engine');
-      var label = (horiz && n.type === 'engine') ? '' : (horiz ? cardName(n) : shortName(n, 9));
+      var horiz = (state.view === 'engine' || state.view === 'domain');
+      var label = (state.view === 'engine' && n.type === 'engine') ? '' : (horiz ? cardName(n) : shortName(n, 9));
       var isAsc = nodeStack(n) === 'ascend';
       nodesS += '<g class="node t-' + esc(n.type) + (isAsc ? ' s-ascend' : '') + (state.selected === n.id ? ' selected' : '') + '" data-id="' + esc(n.id) +
         '" transform="translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ')">' +
         '<circle class="node-circle" r="' + r + '" cx="0" cy="0"/>' +
-        (isAsc && !horiz ? '<text class="asc-flag" x="0" y="' + (-(r + 5)) + '" text-anchor="middle">昇</text>' : '') +
+        (isAsc && !horiz && r >= 8 ? '<text class="asc-flag" x="0" y="' + (-(r + 5)) + '" text-anchor="middle">昇</text>' : '') +
         '<text class="node-ico" x="0" y="' + (r > 11 ? 4 : 3) + '">' + esc(ico) + '</text>' +
         '<text class="node-label" x="' + (horiz ? (r + 6) : 0) + '" y="' + (horiz ? 4 : (r + 14)) + '"' + (horiz ? '' : ' text-anchor="middle"') + '>' + esc(label) + '</text></g>';
       map[n.id] = true;
@@ -870,6 +892,113 @@
       a.addEventListener('click', function () { selectNode(a.getAttribute('data-goto'), true); });
     });
   }
+  // 通用列表抽屉：技术域 / 引擎 / 任意一组节点都走这里 —— v2 三层交互的「列表层」
+  function showGroupPanel(title, list, note) {
+    var order = ['engine', 'tech', 'impl', 'case', 'hardware', 'community'];
+    var groups = {};
+    list.forEach(function (n) { (groups[n.type] = groups[n.type] || []).push(n); });
+    var html = '<div class="gp-top"><span class="gp-ico" style="background:var(--accent,#2563eb)">◎</span>' +
+      '<div class="gp-title-wrap"><h3 class="gp-name">' + esc(title) + '</h3>' +
+      '<div class="gp-badges"><span class="gp-badge b-type">' + list.length + ' 个节点</span></div>' +
+      (note ? '<div class="gp-impl-meta">' + esc(note) + '</div>' : '') + '</div>' +
+      '<button class="gp-close" id="gp-close" aria-label="关闭详情">×</button></div>';
+    order.forEach(function (t) {
+      var arr = groups[t] || []; if (!arr.length) return;
+      html += sec(order.indexOf(t) + 2, typeMeta(t).name + '（' + arr.length + '）',
+        '<ul class="gp-links">' + arr.map(function (n) {
+          return '<li><a class="gp-rel-link" data-goto="' + esc(n.id) + '">' + esc(n.name) + '</a></li>';
+        }).join('') + '</ul>');
+    });
+    $('gpanel').innerHTML = html;
+    $('gpanel').hidden = false;
+    $('ggrid').classList.add('has-panel');
+    $('gp-close').addEventListener('click', closePanel);
+    Array.prototype.forEach.call($('gpanel').querySelectorAll('[data-goto]'), function (a) {
+      a.addEventListener('click', function () { selectNode(a.getAttribute('data-goto'), true); });
+    });
+  }
+  // 点技术域的球：列出该域全部节点（按类型分组），点条目直接跳节点面板。
+  function showDomainPanel(key) {
+    var d = DOMAINS.filter(function (x) { return x[0] === key; })[0] || [key, key];
+    var list = state.doc.nodes.filter(function (n) { return (n.domains || []).indexOf(key) >= 0; });
+    showGroupPanel(d[1], list, '技术域 · 按类型分组，点条目看九分区详情');
+  }
+
+  /* ---------- 总览地图（v2 首屏）：HTML 承载入口，点击目标大 ---------- */
+  var MAP_DOMAIN_GROUPS = [
+    ['服务与输入输出', ['serving', 'multimodal', 'structured-output']],
+    ['计算与并行', ['attention-kernel', 'quantization', 'parallel']],
+    ['调度与缓存', ['scheduling', 'kv-cache', 'prefix-cache']],
+    ['图与解码', ['graph-compile', 'spec-decode', 'ascend-native']]
+  ];
+  function engineShort(eid) { return String(eid || '').split('/')[1] || ''; }  function nodesOfEngine(short) {
+    return state.doc.nodes.filter(function (n) {
+      if (n.type === 'engine') return engineShort(n.id) === short;
+      if ((n.engines || []).indexOf(short) >= 0) return true;
+      return n.engine === short;
+    });
+  }
+  function openEnginePanel(short) {
+    var eng = state.doc.nodes.filter(function (n) { return n.type === 'engine' && engineShort(n.id) === short; })[0];
+    showGroupPanel(eng ? eng.name : short, nodesOfEngine(short), '推理引擎 · 实现、相关技术与案例，点条目看九分区');
+  }
+  function matchNode(n, q) {
+    if (!q) return false;
+    var hay = [n.name, (n.alias || []).join(' '), n.one_line || '', n.module || '',
+      (n.symbols || []).join(' '), n.config || '', n.engine || '',
+      (n.engines || []).join(' '), (n.domains || []).join(' ')].join(' ').toLowerCase();
+    return hay.indexOf(q) >= 0;
+  }
+  function filterMap() {
+    var q = state.query.trim().toLowerCase();
+    Array.prototype.forEach.call(document.querySelectorAll('#gmap [data-engine]'), function (b) {
+      var k = b.getAttribute('data-engine');
+      var hit = !q || k.toLowerCase().indexOf(q) >= 0 || (b.textContent || '').toLowerCase().indexOf(q) >= 0;
+      b.style.display = hit ? '' : 'none';
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#gmap [data-ball-item]'), function (b) {
+      var k = b.getAttribute('data-domain');
+      var hit = !q || (DOMAIN_NAME[k] || '').toLowerCase().indexOf(q) >= 0 ||
+        state.doc.nodes.some(function (n) {
+          return (n.domains || []).indexOf(k) >= 0 && (n.name || '').toLowerCase().indexOf(q) >= 0;
+        });
+      b.style.display = hit ? '' : 'none';
+    });
+  }
+  function buildMap() {
+    if (!state.doc) return;
+    var stEl = $('gmapstacks'), dmEl = $('gmapdomains'), ftEl = $('gmapfoot');
+    if (!stEl || !dmEl) return;
+    var groups = { nvidia: [], ascend: [], other: [] };
+    ENGINES.forEach(function (e) {
+      var k = e[2] === 'ascend' ? 'ascend' : (e[2] === 'nvidia' ? 'nvidia' : 'other');
+      groups[k].push(e);
+    });
+    var stackDefs = [['nvidia', 'NVIDIA · GPU 栈'], ['ascend', '昇腾 · NPU 栈'], ['other', '跨栈 · 其它引擎']];
+    stEl.innerHTML = stackDefs.filter(function (s) { return groups[s[0]].length; }).map(function (s) {
+      var list = groups[s[0]];
+      return '<div class="g-stack ' + s[0] + '"><div class="g-stack-head"><span class="g-stack-name">' + s[1] +
+        '</span><span class="g-stack-sub">' + list.length + ' 个引擎 · 点开看它的实现层</span></div><div class="g-engines">' +
+        list.map(function (e) {
+          var n = nodesOfEngine(e[0]).length;
+          return '<button class="g-engine" data-engine="' + esc(e[0]) + '"><span class="g-engine-name">' + esc(e[1]) +
+            '</span><span class="g-engine-meta">' + n + ' 项内容</span></button>';
+        }).join('') + '</div></div>';
+    }).join('');
+    dmEl.innerHTML = MAP_DOMAIN_GROUPS.map(function (g) {
+      var balls = g[1].filter(function (k) { return DOMAIN_NAME[k]; }).map(function (k) {
+        var n = state.doc.nodes.filter(function (x) { return (x.domains || []).indexOf(k) >= 0; }).length;
+        return '<button class="g-ball-item" data-ball-item data-domain="' + esc(k) + '"><span class="g-ball-circle"><span class="g-ball-n">' + n +
+          '</span></span><span class="g-ball-name">' + esc(DOMAIN_NAME[k]) + '</span></button>';
+      }).join('');
+      return '<div class="g-dgroup"><div class="g-dgroup-head">' + g[0] + '</div><div class="g-balls">' + balls + '</div></div>';
+    }).join('');
+    if (ftEl) {
+      ftEl.textContent = '数据 ' + state.doc.nodes.length + ' 节点 · ' + state.doc.edges.length + ' 条关系 · 生成于 ' +
+        String(state.doc.generated_at || '—').slice(0, 16).replace('T', ' ');
+    }
+    filterMap();
+  }
   function copyText(t) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(t).catch(function () { fallbackCopy(t); });
@@ -1062,20 +1191,28 @@
 
   /* ---------- 深链 ---------- */
   function setView(mode, pushHash) {
-    if (!VIEW_NAME[mode]) mode = 'engine';
+    if (!VIEW_NAME[mode]) mode = 'map';
     state.view = mode;
+    var mapEl = $('gmap'), stEl = $('gstage');
+    if (mapEl) mapEl.hidden = mode !== 'map';
+    if (stEl) stEl.hidden = mode === 'map';
     if (pushHash !== false) {
       state.suppressHash = true;
       history.replaceState(null, '', '#view/' + mode);
       setTimeout(function () { state.suppressHash = false; }, 0);
     }
-    renderViews(); buildScene();
+    renderViews();
+    if (mode === 'map') return;
+    fit(); buildScene();
   }
   function applyHash() {
     if (!state.doc) return;
     var h = location.hash;
     var m = h.match(/^#node\/(.+)$/);
-    if (m) { selectNode(decodeURIComponent(m[1]), false); return; }
+    if (m) {
+      if (state.view === 'map') setView('engine', false);
+      selectNode(decodeURIComponent(m[1]), false); return;
+    }
     m = h.match(/^#view\/([a-z]+)$/);
     if (m) { closePanelSilent(); setView(m[1], false); return; }
     closePanelSilent();
@@ -1173,7 +1310,11 @@
     });
     // 卡片底部的「+N 个 · 点开看」/「收起」：展开/折叠该引擎卡片（只改布局，不动数据）
     $('gstage').addEventListener('click', function (e) {
-      var t = e.target, key = t && t.getAttribute ? t.getAttribute('data-card-more') : null;
+      var t = e.target;
+      // 技术域视图：整颗球都是点击区（不必精确点中 4px 的小圆点）
+      var ball = t && t.getAttribute ? t.getAttribute('data-ball') : null;
+      if (ball) { e.preventDefault(); e.stopPropagation(); showDomainPanel(ball); return; }
+      var key = t && t.getAttribute ? t.getAttribute('data-card-more') : null;
       if (!key) return;
       e.preventDefault();
       e.stopPropagation();
@@ -1182,10 +1323,58 @@
     });
   }
 
+  /* 侧栏抽屉 / 全屏：把整屏留给画布 */
+  function bindChrome() {
+    var side = $('gside'), tg = $('gside-toggle');
+    if (!side || !tg) return;
+    var set = function (open) {
+      side.classList.toggle('is-open', open);
+      tg.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    tg.addEventListener('click', function (e) {
+      e.stopPropagation();
+      set(!side.classList.contains('is-open'));
+    });
+    // 点画布空白处收起侧栏（点节点/球/卡片不收起，避免误关）
+    $('gstage').addEventListener('click', function (e) {
+      if (!side.classList.contains('is-open')) return;
+      var t = e.target;
+      if (t.closest && t.closest('.node,.g-ball,.g-card-more')) return;
+      set(false);
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') set(false); });
+    var fs = $('gfs');
+    if (fs) fs.addEventListener('click', function () {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+    });
+    // 总览地图：点引擎卡 → 该引擎全部内容；点域球 → 该域全部内容；整卡/整球都是点击区
+    var map = $('gmap');
+    if (map) map.addEventListener('click', function (e) {
+      var t = e.target;
+      var eb = t.closest && t.closest('[data-engine]');
+      if (eb) { openEnginePanel(eb.getAttribute('data-engine')); return; }
+      var db = t.closest && t.closest('[data-ball-item]');
+      if (db) { showDomainPanel(db.getAttribute('data-domain')); return; }
+    });
+    var tr = $('gtorelations');
+    if (tr) tr.addEventListener('click', function () { setView('engine'); });
+    var ms = $('gmapsearch');
+    if (ms) {
+      ms.addEventListener('input', function () { state.query = ms.value; filterMap(); });
+      ms.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+        var q = (ms.value || '').trim().toLowerCase(); if (!q) return;
+        var hit = state.doc.nodes.filter(function (n) { return passes(n) && matchNode(n, q); })[0];
+        if (hit) selectNode(hit.id, true);
+      });
+    }
+  }
+
   /* ---------- boot ---------- */
   function boot() {
     var tBoot = performance.now();
-    initTheme(); bindViewport(); bindHash(); bindNodes();
+    initTheme(); bindViewport(); bindHash(); bindNodes(); bindChrome();
     var s = $('gsearch');
     s.addEventListener('input', function () { state.query = s.value; applyVisibility(); });
     s.addEventListener('keydown', function (e) {
@@ -1211,11 +1400,15 @@
         '<span class="g-stat">引擎 <b>' + ENGINES.length + '</b></span>' +
         '<span class="g-stat">技术域 <b>' + DOMAINS.length + '</b></span>';
       $('gloading').hidden = true;
-      fit(); renderViews(); renderFilters(); renderMatrix(); renderLegends();
+      renderViews(); renderFilters(); renderMatrix(); renderLegends(); buildMap();
       var h = location.hash.match(/^#view\/([a-z]+)$/);
-      state.view = h && VIEW_NAME[h[1]] ? h[1] : 'engine';
+      state.view = h && VIEW_NAME[h[1]] ? h[1] : 'map';
+      var isMap = state.view === 'map';
+      $('gmap').hidden = !isMap;
+      $('gstage').hidden = isMap;
       var tDraw = performance.now();
-      buildScene(); applyHash();
+      if (!isMap) { fit(); buildScene(); }
+      applyHash();
       var renderMs = Math.round(performance.now() - tDraw);
       var totalMs = Math.round(performance.now() - tBoot);
       window.__gPerf = { nodes: doc.nodes.length, edges: doc.edges.length, loadMs: Math.round(tData - tBoot), renderMs: renderMs, totalMs: totalMs };

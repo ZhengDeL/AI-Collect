@@ -40,12 +40,16 @@
       <h2>推理技术知识图谱 <span class="g-ver" id="gver">v1 · P0 骨架</span></h2>
       <p class="g-meta" id="gmeta">加载中…</p>
     </div>
+    <div class="g-head-actions">
+      <button class="g-toggle" id="gside-toggle" aria-expanded="false" aria-controls="gside">☰ 筛选 / 视图</button>
+      <button class="g-toggle" id="gfs" title="全屏看图（Esc 退出）">⛶ 全屏</button>
+    </div>
     <div class="g-statline" id="gstatline"></div>
   </section>
 
   <div class="g-grid" id="ggrid">
-    <!-- 左栏：搜索 / 视图 / 筛选 / 覆盖率矩阵 / 简版图例 -->
-    <aside class="g-side" aria-label="检索与筛选">
+    <!-- 左栏：搜索 / 视图 / 筛选 / 覆盖率矩阵 / 简版图例（浮层抽屉，默认收起，把整屏留给画布） -->
+    <aside class="g-side" id="gside" aria-label="检索与筛选">
       <div class="g-side-block">
         <label class="g-label" for="gsearch">搜索节点</label>
         <input id="gsearch" class="g-search" type="search" placeholder="名称 / 别名 / 文件 / 参数…" aria-label="搜索图谱节点">
@@ -76,9 +80,27 @@
       </div>
     </aside>
 
-    <!-- 中央画布 -->
+    <!-- 中央：总览地图（HTML，点击目标大）+ 关系图（SVG，按需进入） -->
     <section class="g-main" aria-label="图谱画布">
-      <div class="g-stage" id="gstage">
+      <div class="g-map" id="gmap">
+        <div class="g-map-top">
+          <div class="g-map-title">
+            <h2 id="gmaptitle">推理技术地图</h2>
+            <p id="gmapmeta">12 个推理引擎 · 12 个技术域 · 圈内数字＝该域节点数，点开看全部内容</p>
+          </div>
+          <div class="g-map-search">
+            <input id="gmapsearch" class="g-search" type="search" placeholder="搜技术 / 引擎 / 参数，回车打开" aria-label="搜索图谱节点">
+          </div>
+        </div>
+        <div class="g-map-stacks" id="gmapstacks"></div>
+        <div class="g-map-domains" id="gmapdomains"></div>
+        <div class="g-map-foot">
+          <span id="gmapfoot"></span>
+          <button class="g-toggle" id="gtorelations">看关系图 →</button>
+        </div>
+      </div>
+
+      <div class="g-stage" id="gstage" hidden>
         <div class="g-loading" id="gloading">图谱加载中…</div>
         <svg id="gsvg" viewBox="0 0 1000 620" role="img" aria-label="推理技术知识图谱，可拖拽平移、滚轮缩放、点击节点">
           <g id="vp">
