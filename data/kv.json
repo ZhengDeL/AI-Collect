@@ -1,6 +1,6 @@
 {
   "version": "v1",
-  "generated_at": "2026-11-21T02:33:12+08:00",
+  "generated_at": "2026-11-22T09:23:10+08:00",
   "items": [
     {
       "id": "N1",
@@ -1980,6 +1980,136 @@
         "active": "2026-11-20"
       },
       "url": "https://github.com/kvcache-ai/Mooncake/pull/5644",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "N43",
+      "line": "nvidia",
+      "name": "SGLang mem_cache 统一内存池重定位降本",
+      "scenario": [
+        "S4",
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "SGLang main (PR#52143, open 2026-11-21)",
+      "gain": "2x H200 TP2 BF16 Qwen3.6-35B-A3B，--enable-unified-memory：page size 1 output 5750→9280 tok/s（+61%），relocate_into host time 100.9s→1.4s、median per relocation 286ms→1.25ms，KV copied 45.7GB→20.7GB；page size 64 差异 1-2% 在抖动内",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "只针对统一内存池填满后的 sliding-window band；默认池不变，page size 64 收益不显著",
+        "consist": "relocate 前后 154872 small states + 60000 随机步逐字节一致；GSM8K 0.688/0.694→0.688/0.691",
+        "block": "每次 relocate 仍约 0.7us host/page，80万页一次移动仍 600ms，作者留作 follow-up",
+        "engine_change": "改 mem_cache 的 _gap_weights / FloatBand.relocate_into / Band._reader_groups / normal_decode_set_metadata，无新配置；CI 未跑（需 run-ci label）",
+        "active": "2026-11-21"
+      },
+      "url": "https://github.com/sgl-project/sglang/pull/52143",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N44",
+      "line": "nvidia",
+      "name": "LMCache CacheBlend 重复 chunk 每 retrieve 步只从 host stage 一次",
+      "scenario": [
+        "S1",
+        "S3"
+      ],
+      "layers": [
+        "L2",
+        "L1"
+      ],
+      "engine": "LMCache dev (PR#6813, merged 2026-11-21)",
+      "gain": "H200 openai/gpt-oss-120b，10 次中位数：A twice H2D 377MB→189MB、retrieve GPU time 6.96→3.67ms（A once 3.55→3.54ms）；2560/5120 token 全加载 0 degraded",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "仅同一 retrieve plan 内多次命中的同一 chunk 受益，单次命中无收益",
+        "consist": "后续 copy 用 host_offset=-1 的 device-to-device staging row，须在 re-RoPE 改写前完成；repeat=3 case 与 stage-from-host 逐位一致",
+        "block": "无 feature probe，旧 cuda_ops 会把 -1 当 host offset 读",
+        "engine_change": "planner 分组改动，137 blend tests 过；PR 仍 draft 待作者逐行复核",
+        "active": "2026-11-21"
+      },
+      "url": "https://github.com/LMCache/LMCache/pull/6813",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N45",
+      "line": "nvidia",
+      "name": "Mooncake Store 二次触碰准入闸修正（CountMinSketch 误 admit 首读）",
+      "scenario": [
+        "S3",
+        "S5"
+      ],
+      "layers": [
+        "L5",
+        "L3"
+      ],
+      "engine": "Mooncake Store (PR#5724, open 2026-11-21)",
+      "gain": "40000 个只读一次的 key 拷进本地热缓存 30197→3；约 45000 SSD-only key 通过 promotion gate 35581→7；一次 decay 380us→34us（1MiB sketch, arm64 -O2）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "修的是热缓存/promotion-on-hit 准入闸误 admit 首读；阈值设 1 时仍全拷（6000/6000）",
+        "consist": "width 4096→262144、每 width/2 increment 减半；first touch 记忆到下个 decay 周期",
+        "block": "decay 在 mutex 下扫全 sketch、sketch 大 64 倍；分 8 counter/step 才压到 34us",
+        "engine_change": "只改 count_min_sketch.h 两个数字 + decay 循环，无新配置；unit 43/53 过，未合并",
+        "active": "2026-11-21"
+      },
+      "url": "https://github.com/kvcache-ai/Mooncake/pull/5724",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A39",
+      "line": "ascend",
+      "name": "vLLM-Ascend 进程共享多模态 embedding 缓存（disk-backed）",
+      "scenario": [
+        "S5"
+      ],
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "engine": "vLLM-Ascend MRV2 / Ascend 910B3 (PR#22757, open 2026-11-21)",
+      "gain": "910B3 Qwen3.6-27B-w8a8：c8 64 req wall 40.33→28.50s(-29.3%)、req/s 1.587→2.245(+41.5%)、TTFT 4.433→2.971s(-33.0%)；c1 TTFT -25.8%。注：为等效 V1 原型采集，MRV2 端到端待 CI；40 unique embedding 约 1.1GiB",
+      "evidence": "B",
+      "pitfalls": {
+        "hit": "按 mm_hash 命中跳过 ViT；unique-image prefill 下 encoder 约占 device time 47%；默认关闭",
+        "consist": "key 仅 mm_hash 无 model/config namespace，目录须按模型隔离；无分布式锁，并发编码同图都跑 ViT（结果相同，浪费非错）",
+        "block": "async 写，硬 kill 丢队列写；LRU 按文件 mtime 淘汰",
+        "engine_change": "新增 VLLM_ASCEND_MM_GLOBAL_CACHE_DIR / _GB（默认16GiB）两环境变量；UT 4 passed，MRV2 NPU 端到端待 CI",
+        "active": "2026-11-21"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22757",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A40",
+      "line": "ascend",
+      "name": "vLLM-Ascend GLM-5.3 prefill KV offload 到 AscendStore（FP8 MLA+Indexer）",
+      "scenario": [
+        "S2",
+        "S3"
+      ],
+      "layers": [
+        "L1",
+        "L2",
+        "L4"
+      ],
+      "engine": "vLLM-Ascend MRV2 / Ascend A5 (PR#22742, open 2026-11-21)",
+      "gain": "未查到端到端吞吐（A5 prefill + P-to-D WRITE 待测）；CPU 442 tests pass，per-block probe 504320 B、三块 1512960 B 字节往返一致",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "标准 GLM-5.3 走现有 AscendStore 选项 opt-in；L78 MTP 常驻、L0 默认常驻",
+        "consist": "FP8 packed MLA + FP8 Indexer 走已合入 #21256 共享 slot planner；PD 分离需叠加 #21891 等 Push 读完成再复用 slot",
+        "block": "P 节点 layerwise 每 block-stride 4 个 shared buffer，D 节点 use_layerwise=false；kv_load_failure_policy=fail",
+        "engine_change": "依赖已合入的 #21256；新增 209 行仅 CPU 验证，A5 实测未完成",
+        "active": "2026-11-21"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22742",
       "status": "在读",
       "flag": "新增"
     }
