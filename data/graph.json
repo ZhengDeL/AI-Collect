@@ -1,6 +1,6 @@
 {
  "schema_version": "1.0",
- "generated_at": "2026-11-22T17:26:50+08:00",
+ "generated_at": "2026-11-22T17:36:03+08:00",
  "counts": {
   "nodes": 215,
   "edges": 221
@@ -11026,6 +11026,9 @@
     "date": "2026-11-16"
    },
    "data_source": "GitHub REST API 2026-11-22",
+   "one_line": "vLLM 主仓与其插件生态（vllm-ascend、speculators、production-stack）的维护组织，Apache-2.0。",
+   "why": "开源推理引擎事实上的接口标准：OpenAI 兼容 API、PagedAttention、连续批处理都从这里出发；昇腾侧 vLLM-Ascend 也挂在同一个组织下。",
+   "principle": "vLLM 把 KV 按固定 block 分页，块表做逻辑到物理映射，配合连续批处理把显存碎片压下去；V1 引擎再把调度、KV 管理、worker 拆成独立进程，插件通过 platform 接口接入不同硬件。治理上是公开 committer 名单加晋升流程，发版节奏稳定（见本节点发版节奏字段），插件仓与主仓同步演进，因此看昇腾侧行为要同时对齐 vLLM 与 vllm-ascend 两个版本号。",
    "type": "community",
    "stack": [
     "nvidia"
@@ -11080,6 +11083,9 @@
     "date": "2026-11-02"
    },
    "data_source": "GitHub REST API 2026-11-22",
+   "one_line": "SGLang 主仓与相关工具的组织，核心是 RadixAttention 前缀复用与前后端分离的调度。",
+   "why": "与 vLLM 同为一线开源引擎，差异集中在调度与 KV 复用策略，做双栈对照时是最直接的另一条设计取向。",
+   "principle": "SGLang 用基数树维护前缀，把共享前缀的请求合并到同一份 KV；调度侧把 prefill 与 decode 拆成不同批次处理，并支持 overlap 调度掩盖通信与计算。前端提供结构化输出的约束解码接口。它的许多优化项以 PR 形式落地、参数名与 vLLM 不通用，所以同一条技术在两边的配置写法要分别查，不能互相套用。",
    "type": "community",
    "stack": [
     "nvidia"
@@ -11135,6 +11141,9 @@
     "date": "2026-11-20"
    },
    "data_source": "GitHub REST API 2026-11-22",
+   "one_line": "NVIDIA 官方推理栈（TensorRT-LLM、Dynamo、Triton Inference Server）的发布方，内核与编译优化部分闭源。",
+   "why": "NVIDIA 硬件上的性能上限通常由这套栈给出，做双栈对照时它是基准一侧。",
+   "principle": "TensorRT-LLM 走编译路线：先把模型编译成引擎，再按 GPU 架构选内核（含 FP8/FP4 与 in-flight batching），因此版本与 GPU 型号绑定很紧；Dynamo 负责分布式编排与 KV 路由；Triton 提供通用服务层。三者常一起部署，版本矩阵比开源引擎更严格，升级前必须核对 CUDA、驱动、引擎三方兼容性。",
    "type": "community",
    "stack": [
     "nvidia"
@@ -11191,6 +11200,9 @@
    },
    "data_source": "GitHub REST API 2026-11-22",
    "data_note": "repo HTTP 404",
+   "one_line": "昇腾官方生态（CANN、MindIE、MindSpore、vLLM-Ascend、ATB、msModelSlim）的社区与发布渠道，组件许可混合。",
+   "why": "昇腾一侧的软件栈都从这里分发，版本节奏与 CANN 强绑定，是判断某特性「能不能跑」的第一手来源。",
+   "principle": "昇腾栈分三层：底层 CANN 提供算子库与运行时，中间 MindIE 或 vLLM-Ascend 提供推理服务，上层 ATB、msModelSlim 分别负责加速库与量化。很多特性支持是「型号 + CANN 版本 + 框架版本」三元绑定，文档里常只写特性级支持而不给分型号矩阵，因此结论必须标清版本与硬件，缺一项就只能写未查到。",
    "type": "community",
    "stack": [
     "nvidia"
@@ -11244,6 +11256,9 @@
     "date": "2026-11-22"
    },
    "data_source": "GitHub REST API 2026-11-22",
+   "one_line": "KV cache 复用与分层存储项目，把 KV 从显存扩到 host 与远端存储，与 vLLM 集成。",
+   "why": "KV 卸载与 prefix cache 的交叉点，本图与 KV 专题里的多条方案直接来自它的实现。",
+   "principle": "LMCache 在引擎之外维护一份 KV 存储层：请求结束时把 KV 按块写入 host 内存或远端，命中时再读回显存，配合前缀匹配决定复用范围。它的收益高度依赖前缀重复率与存储带宽，代价是额外的搬运与序列化开销；因此同一套配置在不同负载下差异很大，必须带负载条件看数字。",
    "type": "community",
    "stack": [
     "nvidia"
@@ -11297,6 +11312,9 @@
     "date": "2026-11-03"
    },
    "data_source": "GitHub REST API 2026-11-22",
+   "one_line": "月之暗面（Moonshot）开源的 KV 缓存池与 PD 分离服务框架。",
+   "why": "以 KVCache 为中心的分离式架构代表，长上下文与高并发场景的对照组。",
+   "principle": "Mooncake 把 KV 缓存做成集群级资源池，prefill 与 decode 在不同节点上执行，中间通过高速传输搬 KV；调度器按缓存位置决定请求落到哪，尽量让 decode 就近读缓存。它的设计与显存容量、网络带宽强相关，单机部署收益有限，评估时必须看集群规模与拓扑。",
    "type": "community",
    "stack": [
     "nvidia"
@@ -11351,6 +11369,9 @@
     "date": "2026-11-22"
    },
    "data_source": "GitHub REST API 2026-11-22",
+   "one_line": "llama.cpp 与 ggml 张量库的组织，主打 CPU 与消费级 GPU 上的量化推理。",
+   "why": "低比特量化与端侧推理的参照系，很多量化格式（Q4_K_M 等）从这里定义。",
+   "principle": "ggml 定义了一套跨平台的张量运算与量化格式，llama.cpp 在其上实现完整的推理流程，支持 CPU、Metal、CUDA 等多种后端。它的优化目标是单机低延迟与内存占用，而不是数据中心吞吐，因此批处理与并行策略与 vLLM 这类服务型引擎差别很大，不能直接拿它的数字和服务端引擎比。",
    "type": "community",
    "stack": [
     "nvidia"
@@ -11404,6 +11425,9 @@
     "date": "2026-09-28"
    },
    "data_source": "GitHub REST API 2026-11-22",
+   "one_line": "上海 AI Lab 的开源组织，维护 LMDeploy 推理工具链与 InternLM 系列模型。",
+   "why": "LMDeploy 的 TurboMind 引擎是国产开源栈里较早做连续批处理与量化的实现。",
+   "principle": "LMDeploy 由 TurboMind 引擎与 PyTorch 引擎两套后端组成，前者用自研内核做高吞吐推理，后者便于快速适配新模型；量化方面提供 W4A16 等方案，并带 KV 量化选项。它的参数体系与 vLLM 不通用，同一项优化的开关名与默认值需要按它自己的文档核对。",
    "type": "community",
    "stack": [
     "nvidia"
@@ -11455,6 +11479,9 @@
     "date": "2025-12-19"
    },
    "data_source": "GitHub REST API 2026-11-22",
+   "one_line": "Hugging Face 官方组织，维护 TGI 推理服务与 transformers 生态。",
+   "why": "模型权重与 tokenizer 的事实标准来源，TGI 是 HF 官方推理服务实现。",
+   "principle": "TGI 用 Rust 写服务层、Python 写模型层，支持张量并行、连续批处理与多种量化后端；它对模型结构的适配依赖 transformers 的实现，因此新模型的支持往往先到 transformers 再到 TGI。评估 TGI 时要同时看 transformers 版本，否则容易出现「模型能加载但特性不生效」。",
    "type": "community",
    "stack": [
     "nvidia"
@@ -11506,6 +11533,9 @@
     "date": "2026-11-10"
    },
    "data_source": "GitHub REST API 2026-11-22",
+   "one_line": "Ollama 官方组织，把 GGUF 模型封装成一键本地推理服务。",
+   "why": "本地与端侧部署的事实入口，量化与模型分发方式与服务器侧栈差异大。",
+   "principle": "Ollama 在 llama.cpp 之上做模型管理与服务封装：模型以 GGUF 分发，按显存自动选择卸载层数，提供简单的 HTTP 接口。它的默认配置偏向单用户低延迟，不做复杂的多请求调度与分布式并行，因此适合验证「模型能不能跑、效果如何」，不适合作为服务端吞吐基准。",
    "type": "community",
    "stack": [
     "nvidia"

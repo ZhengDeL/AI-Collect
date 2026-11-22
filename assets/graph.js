@@ -621,6 +621,18 @@
         '<div class="gp-impl-meta">版本快照：' + val(im.version_seen) + '</div>' +
         (im.notes ? '<div class="gp-impl-meta">' + esc(im.notes) + '</div>' : '') + '</div>';
     }).join('') : (engHtml || (n.engine_note ? '<div class="gp-impl-meta">未走推理引擎：' + esc(n.engine_note) + '</div>' : '<p class="gp-none">未查到</p>'));
+    // 社区节点没有实现层：改为列出本社区维护的引擎（点开即跳到该引擎面板）
+    if (n.type === 'community' && !impls.length) {
+      var owned = state.doc.edges.filter(function (e) { return e.type === 'maintained_by' && e.to === n.id && nm[e.from]; });
+      if (owned.length) {
+        implHtml = '<div class="gp-impl-meta">本社区维护的引擎（点引擎名跳转，看它的实现层与发版情况）：</div>' +
+          owned.map(function (e) {
+            var en = nm[e.from];
+            return '<div class="gp-impl"><div class="gp-impl-name gp-rel-link" data-goto="' + esc(en.id) + '">' + esc(en.name) + '</div>' +
+              '<div class="gp-impl-meta">' + esc(en.one_line || '') + '</div></div>';
+          }).join('');
+      }
+    }
     html += sec(4, '在哪些引擎里 · 怎么实现', implHtml);
     // 5 实测收益
     var g = n.gain || [];
