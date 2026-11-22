@@ -99,7 +99,7 @@
   var state = {
     doc: null, view: 'engine', query: '',
     filters: { stack: '全部', engine: '全部', domain: '全部', maturity: '全部', evidence: '全部' },
-    focusSet: null, selected: null, positions: {}, visible: {},
+    focusSet: null, selected: null, positions: {}, visible: {}, cardOpen: {},
     w: 1000, h: 620, tx: 0, ty: 0, k: 1, matrixCell: null, suppressHash: false
   };
   function $(id) { return document.getElementById(id); }
@@ -210,7 +210,15 @@
           var ra = rank[a.type] == null ? 9 : rank[a.type], rb = rank[b.type] == null ? 9 : rank[b.type];
           return ra - rb || (a.domains[0] || '').localeCompare(b.domains[0] || '') || a.name.localeCompare(b.name);
         });
-        return { en: en, li: li, all: all, g: g, h: titleH + Math.max(1, Math.ceil(g.length / innerCols)) * cellH + 8 };
+        // 默认每张卡只摊 6 个节点：214 个节点全铺开就是一堵标签墙（用户原话「太密，看不清」）。
+        // 其余折叠成「+N 个 · 点开看」，点一下就展开，搜索时自动全展开（否则命中项藏在折叠里）。
+        var open = !!state.cardOpen[en[0]] || !!state.query.trim() || state.filters.engine !== '全部' || state.filters.domain !== '全部';
+        var CAP = 6;
+        var shown = open ? g : g.slice(0, CAP);
+        return {
+          en: en, li: li, all: all, g: g, shown: shown, more: g.length - shown.length, open: open,
+          h: titleH + Math.max(1, Math.ceil(shown.length / innerCols)) * cellH + (g.length > shown.length ? 24 : 8)
+        };
       });
       // 瀑布式两列：每张卡放进当前较矮的那一列，避免 23 节点的卡片旁边留一大片空白
       var colBags = [], colHeights = [];
@@ -225,10 +233,10 @@
       colBags.forEach(function (bag, k) {
         var cx = cardX + k * (cardW + cardGap), cy = 40;
         bag.forEach(function (cd) {
-          geom.push({ name: cd.en[1], x: cx, y: cy, w: cardW, h: cd.h, n: cd.all.length });
+          geom.push({ name: cd.en[1], key: cd.en[0], x: cx, y: cy, w: cardW, h: cd.h, n: cd.all.length, more: cd.more, open: cd.open });
           var engNode = cd.all.filter(function (n) { return n.type === 'engine'; })[0];
           if (engNode) out[engNode.id] = { x: cx + 22, y: cy + (narrow ? 15 : 18), lane: cd.li };
-          cd.g.forEach(function (n, j) {
+          cd.shown.forEach(function (n, j) {
             var r = Math.floor(j / innerCols), c = j % innerCols;
             out[n.id] = {
               x: cx + 12 + c * cellW + 10,
@@ -455,6 +463,11 @@
       var nm = (narrow ? LANE_SHORT_NARROW[ln.name] : LANE_SHORT[ln.name]) || ln.name;
       s += '<text class="g-card-title" x="' + (x + 44) + '" y="' + (ln.y + (narrow ? 17 : 20)).toFixed(1) + '">' + esc(nm) + '</text>';
       s += '<text class="g-card-count" x="' + (x + wd - 14) + '" y="' + (ln.y + (narrow ? 17 : 20)).toFixed(1) + '" text-anchor="end">' + ln.n + ' 个节点</text>';
+      if (ln.more > 0) {
+        s += '<text class="g-card-more" data-card-more="' + esc(ln.key) + '" x="' + (x + 14) + '" y="' + (ln.y + ln.h - 7).toFixed(1) + '">＋' + ln.more + ' 个 · 点开看</text>';
+      } else if (ln.open && ln.n > 6) {
+        s += '<text class="g-card-more" data-card-more="' + esc(ln.key) + '" x="' + (x + 14) + '" y="' + (ln.y + ln.h - 7).toFixed(1) + '">收起</text>';
+      }
     });
     return s;
   }
@@ -1157,6 +1170,15 @@
     host.addEventListener('mouseout', function (e) {
       var g = e.target.closest ? e.target.closest('.node') : null;
       if (g) clearHighlight();
+    });
+    // 卡片底部的「+N 个 · 点开看」/「收起」：展开/折叠该引擎卡片（只改布局，不动数据）
+    $('gstage').addEventListener('click', function (e) {
+      var t = e.target, key = t && t.getAttribute ? t.getAttribute('data-card-more') : null;
+      if (!key) return;
+      e.preventDefault();
+      e.stopPropagation();
+      state.cardOpen[key] = !state.cardOpen[key];
+      buildScene();
     });
   }
 
