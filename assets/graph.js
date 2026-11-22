@@ -134,9 +134,9 @@
   }
   function radius(n) {
     if (n.type === 'engine') return state.w < 640 ? 12 : 15;
-    if (n.type === 'tech') return state.w < 640 ? 9 : 11;
-    if (n.type === 'case') return state.w < 640 ? 10 : 12;
-    return state.w < 640 ? 8 : 10;
+    if (n.type === 'tech') return state.w < 640 ? 8 : 9.5;
+    if (n.type === 'case') return state.w < 640 ? 9 : 10.5;
+    return state.w < 640 ? 7 : 8.5;
   }
 
   /* ---------- 四视图布局：共用一份数据，切换只重排 ---------- */
@@ -162,11 +162,11 @@
   }
   function layout(view) {
     var w = state.w, h = state.h, out = {}, nodes = state.doc.nodes, nm = nodeMap();
-    var padL = 74, padR = 18, padT = 34, padB = 22;
+    var padL = (view === 'engine' && state.w >= 640) ? 112 : 74, padR = 18, padT = 34, padB = 22;
     if (view === 'engine') {
       // 12 条泳道 = 12 个 engine/* 节点。impl 按 engine 字段落泳道；tech 按 engines[] 关联
       // （一个 tech 可在多条泳道，这里取第一条避免重复节点；筛选/矩阵仍按完整 engines[]）。
-      var laneH = (h - padT - padB) / ENGINES.length;
+      // 泳道高度按节点数加权：vLLM 87 个、llama.cpp 1 个如果平分高度，前者必然压成一行互相重叠。
       var groups = {};
       ENGINES.forEach(function (en) { groups[en[0]] = []; });
       nodes.forEach(function (n) {
@@ -177,20 +177,42 @@
         if (!groups[key]) key = ENGINES.length ? ENGINES[Math.abs(hash(n.id)) % ENGINES.length][0] : null;
         if (key) groups[key].push(n);
       });
+      var availH = h - padT - padB;
+      var weights = ENGINES.map(function (en) { return Math.sqrt(Math.max(1, groups[en[0]].length)); });
+      var sumW = 0;
+      weights.forEach(function (x) { sumW += x; });
+      if (!sumW) sumW = 1;
+      var y0 = padT, geom = [];
+      var narrow = state.w < 640;
       ENGINES.forEach(function (en, li) {
-        var cy = padT + laneH * (li + 0.5);
+        var lh = Math.max(narrow ? 62 : 34, availH * weights[li] / sumW);
         var g = groups[en[0]];
         g.sort(function (a, b) { return (a.domains[0] || '').localeCompare(b.domains[0] || '') || a.name.localeCompare(b.name); });
+        var rowH = narrow ? 26 : 31;
+        var rowTop = narrow ? 46 : 26;
+        var rows = Math.max(1, Math.floor((lh - rowTop - 4) / rowH));
+        var perRow = Math.max(1, Math.ceil(g.length / rows));
+        var x0 = narrow ? padL + 8 : padL + 64;
+        var innerW = Math.max(60, w - x0 - padR - 6);
         g.forEach(function (n, j) {
-          var x;
-          if (n.type === 'engine') x = padL + 12;
+          var row = Math.floor(j / perRow), col = j % perRow;
+          var x, cy;
+          if (n.type === 'engine') { x = narrow ? padL + 34 : padL + 4; cy = y0 + (narrow ? 28 : 18); }
           else {
-            var slot = (w - padL - padR - 60) / Math.max(1, g.length - 1);
-            x = padL + 78 + j * slot;
+            var slot = innerW / Math.max(1, perRow - 1);
+            x = x0 + col * slot;
+            cy = y0 + rowTop + row * rowH;
           }
-          out[n.id] = { x: Math.min(w - padR, Math.max(padL - 30, x)), y: Math.max(padT, Math.min(h - padB, cy)), lane: li };
+          out[n.id] = {
+            x: Math.min(w - padR, Math.max(padL - 30, x)),
+            y: Math.max(padT, Math.min(h - padB, cy)),
+            lane: li
+          };
         });
+        geom.push({ name: en[1], y: y0, h: lh });
+        y0 += lh;
       });
+      state.laneGeom = geom;
     } else if (view === 'domain') {
       // 12 个域 = tech 节点 domains[] 并集；impl 经 implements 边挂到对应 tech 的域
       var cols = w < 640 ? 2 : 4, rows = Math.ceil(DOMAINS.length / cols);
@@ -373,15 +395,39 @@
   }
 
   /* ---------- 场景渲染：字符串拼接 + 事件委托，350 节点也能秒渲染 ---------- */
+  // 泳道名用短名：全名（Text Generation Inference）会把左侧标签区撑到 150px 以上，
+  // 压住引擎节点；短名控制在 ~14 字符，配合加宽的引擎视图左留白（112px）。
+  var LANE_SHORT = {
+    'NVIDIA Dynamo': 'Dynamo',
+    'TensorRT-LLM': 'TensorRT-LLM',
+    'Triton Inference Server': 'Triton',
+    'Text Generation Inference': 'TGI',
+    'MindSpore Lite': 'MindSpore'
+  };
+  // 窄屏（<640）左侧只留 74px，泳道名必须再短一档，否则会压住引擎图标
+  var LANE_SHORT_NARROW = {
+    'NVIDIA Dynamo': 'Dynamo',
+    'TensorRT-LLM': 'TRT-LLM',
+    'Triton Inference Server': 'Triton',
+    'Text Generation Inference': 'TGI',
+    'MindSpore Lite': 'MindSpore',
+    'llama.cpp': 'llama',
+    'vLLM-Ascend': 'vLLM-Asc'
+  };
   function laneDecor() {
     if (state.view !== 'engine') return '';
-    var h = state.h, n = ENGINES.length || 1, laneH = (h - 34 - 22) / n, s = '';
-    for (var i = 0; i < n; i++) {
-      var y = 34 + laneH * i;
-      s += '<rect class="g-lane-' + (i % 2) + '" x="0" y="' + y.toFixed(1) + '" width="' + state.w + '" height="' + laneH.toFixed(1) + '"/>';
-      s += '<text class="g-lane-label" x="8" y="' + (y + laneH / 2 + 4).toFixed(1) + '">' + esc(ENGINES[i][1]) + '</text>';
-      s += '<line class="g-lane-rule" x1="0" y1="' + y.toFixed(1) + '" x2="' + state.w + '" y2="' + y.toFixed(1) + '"/>';
-    }
+    var geom = state.laneGeom || [];
+    if (!geom.length) return '';
+    var s = '', narrow = state.w < 640;
+    geom.forEach(function (ln, i) {
+      // 类名必须与 graph.css 的 .g-lane-bg / .g-lane-alt 对应：历史上写成了 g-lane-0/1，
+      // 于是 rect 没有样式、用默认黑色填充把整块画布压暗。
+      s += '<rect class="' + (i % 2 ? 'g-lane-alt' : 'g-lane-bg') + '" x="0" y="' + ln.y.toFixed(1) + '" width="' + state.w + '" height="' + ln.h.toFixed(1) + '"/>';
+      s += '<line class="g-lane-rule" x1="0" y1="' + ln.y.toFixed(1) + '" x2="' + state.w + '" y2="' + ln.y.toFixed(1) + '"/>';
+      // 泳道名固定在左上角，不再垂直居中（居中被节点压住，且与引擎节点标签重复）
+      var nm = (narrow ? LANE_SHORT_NARROW[ln.name] : LANE_SHORT[ln.name]) || ln.name;
+      s += '<text class="g-lane-label" x="8" y="' + (ln.y + (narrow ? 14 : 15)).toFixed(1) + '">' + esc(nm) + '</text>';
+    });
     return s;
   }
   function dualDecor() {
@@ -420,7 +466,10 @@
     doc.nodes.forEach(function (n) {
       var p = state.positions[n.id]; if (!p) return;
       var tm = typeMeta(n.type), r = radius(n);
-      var ico = tm.ico, label = shortName(n);
+      var ico = tm.ico;
+      // 引擎视图里泳道名已经写在左上角，engine 节点再挂一个同名标签就是重复；
+      // 只保留鼠标悬停/选中时才出现的标签（CSS .node.hov .node-label）。
+      var label = (state.view === 'engine' && n.type === 'engine') ? '' : shortName(n);
       var isAsc = nodeStack(n) === 'ascend';
       nodesS += '<g class="node t-' + esc(n.type) + (isAsc ? ' s-ascend' : '') + (state.selected === n.id ? ' selected' : '') + '" data-id="' + esc(n.id) +
         '" transform="translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ')">' +
@@ -509,7 +558,7 @@
       if (!g.classList || !g.classList.contains('node')) return;
       if (g.style.display === 'none') return;
       var t = g.querySelector('.node-label');
-      if (t) els.push({ g: g, t: t, id: g.getAttribute('data-id') });
+      if (t && t.textContent) els.push({ g: g, t: t, id: g.getAttribute('data-id') });
     });
     /* 第一遍纯写：全部恢复可见。不要与下面的 getBBox 交替，否则每次读都触发强制重排 */
     els.forEach(function (it) { it.t.classList.remove('lo'); it.t.style.visibility = ''; });
@@ -528,8 +577,10 @@
     list.sort(function (a, b) {
       return a.p - b.p || (a.b.y1 - b.b.y1) || (a.b.x1 - b.b.x1) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
     });
-    var kept = [], pad = 2;
+    var kept = [], pad = 4, MAXLBL = state.w < 640 ? 30 : 55;
     list.forEach(function (it) {
+      // 标签上限：超过就一律隐藏，鼠标悬停/选中时 CSS 会强制显示，避免满屏小字
+      if (kept.length >= MAXLBL) { it.el.classList.add('lo'); it.el.style.visibility = 'hidden'; return; }
       var hit = false;
       for (var i = 0; i < kept.length; i++) {
         var k = kept[i].b;
