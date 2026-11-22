@@ -1,6 +1,6 @@
 {
  "schema_version": "1.0",
- "generated_at": "2026-11-22T18:05:03+08:00",
+ "generated_at": "2026-11-22T18:23:37+08:00",
  "counts": {
   "nodes": 214,
   "edges": 225
@@ -359,7 +359,7 @@
     "https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/800alpha002/devaids/devtools/aoe/aoepar_16_001.html",
     "https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/83RC1/devaids/aoe/aoepar_16_060.html"
    ],
-   "urls_more": 7,
+   "urls_more": 10,
    "evidence": "A",
    "status": "candidate",
    "impls": [
@@ -367,7 +367,7 @@
     "impl/torchair-aoe-config-entry",
     "impl/torchair-aoe-session-dispatch"
    ],
-   "gain_note": "未查到。CANN 8.2.RC1 的 ResNet18 文档给出调优命令与 xx% 报告示例，该示例没有测量值。需固定 CANN、设备型号与卡数、输入 shape 和 batch，同一 OM 单独切换调优库后做双跑。",
+   "gain_note": "未查到。CANN 8.2.RC1 的 ResNet18 示例输出以 xx% 占位。CANN 8.3.RCX 的结果说明列出可导出的 model_original_performance 和 model_result_performance 字段，但没有发布该示例的两臂原始测量。昇腾团队关于 ResNet50 的历史介绍未给出该结果对应的 CANN 构建、设备型号/卡数、输入批次与 shape，无法纳入同口径数据。官方 8.3.RC1.alpha002 指南记录 RL 搜索候选的 aicore 日志及跳过条件，截图未注明实际执行构建，文档版号不能代替触发版本。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -379,6 +379,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -712,7 +716,7 @@
     "https://github.com/Ascend/msModelSlim",
     "https://arxiv.org/abs/2211.10438"
    ],
-   "urls_more": 8,
+   "urls_more": 10,
    "evidence": "A",
    "status": "candidate",
    "impls": [
@@ -737,7 +741,7 @@
      "source": "https://github.com/Ascend/msModelSlim/blob/20db10875b2c3f55ce9c8731ed544effbf051e0e/msmodelslim/cli/__main__.py#L692"
     }
    ],
-   "gain_note": "未查到条件齐全的对照。msModelSlim 官方 Qwen3-32B 调优案例给出在 Atlas 800I A3、CANN 9.0.0、vLLM Ascend 0.22.1rc1 上的 GPQA 校准前后结果，但未披露工具版本、实际参与卡数、评测 batch 或长度。校准样本取自同一评测集的 badcase，因此也缺独立留出集验证。",
+   "gain_note": "未查到条件齐全的独立 A/B。官方 Qwen3-32B 案例固定 Atlas 800I A3、CANN 9.0.0、vLLM Ascend 0.22.1rc1，公布 GPQA 校准前后结果，但未披露 msModelSlim 执行构建、实际参与卡数、评测 batch 和长度；校准样本取自同一评测集的 badcase，也缺独立留出集。官方自动精度调优指南给配置与依赖兼容要求，未绑定公开逐臂测量。`fake_quantize_save()` 的公开求助仍有换提交后报错的反馈，未找到触发构建与已确认修复成对的记录。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -749,6 +753,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -782,6 +790,12 @@
      "value": "约 2×",
      "source": "https://arxiv.org/abs/2307.08691",
      "evidence": "C"
+    },
+    {
+     "metric": "FlashAttention-2 作为 H800 BF16 前向参考的延迟",
+     "value": "序列长 4096 / 8192 / 16384 时，FA2 为 0.826 / 3.055 / 11.677 ms，FA3 为 0.468 / 1.693 / 6.690 ms。版本：FA2 2.8.3、FA3 3.0.0b1、PyTorch 2.8、CUDA 12.6、Triton 3.4。设备：1×H800，Notebook 用单设备 CUDA 张量和 stream。负载：合成 BF16 GQA，batch=1，Q 64 头、KV 4 头、head_dim=128，Q/KV 等长，causal，比较 4096、8192 和 16384 token。对照：相同 shape 下分别调用 FlashAttention-2 和 FlashAttention-3 的 varlen 前向，Triton do_bench 仅计 attention 调用，排除 QKV 投影与跨卡通信。",
+     "source": "https://github.com/mdy666/Scalable-Flash-Native-Sparse-Attention#forward",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -792,6 +806,10 @@
     {
      "hit": "Block size must be a multiple of 16.",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。用该版本 FlashAttention 后端支持的页大小，重新启动并确认其他缓存组也接受该尺寸。"
+    },
+    {
+     "hit": "undefined symbol: _ZN3c105ErrorC2ENS_14SourceLocationESs",
+     "fix": "触发版本：flash-attn 2.7.4.post1 与 PyTorch 2.7.0+cu128（同帖 2.6.0+cu126 也复现）。按原作者在该环境验证的方式切回 PyTorch 2.6.0+cu124，或安装匹配 Python 与 CXX11 ABI 的发布 wheel。换 wheel 的成功记录绑定该帖环境，跨版本部署应在目标环境重新验证导入。"
     }
    ],
    "hardware_scope": [
@@ -804,7 +822,7 @@
     "https://arxiv.org/abs/2307.08691",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/attention.py#L19"
    ],
-   "urls_more": 1,
+   "urls_more": 5,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -824,7 +842,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/flash_attn.py#L146"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/flash_attn.py#L146",
+    "https://github.com/Dao-AILab/flash-attention/issues/1644"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -837,12 +856,16 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "attention-kernel"
    ],
-   "gain_note": "未查到针对整模型推理的同口径对照。原论文中的约 2× 为 attention kernel 前后向测试，公开的是合成张量 shape，端到端结果则为训练。"
+   "gain_note": "Scalable Flash NSA 作者公开了同芯片、同形状的 FA2 和 FA3 内核报告，Notebook 确认单序列与 BF16。FA2 在 H800 上是该对照的参考，数据适用于单个前向内核。"
   },
   {
    "id": "tech/flashattention-three",
@@ -871,6 +894,12 @@
      "value": "1.5–2.0×",
      "source": "https://arxiv.org/abs/2407.08608",
      "evidence": "C"
+    },
+    {
+     "metric": "Hopper 上 FA2 → FA3 的 BF16 因果前向内核延迟",
+     "value": "长度 4096 / 8192 / 16384 分别 0.826→0.468、3.055→1.693、11.677→6.690 ms。版本：FA2 2.8.3、FA3 3.0.0b1、PyTorch 2.8、CUDA 12.6、Triton 3.4。设备：1×H800，Notebook 用单设备 CUDA 张量和 stream。负载：合成 BF16 GQA，batch=1，Q 64 头、KV 4 头、head_dim=128，Q/KV 等长，causal，比较 4096、8192 和 16384 token。对照：相同 shape 下分别调用 FlashAttention-2 和 FlashAttention-3 的 varlen 前向，Triton do_bench 仅计 attention 调用，排除 QKV 投影与跨卡通信。",
+     "source": "https://github.com/mdy666/Scalable-Flash-Native-Sparse-Attention#forward",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -881,6 +910,10 @@
     {
      "hit": "Only Hopper supports different V headdim",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 v2.8.3）。FA3 上游内核检查。对 Q/V 头维不同的检查点，在非 Hopper 上选经过验证支持此维度组合的注意力后端，或切换到受支持的 Hopper 设备。"
+    },
+    {
+     "hit": "CUDA error (/workspace/.deps/vllm-flash-attn-src/hopper/flash_fwd_launch_template.h:171): an illegal memory access was encountered",
+     "fix": "触发版本：vLLM 0.30.0，单张 H100 80GB，gpt-oss-20b + DFlash，speculators 0.9.0a67，warmup 使用 FA3 时触发。升级 vLLM 0.31.0；协作者在 H20 验证启动和服务后，原作者也确认升级后默认配置通过。"
     }
    ],
    "hardware_scope": [
@@ -893,7 +926,7 @@
     "https://arxiv.org/abs/2407.08608",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/attention.py#L19"
    ],
-   "urls_more": 1,
+   "urls_more": 7,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -927,15 +960,20 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "attention-kernel"
    ],
    "pitfall_sources": [
-    "https://github.com/Dao-AILab/flash-attention/blob/v2.8.3/hopper/flash_api.cpp#L745-L753"
+    "https://github.com/Dao-AILab/flash-attention/blob/v2.8.3/hopper/flash_api.cpp#L745-L753",
+    "https://github.com/vllm-project/vllm/issues/61330"
    ],
-   "gain_note": "未查到 FA3 对 FA2 同模型同批长的整模型 A/B。原论文的加速比针对 H100 上不同序列长度和头维的单注意力张量；SM90 稀疏 MLA 的实测另见相应节点。"
+   "gain_note": "同一 H800、同一 BF16 GQA 形状对照 FA3 与 FA2。仅记录图表中的因果前向内核时间，具体 Python 路径由作者 Notebook 核对。"
   },
   {
    "id": "tech/flashinfer-attention",
@@ -1187,6 +1225,10 @@
     {
      "hit": "Window left is not the same for all layers. One potential fix is to set disable_sliding_window=True",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这个分支要求所有层使用同一左窗口。保留模型语义时选择支持层间窗口差异的后端。只有模型允许全局替代并通过精度和显存复测时，才使用源码提示的关闭窗口方案。"
+    },
+    {
+     "hit": "AssertionError: Cascade attention does not support sliding window.",
+     "fix": "触发版本：vLLM 0.7.4.dev477+g61c6a5a7，Gemma 3 27B IT 的批量离线推理；同帖 vLLM 0.7.3 的服务也复现。使用包含 #14896 的构建，以避免该组合进入不受支持的 cascade 路径。报错作者确认问题解决。"
     }
    ],
    "hardware_scope": [
@@ -1199,7 +1241,7 @@
     "https://docs.vllm.ai/en/stable/design/hybrid_kv_cache_manager/",
     "https://arxiv.org/abs/2310.06825"
    ],
-   "urls_more": 3,
+   "urls_more": 7,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -1217,7 +1259,7 @@
      "source": "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/single_type_kv_cache_manager.py#L503"
     }
    ],
-   "gain_note": "未查到固定模型、batch、长度和版本的窗口开关 A/B。#42024 只测滑窗 KV 节省策略的启动容量估计，计算路径的滑窗始终启用。",
+   "gain_note": "未查到能独立归因于滑窗的严格对照。vLLM 0.8.3 的 H100 插件报告同时改了滑窗、attention sinks 和 Triton 实现，源仓库的压测脚本还能走 mock，未公开两臂原始输出。另一个混合 KV 启动案例中，滑窗计算始终启用。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -1233,13 +1275,18 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "attention-kernel"
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/flashinfer.py#L931-L936"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/flashinfer.py#L931-L936",
+    "https://github.com/vllm-project/vllm/issues/14881"
    ]
   },
   {
@@ -1290,7 +1337,7 @@
     "https://github.com/Dao-AILab/flash-attention",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/flash_attn.py#L797"
    ],
-   "urls_more": 2,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -1323,6 +1370,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -1331,7 +1382,7 @@
    "pitfall_sources": [
     "https://github.com/Dao-AILab/flash-attention/blob/v2.8.3/csrc/flash_attn/flash_api.cpp#L544-L554"
    ],
-   "gain_note": "未查到。PyTorch 的 nested / padded 对照给出模块级实测，页面未列被测 GPU 型号与安装版本；FlashInfer 论文的变长张量实验同时改变内核，不能直接归因于 packing。"
+   "gain_note": "未查到同版本、同设备和同序列长度分布的 packed vs padded 性能对照。vLLM Ascend 0.20.2rc1 / CANN 9.0.0 的实际测试出现 `The MPU address access is invalid.`（507015）。报告中的累计偏移与 packed tensor 长度不一致，后续补丁还发现缺少 chunk indices，带有初步修补的复测仍有数值偏差。完整修法的通过记录未查到，暂不计入故障齐全。"
   },
   {
    "id": "tech/cuda-graph-capture",
@@ -1460,6 +1511,12 @@
      "value": "1.762 / 0.621 ms，约 2.83×。PyTorch 官方教程对同一 CUDA 函数各测 10 次，覆盖固定形状计算与图断裂示例。该值是编译机制微基准。",
      "source": "https://docs.pytorch.org/tutorials/intermediate/torch_compile_tutorial.html",
      "evidence": "A"
+    },
+    {
+     "metric": "同一 CUDA Graph 引擎关闭与开启 torch.compile 的 HTTP 请求吞吐与 p50",
+     "value": "并发吞吐中位数 37.11 → 43.77 req/s，顺序请求 p50 29.79 → 25.44 ms。版本：basal 2.5.3、PyTorch 2.11.0+cu128、Transformers 5.17.0、triton-windows 3.6.0.post26、FLA 0.5.2、驱动 621.01。设备：1×RTX 5060 Ti 16 GB，原生 Windows。负载：Remek/basal-omni-pico，约 512 输入 token 的合成文本，单题选项读出，HTTP 并发 4，每轮 10 次预热、20 次顺序、80 次并发，三轮。对照：同模型 BF16 fast-nocompile 对 fast，保留 CUDA Graph 和默认分桶，只切换编译模式。",
+     "source": "https://github.com/rkinas/basal/blob/main/docs/HARDWARE.md#basal-omni-pico-on-rtx-5060-ti-sm120-native-windows",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -1470,6 +1527,10 @@
     {
      "hit": "compile_cache_save_format must be 'binary' or 'unpacked', got: {value}",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是源码异常模板。把缓存保存格式改成当前版本接受的 binary 或 unpacked，然后核对缓存目录权限。"
+    },
+    {
+     "hit": "torch._dynamo.exc.Unsupported: Data-dependent branching",
+     "fix": "触发版本：vLLM 0.10.1rc2.dev235+gb5d34af32、Transformers 4.55.3，InternVL3-8B-hf 在 Transformers fallback 中遇到张量数据依赖分支。原作者用 `--enforce-eager` 回避 Dynamo 捕获并确认服务启动。该选项同时关闭 CUDA 图。"
     }
    ],
    "hardware_scope": [
@@ -1479,7 +1540,7 @@
     "https://docs.vllm.ai/en/stable/design/torch_compile/",
     "https://docs.pytorch.org/docs/stable/torch.compiler.html"
    ],
-   "urls_more": 4,
+   "urls_more": 8,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -1499,7 +1560,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/compilation.py#L858"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/compilation.py#L858",
+    "https://github.com/vllm-project/vllm/issues/23730"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -1516,12 +1578,16 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "graph-compile"
    ],
-   "gain_note": "未查到。#56892 在 vLLM 0.30.0 的 compile-only 与 eager 臂报告相同解码吞吐，但未公开解码臂的 batch、逐请求输入和输出长；教程的微基准缺设备型号，需用固定形状补跑。"
+   "gain_note": "basal 维护者在同一张 RTX 5060 Ti 上对照两种保留 CUDA Graph 的模式。指标是 HTTP 请求吞吐和顺序请求时延，任务为分类式选项读出。公布的吞吐不代表多 token 自回归生成，启动耗时也受保留的编译缓存影响。"
   },
   {
    "id": "tech/piecewise-graph-execution",
@@ -1655,6 +1721,12 @@
      "value": "150.66 / 113.79 TFLOPS。官方教程同组数据，batch 4、head 32、head dimension 64、上下文 4,096、warp_specialize=False。公开表未列出 GPU 型号。",
      "source": "https://triton-lang.org/main/getting-started/tutorials/06-fused-attention.html",
      "evidence": "A"
+    },
+    {
+     "metric": "同 W8A8 权重的 vLLM 自带 Triton 与 CUTLASS",
+     "value": "Decode batch 64 为 12,810.0 → 11,082.0 tok/s；prefill 8×512 为 79,103 → 94,666 tok/s。版本：vLLM 0.28.0、torch 2.13.0+cu130、Triton 3.7.1。设备：1×RTX 4090。负载：同一 Qwen3-1.7B W8A8；decode 输入 64、生成 128 token，扣除首 token，5 次中位；prefill 为 8 条各 512 token，compile/图均开启、prefix cache 关闭。对照：vLLM 内建 CUTLASS vs vLLM 内建 Triton int8 GEMM。",
+     "source": "https://github.com/AshrithaG/int8-linear/blob/main/results/e2e.md",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -1665,6 +1737,10 @@
     {
      "hit": "Block size must be a multiple of 16.",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。将该 Triton 注意力路径的 KV 页大小设为允许的十六倍数，并确认模型的其他缓存组也能使用该值。"
+    },
+    {
+     "hit": "ptxas fatal : SM version specified by .target is higher than default SM version assumed",
+     "fix": "触发版本：Triton 3.5.0 随包 ptxas 在 NVIDIA GB10 上装配 sm_121a 时触发。原实验用 `TRITON_PTXAS_PATH=/usr/local/cuda/bin/ptxas` 选用系统 CUDA 13.0.88 工具链，装配从 rc=255 变为 rc=0；另有 3.7.1 不需要覆盖工具链的端到端确认。"
     }
    ],
    "hardware_scope": [
@@ -1674,7 +1750,7 @@
     "https://triton-lang.org/main/getting-started/tutorials/index.html",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/triton_attn.py#L266"
    ],
-   "urls_more": 2,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -1693,7 +1769,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/triton_attn.py#L316"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/triton_attn.py#L316",
+    "https://github.com/triton-lang/triton/issues/10331"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -1710,12 +1787,16 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "graph-compile"
    ],
-   "gain_note": "未查到四项齐备的基线。公开 Triton 教程列出注意力微基准，但对应表没有将设备型号、卡数、Triton 版本与该行锁定，也没有模型推理对照。"
+   "gain_note": "有 NVIDIA 单卡端到端结果。对照取同 vLLM 版本自带的 Triton 与 CUTLASS 两臂，分开记录 prefill 和 decode，结论仅适用于这一模型与形状。"
   },
   {
    "id": "tech/ascend-aclgraph-replay",
@@ -1844,6 +1925,18 @@
      "value": "FlashNormAttention 官方实验报告内核最高加速 35%，用于说明归一化并入注意力的路径。",
      "source": "https://pytorch.org/blog/towards-free-normalization-fusing-normalization-into-gemm-and-attention-kernels/",
      "evidence": "A"
+    },
+    {
+     "metric": "RMSNorm 与 INT8 量化融合的算子耗时随行数变化",
+     "value": "1 行 2.90 → 2.23 μs，4096 行 24.59 → 48.58 μs。版本：vLLM 0.28.0、torch 2.13.0+cu130、Triton 3.7.1。设备：1×RTX 4090。负载：BF16 合成 [1 或 4096, 2048] 输入加 residual，100 调用/图、7 窗中位。对照：fused_add_rms_norm 接 scaled_int8_quant（先扣输入复制耗时）vs fused rms_norm_dynamic_per_token_quant。",
+     "source": "https://github.com/vllm-project/vllm/issues/60499",
+     "evidence": "B"
+    },
+    {
+     "metric": "两处激活量化融合启停的整模型 prefill 对照",
+     "value": "融合组合开启提高 prefill 吞吐 6.8%。版本：vLLM 0.28.0、torch 2.13.0+cu130、Triton 3.7.1，加原报告发布的 Triton 测试补丁。设备：1×RTX 4090。负载：nytopop/Qwen3-1.7B.w8a8@cbf1e72c，8 条各 512 token 的 prefill，CUDA graphs 启用，CUTLASS int8 GEMM 固定。对照：未改激活量化路径 vs 同时融合 add+RMSNorm+量化与 SiLU-and-mul+量化，两臂各两轮交替测量。",
+     "source": "https://github.com/vllm-project/vllm/issues/60499",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -1863,7 +1956,7 @@
     "https://docs.vllm.ai/en/stable/design/torch_compile/",
     "https://docs.pytorch.org/tutorials/recipes/recipes/tuning_guide.html"
    ],
-   "urls_more": 3,
+   "urls_more": 5,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -1896,6 +1989,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -1904,7 +2001,7 @@
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/compilation/passes/fusion/rms_quant_fusion.py#L132-L149"
    ],
-   "gain_note": "未查到。现有内核实验给出 FlashNormAttention 的最高加速，缺与该峰值绑定的模型、当前框架版本以及服务 batch/输入输出长度。"
+   "gain_note": "补了合成张量单算子对照与 Qwen3-1.7B 服务的两处融合共同开关。两处一并启用的整模型数字仅说明组合结果。 未查到带原始异常、触发构建和验证修法的融合故障。当前已有条目是 RMSNorm 量化融合的源码检查模板。#50773 关闭两处融合能缓解乱码，报告仍提示输出不正确。"
   },
   {
    "id": "tech/paged-attention",
@@ -1994,6 +2091,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -2002,7 +2103,7 @@
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/kv_cache_utils.py#L219-L230"
    ],
-   "gain_note": "未查到满足版本和实验变量独立条件的结果。原论文为 vLLM 对 FasterTransformer、Orca 的系统级端到端对照，并非同版本/调度器单切 PagedAttention。"
+   "gain_note": "未查到满足版本和实验变量独立条件的结果。原论文为 vLLM 对 FasterTransformer、Orca 的系统级端到端对照，并非同版本/调度器单切 PagedAttention。 未查到能单独归因于分页注意力、且有版本与验证修法的现场日志。现有 No free blocks available 来自块分配器源码。"
   },
   {
    "id": "tech/kv-block-reference-counting",
@@ -2042,6 +2143,10 @@
     {
      "hit": "Cannot get {num_blocks} free blocks from the pool",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是源码中的异常模板。让调度器按空闲页限额申请，必要时触发抢占或降低并发，再核对引用与等待队列。"
+    },
+    {
+     "hit": "AssertionError",
+     "fix": "触发版本：vLLM V1 commit 89ac266；Llama-4-Scout 的 attention chunk size 改为 32 并启用局部注意力的混合 KV 管理，`cache_full_blocks()` 在 `assert prev_block.block_hash is not None` 停止。另一复现记录了负 ref_cnt。合入 #22209 并在该时期的 trunk 配置 `VLLM_ALLOW_CHUNKED_LOCAL_ATTN_WITH_HYBRID_KV_CACHE=1`，维护者按相同复现步骤验证恢复。"
     }
    ],
    "hardware_scope": [
@@ -2054,7 +2159,7 @@
     "https://docs.vllm.ai/en/stable/design/prefix_caching/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/block_pool.py#L130"
    ],
-   "urls_more": 2,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2073,7 +2178,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/block_pool.py#L334"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/block_pool.py#L334",
+    "https://github.com/vllm-project/vllm/issues/21992"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -2090,12 +2196,16 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "kv-cache"
    ],
-   "gain_note": "未查到能固定运行版本、硬件、批次和采样长度的直接 A/B。PagedAttention 论文图 15 对照的是共享策略整体的缓存节省，单图与具体运行提交未绑定。"
+   "gain_note": "未查到固定软件构建、设备、批次和采样长度的 ref-count 独立性能测量；历史 PagedAttention 实验测的是缓存共享策略整体。已补足实际引用计数异常与修复记录。"
   },
   {
    "id": "tech/kv-cache-memory-layout",
@@ -2128,6 +2238,10 @@
     {
      "hit": "Unknown cache layout format {cache_layout}.",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是源码异常模板。清除不兼容的布局覆盖，或使用该后端接受的 NHD/HND 并让写入、读取及跨实例传输端使用相同布局。"
+    },
+    {
+     "hit": "AssertionError",
+     "fix": "触发版本：vLLM 0.28.1rc1.dev388+g8a728663c，GB200，GLM-5.3 NVFP4 的 DeepSeek-V3.2 稀疏 MLA 路径。在 `MLAAttention.bind_kv_cache` 检查 `self.kv_cache.stride(0) % row_width == 0` 时触发。撤掉 `VLLM_KV_CACHE_LAYOUT=BLHNC`，保持默认 HND，同配置由原作者确认能启动。"
     }
    ],
    "hardware_scope": [
@@ -2137,7 +2251,7 @@
     "https://docs.flashinfer.ai/tutorials/kv_layout.html",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/utils.py#L53"
    ],
-   "urls_more": 2,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2155,7 +2269,7 @@
      "source": "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/utils.py#L53"
     }
    ],
-   "gain_note": "未查到同机器、模型及长度下只切 NHD/HND 的 A/B。FlashInfer #5601 核实了错误标注引起维度解释问题，不能用报错组作为性能基线。",
+   "gain_note": "未查到同模型、同批长且只切 NHD/HND 的吞吐或延迟 A/B。#55431 的同构建对照是 BLHNC 启动崩溃与回到 HND 启动成功，适用作布局兼容性故障证据。FlashInfer #5601 则是 benchmark 调用方错误标注 layout。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -2171,13 +2285,18 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "kv-cache"
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/flashinfer.py#L370-L387"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/flashinfer.py#L370-L387",
+    "https://github.com/vllm-project/vllm/issues/55431"
    ]
   },
   {
@@ -2300,6 +2419,14 @@
     "vllm"
    ],
    "maturity": "emerging",
+   "gain": [
+    {
+     "metric": "混合缓存检查点策略对重用比例与输出吞吐的影响",
+     "value": "输入按共享前缀分组提交时，level 2 两轮重用 8.4% / 8.4%、输出 990 / 996 tok/s，level 3 为 74.4% / 74.2%、1624 / 1626 tok/s；预热一个请求/组时差距减小。版本：SGLang 47361c5、torch 2.14.1+cu130、FlashInfer 0.7.4、sglang-kernel 0.4.11。设备：1×L40S 48 GB。负载：Qwen/Qwen3.5-4B BF16，200 请求同时提交，20 组×10，同组 6000 公共 token+400 独有 token，强制输出 1024 token。对照：循环状态仅在分岔或请求结束发布的 level 2 vs 随 chunk 发布的 level 3，其他配置一致，mamba-full-memory-ratio=1.06，各轮使用新前缀。",
+     "source": "https://github.com/sgl-project/sglang/issues/50873",
+     "evidence": "B"
+    }
+   ],
    "cost": [
     "混合分组可能产生层级填充或对齐浪费。",
     "缓存命中必须满足每个相关组的访问语义。"
@@ -2308,6 +2435,10 @@
     {
      "hit": "Hybrid KV cache manager was explicitly enabled but is not supported in this configuration. Consider omitting the --no-disable-hybrid-kv-cache-manager flag to let vLLM decide automatically.",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。去掉强制开启参数，让引擎按当前模型与后端能力选择；再验证各缓存组是否符合模型语义。"
+    },
+    {
+     "hit": "AssertionError",
+     "fix": "触发版本：vLLM V1 commit 89ac266，Llama-4-Scout 把 attention chunk size 改到 32 并启用混合 KV 管理，`cache_full_blocks()` 无法找到前一 cache block 的 hash。使用包含 #22209 的修复构建；维护者在当时 trunk 开启 `VLLM_ALLOW_CHUNKED_LOCAL_ATTN_WITH_HYBRID_KV_CACHE=1` 后用同样步骤确认。旧构建可先用 `--disable-hybrid-kv-cache-manager`，原帖确认规避。"
     }
    ],
    "hardware_scope": [
@@ -2317,7 +2448,7 @@
     "https://docs.vllm.ai/en/stable/design/hybrid_kv_cache_manager/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/single_type_kv_cache_manager.py#L442"
    ],
-   "urls_more": 2,
+   "urls_more": 6,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2336,9 +2467,10 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/vllm.py#L1311"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/vllm.py#L1311",
+    "https://github.com/vllm-project/vllm/issues/21992"
    ],
-   "gain_note": "未查到同一版本下 HMA 显式 on/off 的完成请求 A/B。#42024 在 vLLM 0.18.x、gpt-oss-120b dummy 加载、RTX PRO 6000 TP2 上只比较了连接器切换后的 131K 启动容量估计（11.65×/21.90×），没有实跑 batch 或同负载吞吐。",
+   "gain_note": "SGLang 真机记录固定模型与混合 KV/循环状态池比例，只调循环状态检查点的发布粒度。样本包括同组相邻、打乱、预热三种提交顺序，支持混合层策略的具体取舍。vLLM HMA 整体启停的稳态对照仍未查到。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -2350,6 +2482,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -2378,6 +2514,14 @@
     "vllm"
    ],
    "maturity": "mainstream",
+   "gain": [
+    {
+     "metric": "GB10 上两种 KV 容量估算路径的启动读数",
+     "value": "传统估算的可用 KV 预算 71.04 GiB，弹性路径 warmup 后 216 blocks（11.21 GiB）。版本：vLLM 0.33.0rc1.dev573+g40941f2c4，V2 model runner。设备：1×NVIDIA GB10（DGX Spark，119.7 GiB UMA），无其它进程。负载：nvidia/Qwen3.8-27B-NVFP4，FP8 KV，max model len 4096，max seqs 32，MTP3，显存预算 0.8，safetensors prefetch；启动测量。对照：同配置经典估算与默认 extensible KV cache。",
+     "source": "https://github.com/vllm-project/vllm/issues/65378",
+     "evidence": "B"
+    }
+   ],
    "cost": [
     "KV 预算过大可能压缩其他运行缓冲。",
     "简单公式不涵盖 MLA、窗口与混合规格。"
@@ -2399,7 +2543,7 @@
     "https://docs.vllm.ai/en/stable/configuration/optimization/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/kv_cache_utils.py#L789"
    ],
-   "urls_more": 3,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2422,7 +2566,7 @@
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/kv_cache_utils.py#L697",
     "https://github.com/vllm-project/vllm/issues/17431"
    ],
-   "gain_note": "未查到固定输入/输出与并发的两档显存预算实测。#14314 有 Kimi-K3 1M 上限的初始化内存估算，基线还卡在通信会合。#17431 是启动复现和修法，未报告负载测试。",
+   "gain_note": "新增的数字是同模型固定启动设置下，两种分配路径给出的 KV 容量读数。经典路径报告可用预算，弹性路径报告 warmup 后实际分配；两项的测量阶段有差别。稳态服务吞吐仍未查到。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -2434,6 +2578,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -2597,7 +2745,7 @@
     "https://docs.vllm.ai/en/stable/examples/disaggregated/disaggregated_encoder/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/ec_transfer.py#L16"
    ],
-   "urls_more": 2,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2634,12 +2782,16 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "multimodal"
    ],
-   "gain_note": "未查到逐臂明确编码批次与输入输出长度的对照。EAServe 图 9 的模型为 LLaVA-v1.6-34B，8× RTX 6000 Ada、500 请求、泊松到达，三轮取中位，对照 vLLM 0.14.1 与 Dynamo 0.9.0。其 1.93 req/s 是 S3（50 s / 120 ms）goodput，含联合调优。"
+   "gain_note": "未查到同模型分离与共置两臂的构建、资源配额和序列长度能够完整对齐的一手记录。vLLM #44049 的 Qwen3-VL-2B-Thinking 实测仅比较 E 已分离后的 SHM 与磁盘 connector，固定 4096×4096 单图、300/2 文本目标与并发 1/16，但没有建立共置基线，设备型号/配额也未公开。EAServe 论文的结果反映系统级对照，保留原实验口径。 未查到能对应端间分离失败的已验证故障。现有 EC 角色提示来自配置校验源码，#44049 报告侧重连接器性能。"
   },
   {
    "id": "tech/multimodal-encoder-output-cache",
@@ -2699,7 +2851,7 @@
      "source": "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/encoder_cache_manager.py#L17"
     }
    ],
-   "gain_note": "未查到绑定精确原型构建的同口径数据。vLLM #56242 的模型级对照已具备 InternVL3_5-38B-HF BF16、6×H20、每请求 4 图和约 400/32 输入输出 token、128 条同到达轨迹，报告只切共享 encoder 输出复用后的 p50 TTFT 为 1.209→0.819 s。页面中的 6e1d051fc 明确绑定另一节的 GPU 验证，整组对照是原型实验，最终重构后未重跑。",
+   "gain_note": "未查到绑定精确原型构建的同口径数据。vLLM #56242 的模型级对照已具备 InternVL3_5-38B-HF BF16、6×H20、每请求 4 图和约 400/32 输入输出 token、128 条同到达轨迹，报告只切共享 encoder 输出复用后的 p50 TTFT 为 1.209→0.819 s。页面中的 6e1d051fc 明确绑定另一节的 GPU 验证，整组对照是原型实验，最终重构后未重跑。 未查到同构建下记录命中失效并且验证修法的故障。现有 encoder miss 来自 worker 源码，#56242 的性能测量来自原型。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -2715,6 +2867,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -2838,6 +2994,10 @@
     {
      "hit": "No video streams found in container",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。确认输入包含可读视频流，再按目标后端支持的格式重新封装或转码。"
+    },
+    {
+     "hit": "AssertionError: The timestamps length(10) should be equal video length (16).",
+     "fix": "触发版本：vLLM 0.15.1、Transformers 4.57.6，Qwen3-VL/Qwen3.5 从 `mm_processor_kwargs` 传 num_frames，处理器实际抽帧数与执行器按默认 FPS 重建的时间戳不一致。使用包含 #36136 的构建，让时间戳统一使用同一抽帧参数。"
     }
    ],
    "hardware_scope": [
@@ -2847,7 +3007,7 @@
     "https://docs.vllm.ai/en/stable/features/multimodal_inputs/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/multimodal/video.py#L52"
    ],
-   "urls_more": 2,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2867,9 +3027,10 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/multimodal/video.py#L377"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/multimodal/video.py#L377",
+    "https://github.com/vllm-project/vllm/issues/35909"
    ],
-   "gain_note": "未查到固定推理栈、卡数、batch、视频覆盖范围和同一 checkpoint 的采样帧率/帧数 A/B。#61681 固定为 2 fps，研究的是 encoder data/weights 模式。",
+   "gain_note": "未查到固定推理构建、卡数、batch、视频覆盖范围及同一 checkpoint 的抽帧帧率/帧数 A/B。#61681 固定 2 fps、比较 encoder 并行模式；#35909 的日志是组装时间戳所用采样参数失配，已作为版本化故障记录。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -2881,6 +3042,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -2917,6 +3082,10 @@
     {
      "hit": "未查到",
      "fix": "未查到真正异常原文。#61681 的请求和 JSON 模式校验成功，错的是视觉内容。该组合可暂用 weights 模式或正常权重加载，并对相同媒体回归。"
+    },
+    {
+     "hit": "RuntimeError: torch_call_dispatcher( \"aten::empty_like\", \"\", stack.data()",
+     "fix": "触发版本：vLLM 0.27.1、PyTorch 2.13.0+cu132，4×RTX 5060 Ti，Qwen3.8-27B-NVFP4，TP=4，单请求五张图。将 --mm-encoder-tp-mode 从 data 改回 weights，原报告用同一个五图请求确认可正常完成。"
     }
    ],
    "hardware_scope": [
@@ -2926,7 +3095,7 @@
     "https://docs.vllm.ai/en/stable/features/multimodal_inputs/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/multimodal.py#L144"
    ],
-   "urls_more": 2,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "impls": [
@@ -2947,7 +3116,7 @@
      "source": "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/multimodal.py#L144"
     }
    ],
-   "gain_note": "未查到条件齐全的性能 A/B。#61681 在 vLLM 0.31.0、双 B200、GLM-5.3-Flash NVFP4 出现 data/weights 视觉结果差异；讨论给出 sharded_state 交互证据，未公布固定 token 长及两臂相同脚本的重复性能测试。",
+   "gain_note": "未查到可回源的吞吐或时延 A/B，已核对到数据并行编码路径在五图请求上的故障与回退。公开 issue 给出可服务性对照，未给负载稳定时的时延和吞吐。另一个案例还涉及 sharded_state 的跨布局读写，不能与这条一起归因。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -2959,10 +3128,17 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "multimodal"
+   ],
+   "pitfall_sources": [
+    "https://github.com/vllm-project/vllm/issues/52654"
    ]
   },
   {
@@ -3251,7 +3427,7 @@
      "source": "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/fused_moe/layer.py#L219"
     }
    ],
-   "gain_note": "未查到。B200 长上下文对照的两臂均用 EP8，只切 attention 的 DP/TP。需固定 TP、DP、专家数、负载及版本，测单独切换专家分片路径。",
+   "gain_note": "未查到。B200 长上下文对照的两臂均用 EP8，只切 attention 的 DP/TP。需固定 TP、DP、专家数、负载及版本，测单独切换专家分片路径。 未查到同时有实际日志、触发构建及回跑修法的专家并行故障。现有专家数量提示来自配置校验源码。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -3267,6 +3443,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -3500,6 +3680,10 @@
     {
      "hit": "Async EPLB is only supported with the default policy.",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。使用该版本默认 EPLB 策略，或在自定义策略下关闭异步 EPLB。"
+    },
+    {
+     "hit": "RuntimeError: Index tensor must have the same number of dimensions as self tensor",
+     "fix": "触发版本：SGLang 0.5.17、sglang-kernel 0.4.5、8×H20-3e TP8/EP8，DeepSeek-V4-Flash 的 DSpark draft CUDA graph capture。EPLB 启用的统计 recorder 在 draft 层没有 layer_idx。原作者验证保持 DSpark、关闭 EPLB 并移除冗余专家参数后可正常启动及服务。"
     }
    ],
    "hardware_scope": [
@@ -3510,7 +3694,7 @@
     "https://docs.vllm.ai/en/stable/serving/expert_parallel_deployment/",
     "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/support_matrix/supported_features.html"
    ],
-   "urls_more": 3,
+   "urls_more": 5,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -3530,9 +3714,10 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/parallel.py#L101"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/parallel.py#L101",
+    "https://github.com/sgl-project/sglang/issues/34974"
    ],
-   "gain_note": "未查到版本/设备/负载完整且只切 EPLB 的记录。Wide-EP 公布样例多同时改变专家重排、通信后端和节点数；需相同流量 trace 的启停对照。",
+   "gain_note": "未查到固定同一构建、设备和序列长度的 EPLB 性能对照。SGLang #34974 的开关验证针对启动是否成功；#34846 的 DSpark 回归测量未披露测试卡型、卡数、确切运行构建和输入/输出长度。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -3544,6 +3729,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -3682,6 +3871,12 @@
      "value": "ShareGPT 100 请求总用时 74.3 s，其中树结构管理 0.2 s，占比约 0.27%。论文 §6.3 的同一次运行分解。",
      "source": "https://arxiv.org/html/2312.07104",
      "evidence": "C"
+    },
+    {
+     "metric": "共享 1024-token 前缀时关闭与开启 RadixCache 的 TTFT、输出吞吐",
+     "value": "TTFT 中位数 2201.78→461.82 ms，输出吞吐 70.15→105.76 tok/s。版本：SGLang 0.5.22、sglang-kernel 0.4.9、PyTorch 2.14.1+cu130、CUDA 13.0、FlashInfer 0.7.1。设备：使用 1×NVIDIA L4 24 GB。负载：Qwen/Qwen3-8B，闭环并发上限 8，每轮 4 组×16 条，每组共享 1024 token 系统提示，每条附加 128 token 问题并输出 64 token，每点三种种子。对照：同一模型和请求配置，--disable-radix-cache 对默认开启，同一 KV 池 24,094 token，双臂时钟中位数 1425→1455 MHz，原始记录均无热降频。",
+     "source": "https://github.com/rohitg00/ai-engineering-from-scratch/blob/9712e323fde8cb2ec933310ac619e920e8e31017/manuals/sglang-101/capture/gpu/summary/l4.json",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -3692,6 +3887,10 @@
     {
      "hit": "The arguments enable-hierarchical-cache and disable-radix-cache are mutually exclusive and cannot be used at the same time.",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 1519acf37c23f2189adb93f57ca9cd2db1bebf18）。SGLang 此版本的 HiCache 需要启用 RadixCache。保留层级缓存时移除 disable-radix-cache，确需禁用基数树时同时关闭层级缓存。"
+    },
+    {
+     "hit": "ValueError: Loaded weights leave no GPU memory for the KV cache under --mem-fraction-static=0.82.",
+     "fix": "触发版本：SGLang v0.5.21（同样在 3a9cae27edec392ff8cc9f09d1164f557c653f42 复现），单 GB10、Qwen3-Next-80B-A3B-Instruct-FP8、NEXTN 五步。关闭 RadixCache 时默认并发使 recurrent state pool 预留过多。移除 --disable-radix-cache，或保留关闭并加 --max-running-requests 10。原作者验证后一做法启动成功且 8/8 聊天检查通过。"
     }
    ],
    "hardware_scope": [
@@ -3704,7 +3903,7 @@
     "https://arxiv.org/abs/2312.07104",
     "https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/mem_cache/radix_cache.py"
    ],
-   "urls_more": 4,
+   "urls_more": 8,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -3737,15 +3936,20 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "prefix-cache"
    ],
    "pitfall_sources": [
-    "https://github.com/sgl-project/sglang/blob/1519acf37c23f2189adb93f57ca9cd2db1bebf18/python/sglang/srt/server_args.py#L3401-L3406"
+    "https://github.com/sgl-project/sglang/blob/1519acf37c23f2189adb93f57ca9cd2db1bebf18/python/sglang/srt/server_args.py#L3401-L3406",
+    "https://github.com/sgl-project/sglang/issues/44355"
    ],
-   "gain_note": "未查到固定同引擎版本、卡数和序列长度的 RadixCache 结构 on/off 对照。SGLang 论文的 0.2 s 是树结构计时分项，两个引擎的对比也有队列、内核差别。"
+   "gain_note": "引用 L4 试验中 1024-token 的配对结果。关闭缓存后有 4096-token 一行低于作者设定的 GPU 时钟阈值，该行不作为本节点的严格增益。另有混合模型加 NEXTN 时关闭 RadixCache 的启动故障和同环境回退记录。"
   },
   {
    "id": "tech/prefix-cache-salting",
@@ -3804,7 +4008,7 @@
      "source": "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/kv_cache_utils.py#L539"
     }
    ],
-   "gain_note": "未查到。同一硬件和负载的未隔离前缀命中数据可查到，使用唯一 cache_salt 在原帖只是修复建议。仍需固定模型、B/S、缓存预热与服务版本，对比同盐与异盐的命中/TTFT。",
+   "gain_note": "未查到。同一硬件和负载的未隔离前缀命中数据可查到，使用唯一 cache_salt 在原帖只是修复建议。仍需固定模型、B/S、缓存预热与服务版本，对比同盐与异盐的命中/TTFT。 未查到含真实报错、触发构建和验证修法的现场案例。cache_salt 非空限制可定位到协议源码。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -3820,6 +4024,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -3879,7 +4087,7 @@
     "https://docs.vllm.ai/en/stable/design/prefix_caching/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/block_pool.py#L322"
    ],
-   "urls_more": 2,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -3912,6 +4120,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -3920,7 +4132,7 @@
    "pitfall_sources": [
     "https://github.com/sgl-project/sglang/blob/1519acf37c23f2189adb93f57ca9cd2db1bebf18/python/sglang/srt/mem_cache/radix_cache.py#L310-L331"
    ],
-   "gain_note": "未查到固定软件版本和请求长度/批次的结果；§5.2 图 13 用单 H200、Qwen3-Coder-30B、10,000 条 FreeInference Trace 与 48 GiB KV 比较两策略，未将软件提交及单请求长度与该图绑定。"
+   "gain_note": "未查到可核对为 GPU 实测的 LRU/FIFO/LFU 对照。UniCache 论文报告 vLLM 0.8.5 与 A100 上下文，也提供 CPU 时序模拟器。已公开材料尚不能确认该策略对照表是实际 GPU 运行还是模拟重放；不把模拟命中率记作实际设备基准。 未查到固定版本实跑的 LRU 回收故障原文和修法。Unknown eviction policy 是参数校验源码。"
   },
   {
    "id": "tech/cacheblend",
@@ -4005,6 +4217,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -4013,7 +4229,7 @@
    "pitfall_sources": [
     "https://github.com/LMCache/LMCache/blob/5e90e8be1cd08ff2a14795430a065c5a9f42c3a5/lmcache/v1/multiprocess/modules/blend/module.py#L85-L95"
    ],
-   "gain_note": "未查到能绑定性能图具体引擎构建、模型、并发与长度的对照。论文结果覆盖多模型、多任务和设备，不能只凭汇总的最大倍数补这些条件。"
+   "gain_note": "未查到能绑定性能图具体引擎构建、模型、并发与长度的对照。论文结果覆盖多模型、多任务和设备，不能只凭汇总的最大倍数补这些条件。 未查到可定位到实际 LMCache 构建且验证修法的 Blend 失败记录。现有 transfer mode 提示来自源码。"
   },
   {
    "id": "tech/kv-aware-request-routing",
@@ -4045,6 +4261,12 @@
      "value": "在所测单工作负载与到达率中，平均延迟改善 1.5–14.5×。模型为 Mistral 7B 与 Llama-3 70B。论文对照包含全局亲和分配与本地调度，数值属于 Preble，不能外推到 Dynamo。",
      "source": "https://arxiv.org/html/2407.00023",
      "evidence": "C"
+    },
+    {
+     "metric": "前缀亲和路由相对最小负载路由的 P99 TTFT、吞吐与 KV 命中",
+     "value": "20 并发时 P99 TTFT 1.68–1.85 s → 1.45–1.50 s，三轮相对变化中位数 −14.6%，吞吐约 4.9 → 5.2 req/s，KV 命中 17–21% → 64–72%。同一实验 30 并发时三轮 P99 相对变化 −6.5%、+6.6%、+11.3%。版本：Ranvier 2.3.0-dev，镜像源码 573fbf6，vLLM 0.15.1。设备：单实例 8×A100。负载：CodeLlama-13b-Instruct-hf，20 或 30 个闭环并发，实验分别 10 或 30 分钟，共用 16 个 2,000–4,000 token 前缀，最大上下文 8192，脚本默认生成上限 100 token。对照：同组后端和请求配置，按当前负载最低派发且无亲和 vs 前缀亲和加本地负载分流，轮换臂顺序，每臂预热且清缓存接口当时未生效。",
+     "source": "https://github.com/Ranvier-Systems/ranvier-core/blob/main/docs/benchmarks/benchmark-results-current.md#baseline-suite-prefix-vs-least-loaded-the-no-affinity-control-measured-2026-10-08",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -4055,6 +4277,10 @@
     {
      "hit": "model_name is required for keyed router tracking hashes",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 666bc9d7d1f929727521264246b4d5b8a81e93ea）。仅针对启用加键哈希的 Dynamo 路由初始化。连接路由器时传入稳定的模型标识，并确认 worker 侧使用相同模型与哈希口径。"
+    },
+    {
+     "hit": "HTTP 404",
+     "fix": "触发版本：Ranvier 2.3.0-dev（573fbf6）、vLLM 0.15.1。2026-10-08 真机前缀路由 A/B 的压测脚本向每个后端 POST /reset_prefix_cache，均返回 404，两臂会继承热缓存。在受控压测的 vLLM 后端设置 VLLM_SERVER_DEV_MODE=1，记录每臂启动前的后端确认数量。后续 2026-10-09 试验记录 8/8 后端均确认重置。"
     }
    ],
    "hardware_scope": [
@@ -4067,7 +4293,7 @@
     "https://github.com/sgl-project/sglang/blob/main/sgl-router/REFERENCE.md",
     "https://docs.nvidia.com/dynamo/cli/kv-aware-routing/overview"
    ],
-   "urls_more": 3,
+   "urls_more": 8,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -4101,15 +4327,20 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "prefix-cache"
    ],
    "pitfall_sources": [
-    "https://github.com/ai-dynamo/dynamo/blob/666bc9d7d1f929727521264246b4d5b8a81e93ea/lib/llm/src/kv_router.rs#L661-L682"
+    "https://github.com/ai-dynamo/dynamo/blob/666bc9d7d1f929727521264246b4d5b8a81e93ea/lib/llm/src/kv_router.rs#L661-L682",
+    "https://github.com/Ranvier-Systems/ranvier-core/blob/main/docs/benchmarks/benchmark-results-current.md#saturation-suite-a-tighter-divert-cap-vs-least-loaded-and-the-eviction-regime-measured-2026-10-09"
    ],
-   "gain_note": "未查到同版本同部署、只切换路由的严格数据。Preble 的跨模型结果同时改变全局路由和本地调度，论文的量值不能沿用为 Dynamo 的单开关结果。"
+   "gain_note": "Ranvier 的最小负载对照比只与随机路由相比更能反映亲和路由的边际效果。20 并发和 30 并发的 P99 结论不同。该组测试前缀集合可分散放入后端，且双臂各自预热、轮换顺序，但前一臂的 KV 仍会保留。项目后续确认在不同前缀占用下应同时核对完成率。"
   },
   {
    "id": "tech/int8-w8a8",
@@ -4148,6 +4379,18 @@
      "value": "2,488 → 1,753 ms，约 1.42×。OPT-30B、单张 A100 80 GB、batch 16、表列序列长 512，论文表 8。",
      "source": "https://arxiv.org/html/2211.10438",
      "evidence": "C"
+    },
+    {
+     "metric": "Meta-Llama-3-8B-Instruct W8A8 与原 FP16 的离线延迟",
+     "value": "平均 1.4200 s → 2.1426 s。版本：vLLM 0.18.0，llmcompressor 0.9.0.2，torch 2.10.0。设备：1×NVIDIA H20-3e。负载：Meta-Llama-3-8B-Instruct，batch 1、输入 512、输出 256 token，vllm bench latency 10 次。对照：原 FP16 与由同模型量化得到的 INT8 dynamic per-token W8A8；两臂同基准，观察到量化臂较慢。",
+     "source": "https://github.com/vllm-project/llm-compressor/issues/2549",
+     "evidence": "B"
+    },
+    {
+     "metric": "Qwen3-1.7B BF16 与 INT8 W8A8 CUTLASS 的解码吞吐",
+     "value": "batch 64 为 10,541.2 → 12,810.0 tok/s。版本：vLLM 0.28.0、torch 2.13.0+cu130、Triton 3.7.1。设备：1×RTX 4090。负载：Qwen3-1.7B，输入 64、输出 128 token，batch 64，5 次中位，扣除首 token，compile/CUDA 图保持启用。对照：同模型原 BF16 对 INT8 W8A8（CUTLASS），同基准中 prefix cache 关闭。",
+     "source": "https://github.com/AshrithaG/int8-linear/blob/main/results/e2e.md",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -4158,6 +4401,10 @@
     {
      "hit": "No compressed-tensors compatible scheme was found.",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。在该 vLLM 后端确认权重及激活的位宽、量化类型和粒度都能映射到 W8A8 scheme。改用目标后端明确支持的导出方案。"
+    },
+    {
+     "hit": "No compiled cutlass_scaled_mm for a compute capability less than CUDA device capability: 75",
+     "fix": "触发版本：vLLM 0.6.3，WSL2、SM75、Orca-2-13b-W8A8，PyTorch 2.4.0+cu121。使用包含 vLLM #9487 的构建，修复 Turing INT8 在 CUTLASS dispatch 上错误认为没有可用 kernel 的问题。"
     }
    ],
    "hardware_scope": [
@@ -4171,7 +4418,7 @@
     "https://arxiv.org/abs/2211.10438",
     "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/support_matrix/supported_features.html"
    ],
-   "urls_more": 4,
+   "urls_more": 8,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -4204,15 +4451,20 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "quantization"
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/quantization/compressed_tensors/compressed_tensors.py#L690-L718"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/quantization/compressed_tensors/compressed_tensors.py#L690-L718",
+    "https://github.com/vllm-project/vllm/issues/9419"
    ],
-   "gain_note": "未查到四项齐备的实测。SmoothQuant 表 8 未钉 FasterTransformer 提交；QwQ-32B 的 Ascend v0.8.4rc2/910B3 TP4 实测两臂都完成 10 个请求，但未公开输入长度分布或并发配置。"
+   "gain_note": "补入 NVIDIA 同栈、同模型两格式的实测。H20 与 RTX 4090 源帖的模型、量化内核及测量对象不同，比较方向不要求一致。原 Ascend QwQ-32B 对照仍缺并发/输入分布。"
   },
   {
    "id": "tech/activation-aware-weight-quantization",
@@ -4541,6 +4793,12 @@
      "value": "4.25 bit/元素，按所引格式每组 32 元素及 E8M0 共享尺度复算",
      "source": "https://arxiv.org/html/2310.10537",
      "evidence": "C"
+    },
+    {
+     "metric": "同 MXFP4 expert 权重，BF16 与 FP8 激活的 prefill TTFT",
+     "value": "128K 档 8.495 s → 7.024 s。版本：SGLang f644444，Humming 0.1.18、CUDA 13.0。设备：8×NVIDIA H20-3e，TP8/EP1、prefill CP8，DSpark block size 5。负载：DeepSeek-V4.1-Flash-1017，131,072 输入、32 输出 token，并发 1，warmup 一次后清缓存，三次取中位。对照：同 Humming 后端和同 MXFP4 expert 权重下，BF16 激活 vs FP8 E4M3 激活。",
+     "source": "https://staging.lmsys.org/blog/2026-11-18-humming-sglang#benchmark-details",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -4551,6 +4809,10 @@
     {
      "hit": "moe_backend='{runner_backend}' is not supported for MXFP4 MoE.",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是 vLLM MXFP4 MoE 后端选择器的异常首句模板。删除不支持的显式后端覆盖，或选该提交映射表中又满足当前 GPU、激活格式和专家分片约束的后端。"
+    },
+    {
+     "hit": "HarmonyError during output parsing, returning partial result:",
+     "fix": "触发版本：vLLM 0.16.0rc2.dev559+g4bf19f9bf、CUDA 13.0，单 GB10 SM12.1 上 openai/gpt-oss-120b 的 MXFP4 Marlin 路径，生成 token 但 content/reasoning 均为空。升级到原作者回跑通过的 vLLM 0.23.1rc1，8 个响应检查通过；该回归仅确认不再空响应，首 token 内核归因仍未闭合。"
     }
    ],
    "hardware_scope": [
@@ -4563,7 +4825,7 @@
     "https://arxiv.org/html/2310.10537",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/quantization/mxfp4.py#L42"
    ],
-   "urls_more": 1,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -4596,15 +4858,20 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "quantization"
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/fused_moe/oracle/mxfp4.py#L170-L190"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/fused_moe/oracle/mxfp4.py#L170-L190",
+    "https://github.com/vllm-project/vllm/issues/37030"
    ],
-   "gain_note": "未查到同权重、卡数、批长和版本下的 MXFP4→BF16 实测对照。公开 gpt-oss 测试多比较两引擎的同一 MXFP4 权重，不能给出格式切换收益。"
+   "gain_note": "新增同一 MXFP4 checkpoint 的两种激活计算路径对照，模型专家权重始终保持 FP4 打包。纯 MXFP4 份额与 BF16 权重之间的受控同栈 A/B 仍未查到，不能用这里的数字说明单独改变权重格式的收益。报错修法针对空响应症状，原帖仍将 Marlin 首 token 的内核缺陷列为待查。"
   },
   {
    "id": "tech/quantization-calibration-fallback",
@@ -4689,6 +4956,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -4697,7 +4968,7 @@
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/quantization/compressed_tensors/compressed_tensors.py#L947-L956"
    ],
-   "gain_note": "未查到条件齐备的敏感层回退实验。厂商 GPQA 案例确实比较回退与全量化版本，未披露实际评测卡数、batch、序列长度和工具版本。SmoothQuant 表 3 未将结果与这些条件绑定。"
+   "gain_note": "未查到条件齐备的敏感层回退实验。厂商 GPQA 案例确实比较回退与全量化版本，未披露实际评测卡数、batch、序列长度和工具版本。SmoothQuant 表 3 未将结果与这些条件绑定。 未查到敏感层高精度回退时有版本、有原文、有验证修法的异常。现有量化 scheme 提示来自源码校验。"
   },
   {
    "id": "tech/continuous-batching",
@@ -4786,6 +5057,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -4794,7 +5069,7 @@
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/scheduler.py#L259-L271"
    ],
-   "gain_note": "未查到与同版本整模型静态 batching 直接比较的可回源数据。Orca 原论文的 36.9× 涵盖整套系统、选择性批处理及调度；保留论文原口径。"
+   "gain_note": "未查到与同版本整模型静态 batching 直接比较的可回源数据。Orca 原论文的 36.9× 涵盖整套系统、选择性批处理及调度；保留论文原口径。 未查到实际触发且验证修复的连续批处理故障。现有 token 预算校验提示来自调度器源码。"
   },
   {
    "id": "tech/chunked-prefill",
@@ -5222,6 +5497,12 @@
      "value": "Qwen3-30B-A3B、双 A100 80 GB PCIe、TP2、arXiv 摘要、1.3 req/s 泊松到达、600 请求。平均 TTFT 145 / 0.95 s，p99 ITL 94 / 463 ms。RFC 作者报告每档单轮。",
      "source": "https://github.com/vllm-project/vllm/issues/62689",
      "evidence": "B"
+    },
+    {
+     "metric": "单独调低 token 预算后的长请求 TTFT 中位",
+     "value": "74.3 s → 85.0 s。版本：vLLM 0.32.0rc1.dev369+g1b2a66639，nightly 镜像 0f44ff32…。设备：2×NVIDIA DGX Spark GB10，TP2+EP，200G CX7 RoCE。负载：Qwen3.8-Flash-Next NVFP4 加 FP8 dense 投影，4 个并发约 100K-token 冷提示、各最多输出 8 token；3 s 后再发 2 条短请求、各生成 128 token；MTP3，温度 0，无前缀复用。对照：同负载下 `max-num-batched-tokens` 从 8192 调到 2048，其余同该次 A/B。",
+     "source": "https://github.com/vllm-project/vllm/issues/54919",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -5232,6 +5513,10 @@
     {
      "hit": "max_num_batched_tokens ({self.max_num_batched_tokens}) must be greater than or equal to max_num_seqs ({self.max_num_seqs}).",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是源代码的异常模板。降低 --max-num-seqs 或增加 --max-num-batched-tokens，并重新核对每轮预算。"
+    },
+    {
+     "hit": "torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 4.78 GiB.",
+     "fix": "触发版本：vLLM 0.1.dev20073+g8e685d198，Qwen3.8-Flash-Next-FP8，H200 TP4/EP4，混合长短提示在预算 32768 时放大 PLE 短卷积的 padding。原作者把 `--max-num-batched-tokens` 降至 8192 后，两副本各运行约 3 h 和 2.3 h 未出现同类引擎退出；仍需用混合负载复测更低预算，8192 仍有理论索引上限风险。"
     }
    ],
    "hardware_scope": [
@@ -5241,7 +5526,7 @@
     "https://docs.vllm.ai/en/stable/configuration/optimization/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/scheduler.py#L63"
    ],
-   "urls_more": 2,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -5261,7 +5546,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/scheduler.py#L274"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/scheduler.py#L274",
+    "https://github.com/vllm-project/vllm/issues/54764"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -5278,12 +5564,16 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "scheduling"
    ],
-   "gain_note": "未查到。vLLM #62689 报告 MRV2 原型对照，原帖未公开引擎版本/构建及每请求序列长度分布。需在固定模型、并发、长度和版本下只改变单轮 token 预算。"
+   "gain_note": "已有固定运行构建和请求负载的两档 token 预算对照，数值采用四条约 100K 长请求的 TTFT 中位，短请求并发及输出上限来自同条原始记录，短请求输入精确长度未公布。该报告另有同时改调度间隔的实验，未将其混入此处。"
   },
   {
    "id": "tech/openai-compatible-serving",
@@ -5519,7 +5809,7 @@
     "https://opentelemetry.io/docs/specs/otlp/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/observability.py#L36"
    ],
-   "urls_more": 2,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -5541,7 +5831,7 @@
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/observability.py#L150"
    ],
-   "gain_note": "未查到。#60508 故障复盘明确 vLLM 0.26.0、OTel SDK 1.40.0、H100、Gemma 4 26B-A4B-IT，比较 traces 开启和加 NoOpMeterProvider。但两臂回放规模不同，生产样本的 batch、输入和输出长度未公开。",
+   "gain_note": "未查到条件齐备的 OTel 开/关开销数据。#60508 给出 vLLM 0.26.0、OTel SDK 1.40.0、H100、Gemma 4 26B-A4B-IT，两臂回放规模不同，未公布生产 batch 与逐请求长度。#7679 的依赖缺失有真实异常文本，修法仅是提出安装 OTel 包的建议，未见同报告回跑，保留为排查线索。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -5553,6 +5843,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
@@ -5671,6 +5965,12 @@
      "value": "ShareGPT 4 req/s、600 请求，双 A100 80 GB PCIe、Qwen3-30B-A3B、TP2。SLO 为首 token ≤5 s 且每段间隔 ≤150 ms，测得 28.8% / 55.2%。RFC 作者每档单轮，TBT 阈值在观察 PP 结果后选定。",
      "source": "https://github.com/vllm-project/vllm/issues/62689",
      "evidence": "B"
+    },
+    {
+     "metric": "Poisson 到达率上升时实际服务量与尾 TPOT 的变化",
+     "value": "SGLang 在 1→2 请求/s 时输出 123.30→226.44 tok/s，TTFT 中位数 174.73→223.21 ms，TPOT P99 76.75→121.60 ms。版本：SGLang 0.5.22、sglang-kernel 0.4.9、PyTorch 2.14.1+cu130、CUDA 13.0、FlashInfer 0.7.1。设备：1×NVIDIA L4 24 GB。负载：Qwen/Qwen3-8B，固定 512 输入和 128 输出 token，以 Poisson 开放环投递，1 请求/s 时每轮 32 条，2 请求/s 时每轮 60 条，三种种子。对照：同一个引擎和 KV 池、相同负载分布、相同降温规则，只比较两个给定到达率，双臂均无热降频。",
+     "source": "https://github.com/rohitg00/ai-engineering-from-scratch/blob/9712e323fde8cb2ec933310ac619e920e8e31017/manuals/sglang-101/capture/gpu/summary/l4.json",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -5690,7 +5990,7 @@
     "https://docs.vllm.ai/en/stable/usage/metrics/",
     "https://docs.vllm.ai/en/stable/benchmarking/cli/"
    ],
-   "urls_more": 4,
+   "urls_more": 9,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -5727,12 +6027,16 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "serving"
    ],
-   "gain_note": "未查到。已有 vLLM V1 MRV2 的开放环 A/B 报告只有原型实现描述，未给引擎版本或负载分布。#66698 的负载并发 1，用于校验 warmup 与正式测量的隔离，不能替代 open-loop A/B。"
+   "gain_note": "新增同一台 GPU 和同一服务的有限 Poisson 到达率扫描，适用于说明开放环下的负载与尾时延关系。vLLM #54101 实测指出旧版客户端排队未计入延迟，后续加了独立计时字段。该现象以计时表呈现，未见此场景的实际异常原文。"
   },
   {
    "id": "tech/prefill-decode-disaggregation",
@@ -5767,6 +6071,12 @@
      "value": "最高 7.4×，基于论文报告的超过 90% 请求达标口径",
      "source": "https://www.usenix.org/conference/osdi24/presentation/zhong-yinmin",
      "evidence": "C"
+    },
+    {
+     "metric": "固定十卡预算，Dynamo 聚合部署与 P/D 拆分端到端对照",
+     "value": "并发 100 时，平均 TTFT 约 1.1 s → 4.7 s，p99 3.3 s → 13.5 s，输出吞吐 3,990 → 3,158 tok/s。版本：Dynamo 0.5.0，vLLM runtime 镜像 `nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.5.0`。设备：每臂 10×NVIDIA H200 SXM 141 GB，Nebius 两节点。负载：Qwen3-32B FP8，200 条流式请求、并发 100，输入约 4,000 token（σ=100），脚本请求输出 500 token。对照：五个 TP2 聚合 worker vs 两个 TP1 prefill 加四个 TP2 decode，同预算，按各自部署配置。",
+     "source": "https://gist.github.com/BenHamm/773652b1668313333e0180d60e3b320e",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -5777,6 +6087,10 @@
     {
      "hit": "Please specify kv_role when kv_connector is set, supported roles are {get_args(KVRole)}",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是源码异常模板。设置 connector 时同时配置该 worker 承担的受支持角色，并核对配对 worker 使用相容配置。"
+    },
+    {
+     "hit": "AssertionError: chosen_rank_list([3]) does not match num_group_pulls(4) and prefill pp size(1).",
+     "fix": "触发版本：vLLM Ascend 0.22.1rc1，Kimi/DeepSeek MLA + Mooncake P/D + Eagle3，prefill TP8、decode TP2。回退已经在同样布置下通过的 vLLM Ascend 0.20.2rc1，或应用上游针对组级 KV 头数映射的修复并重新核对正确性。"
     }
    ],
    "hardware_scope": [
@@ -5790,7 +6104,7 @@
     "https://docs.vllm.ai/en/stable/features/disagg_prefill/",
     "https://arxiv.org/abs/2401.09670"
    ],
-   "urls_more": 4,
+   "urls_more": 6,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -5810,7 +6124,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/kv_transfer.py#L104"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/kv_transfer.py#L104",
+    "https://github.com/vllm-project/vllm-ascend/issues/11877"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -5823,12 +6138,16 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "serving"
    ],
-   "gain_note": "未查到当前所列 7.4× 档位的软件版本、单请求批长和精确硬件配额可逐臂对齐的公开结果。DistServe 报告的 goodput 依赖 SLO 与 P/D 资源摆放，不能当作通用倍数。"
+   "gain_note": "Dynamo 对照固定总卡数、同一 checkpoint 与客户端负载，衡量两套部署拓扑的真实取舍。P/D 拆分前后 worker TP、实例数及长度上限也不同，论文的 goodput 最大倍率不能套到这条结果。源报告未直接测量 KV 搬运分项。"
   },
   {
    "id": "tech/json-schema-constrained-decoding",
@@ -5880,7 +6199,7 @@
     "https://docs.vllm.ai/en/stable/features/structured_outputs/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/structured_output/backend_xgrammar.py#L81"
    ],
-   "urls_more": 3,
+   "urls_more": 6,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -5918,12 +6237,16 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "structured-output"
    ],
-   "gain_note": "未查到被测 XGrammar 实现版本。论文 §4.2 提供 H100 上 Llama-3.1-8B-Instruct、平均 139 输入/53 输出 token 与 vLLM 0.6.3+Outlines 对照，XGrammar/SGLang 的精确软件构建未列出。"
+   "gain_note": "未查到同口径 JSON Schema 框架性能。JSONSchemaBench 附录 E 的单 A100、Llama-3.1-8B-Instruct 对照未绑定该轮依赖构建和输入长度。vLLM #34650 的校验率试验公开请求集与分臂记录，实测的是 MTP 推理边界补丁，未报告每臂 XGrammar 的实际安装版本。"
   },
   {
    "id": "tech/context-free-grammar-decoding",
@@ -5980,7 +6303,7 @@
     "https://docs.vllm.ai/en/stable/features/structured_outputs/",
     "https://arxiv.org/abs/2411.15100"
    ],
-   "urls_more": 4,
+   "urls_more": 5,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -6018,12 +6341,16 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "structured-output"
    ],
-   "gain_note": "未查到被测 XGrammar/SGLang 实现版本。论文图 10 有分 batch 的 H100 在线实验，图 9 的 RTX 4090 单 token mask 数字不能直接当成服务吞吐。"
+   "gain_note": "未查到同模型同负载且两臂构建明确的服务 A/B。新增索引的 XGrammar 0.2.6rc2 vs llguidance 1.8.0 实测使用固定结构约束和路径，但只计 CPU 编译/掩码，未披露 CPU 型号或实跑模型。XGrammar 论文的 H100 服务比较缺被测 SGLang/XGrammar 构建。"
   },
   {
    "id": "tech/xgrammar-token-mask-engine",
@@ -6079,7 +6406,7 @@
     "https://docs.vllm.ai/en/stable/features/structured_outputs/",
     "https://arxiv.org/abs/2411.15100"
    ],
-   "urls_more": 3,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -6112,12 +6439,16 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
     "structured-output"
    ],
-   "gain_note": "未查到图 9 绑定的 XGrammar 构建及采样 batch/序列长度。图 10 虽给端到端负载，仍缺该实验臂的精确软件版本。"
+   "gain_note": "未查到核心调用所用 CPU 型号与资源数齐全的微基准，或版本绑定完整的 GPU 端到端对照。新增公开的 XGrammar 0.2.6rc2 vs llguidance 1.8.0 bench 按相同已接受 token 路径配对、同容器 16 线程，硬件类型只到 Modal CPU 配额，计划/结果未披露 CPU 型号。"
   },
   {
    "id": "tech/finite-choice-constrained-decoding",
@@ -6179,7 +6510,7 @@
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/sampling_params.py#L68"
    ],
-   "gain_note": "未查到四项齐备、对固定备选项集的 choice on/off 对照。XGrammar 论文报告 JSON Schema 和 CFG 测试，不能将它的总体掩码效率直接套为 choice 性能。",
+   "gain_note": "未查到四项齐备、对固定备选项集的 choice on/off 对照。XGrammar 论文报告 JSON Schema 和 CFG 测试，不能将它的总体掩码效率直接套为 choice 性能。 未查到绑定实际 choice 请求、触发版本和验证修法的原始异常。现有冲突提示是多个约束同时使用时的源码检查。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -6191,6 +6522,10 @@
     {
      "date": "2026-11-22",
      "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核公开原始实验与故障记录，补充可核对的证据或明确缺项。"
     }
    ],
    "tags": [
