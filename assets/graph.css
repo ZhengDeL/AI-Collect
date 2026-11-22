@@ -94,6 +94,10 @@
   paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round;
 }
 .g-lane-rule { stroke: var(--line); stroke-width: 1.2; opacity: .9; }
+/* 引擎卡片看板：一张卡片 = 一个推理引擎，卡片内节点排成网格 */
+.g-card-bg { fill: var(--card); stroke: var(--line); stroke-width: 1; }
+.g-card-title { fill: var(--ink); font-size: 13px; font-weight: 700; }
+.g-card-count { fill: var(--ink-3); font-size: 11px; }
 .g-axis-label { fill: var(--ink-3); font-size: 11px; }
 
 /* 边：按 12 类分色 + 线型（图例线共用 --lc） */

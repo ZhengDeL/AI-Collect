@@ -109,7 +109,7 @@
   }
   function typeMeta(t) { return TYPE_META[t] || { name: t, ico: '•', color: 'var(--ink-3)' }; }
   function nodeMap() { var m = {}; state.doc.nodes.forEach(function (n) { m[n.id] = n; }); return m; }
-  function shortName(n) { return n.name.length > 9 ? n.name.slice(0, 9) + '…' : n.name; }
+  function shortName(n, limit) { var L = limit || 9; return n.name.length > L ? n.name.slice(0, L) + '…' : n.name; }
 
   /* ---------- 视口：viewBox 恒等于舞台像素（v0 教训二） ---------- */
   function fit() {
@@ -118,6 +118,14 @@
     state.w = Math.max(320, Math.round(r.width || 1000));
     var baseH = Math.max(300, Math.round(r.height || 620));
     var h = baseH;
+    // 引擎卡片看板：画布高度由 layout 算出的内容高度决定（12 张卡纵排），页面纵向滚动
+    if (state.view === 'engine' && state.needH) {
+      h = Math.max(baseH, state.needH);
+      svg.style.height = h + 'px';
+      state.h = h;
+      svg.setAttribute('viewBox', '0 0 ' + state.w + ' ' + state.h);
+      return;
+    }
     // 窄屏（<700px）：画布改成「纵向长卷」——节点摊开在更高的画布里，页面纵向滚动去看，
     // 而不是把 170 个节点压进 360px 高的舞台（v1 窄屏 domain/timeline 重叠的根因）。
     // 标签仍是屏幕像素级大小，viewBox 与画布像素保持 1:1，不靠缩放蒙混。
@@ -164,9 +172,16 @@
     var w = state.w, h = state.h, out = {}, nodes = state.doc.nodes, nm = nodeMap();
     var padL = (view === 'engine' && state.w >= 640) ? 112 : 74, padR = 18, padT = 34, padB = 22;
     if (view === 'engine') {
-      // 12 条泳道 = 12 个 engine/* 节点。impl 按 engine 字段落泳道；tech 按 engines[] 关联
-      // （一个 tech 可在多条泳道，这里取第一条避免重复节点；筛选/矩阵仍按完整 engines[]）。
-      // 泳道高度按节点数加权：vLLM 87 个、llama.cpp 1 个如果平分高度，前者必然压成一行互相重叠。
+      // 卡片看板：每个引擎一张圆角卡片，卡片内节点排成整齐网格、标签水平排在圆点右侧。
+      // 214 个节点按散点铺开怎么调都是「一堆点」；卡片给了结构、留白和层级。
+      var narrow = state.w < 640;
+      var cardX = narrow ? 10 : 20;
+      var cardW = w - cardX * 2;
+      var cardGap = narrow ? 10 : 14;
+      var titleH = narrow ? 24 : 30;
+      var cellH = narrow ? 30 : 32;
+      var cols = narrow ? 2 : Math.max(2, Math.floor(cardW / 175));
+      var cellW = (cardW - 24) / cols;
       var groups = {};
       ENGINES.forEach(function (en) { groups[en[0]] = []; });
       nodes.forEach(function (n) {
@@ -177,42 +192,29 @@
         if (!groups[key]) key = ENGINES.length ? ENGINES[Math.abs(hash(n.id)) % ENGINES.length][0] : null;
         if (key) groups[key].push(n);
       });
-      var availH = h - padT - padB;
-      var weights = ENGINES.map(function (en) { return Math.sqrt(Math.max(1, groups[en[0]].length)); });
-      var sumW = 0;
-      weights.forEach(function (x) { sumW += x; });
-      if (!sumW) sumW = 1;
-      var y0 = padT, geom = [];
-      var narrow = state.w < 640;
+      var y = 40, geom = [];
       ENGINES.forEach(function (en, li) {
-        var lh = Math.max(narrow ? 62 : 34, availH * weights[li] / sumW);
-        var g = groups[en[0]];
+        var all = groups[en[0]];
+        var g = all.filter(function (n) { return n.type !== 'engine'; });
         g.sort(function (a, b) { return (a.domains[0] || '').localeCompare(b.domains[0] || '') || a.name.localeCompare(b.name); });
-        var rowH = narrow ? 26 : 31;
-        var rowTop = narrow ? 46 : 26;
-        var rows = Math.max(1, Math.floor((lh - rowTop - 4) / rowH));
-        var perRow = Math.max(1, Math.ceil(g.length / rows));
-        var x0 = narrow ? padL + 8 : padL + 64;
-        var innerW = Math.max(60, w - x0 - padR - 6);
+        var rows = Math.max(1, Math.ceil(g.length / cols));
+        var cardH = titleH + rows * cellH + 8;
+        geom.push({ name: en[1], y: y, h: cardH, n: all.length });
+        // 引擎节点当卡片 logo，固定在标题行左侧；不占网格格位（网格格位留给技术/实现/案例）
+        var engNode = all.filter(function (n) { return n.type === 'engine'; })[0];
+        if (engNode) out[engNode.id] = { x: cardX + 22, y: y + (narrow ? 15 : 18), lane: li };
         g.forEach(function (n, j) {
-          var row = Math.floor(j / perRow), col = j % perRow;
-          var x, cy;
-          if (n.type === 'engine') { x = narrow ? padL + 34 : padL + 4; cy = y0 + (narrow ? 28 : 18); }
-          else {
-            var slot = innerW / Math.max(1, perRow - 1);
-            x = x0 + col * slot;
-            cy = y0 + rowTop + row * rowH;
-          }
+          var r = Math.floor(j / cols), c = j % cols;
           out[n.id] = {
-            x: Math.min(w - padR, Math.max(padL - 30, x)),
-            y: Math.max(padT, Math.min(h - padB, cy)),
+            x: cardX + 12 + c * cellW + 10,
+            y: y + titleH + r * cellH + cellH / 2,
             lane: li
           };
         });
-        geom.push({ name: en[1], y: y0, h: lh });
-        y0 += lh;
+        y += cardH + cardGap;
       });
       state.laneGeom = geom;
+      state.needH = y + 8;
     } else if (view === 'domain') {
       // 12 个域 = tech 节点 domains[] 并集；impl 经 implements 边挂到对应 tech 的域
       var cols = w < 640 ? 2 : 4, rows = Math.ceil(DOMAINS.length / cols);
@@ -302,7 +304,8 @@
         });
       }
     }
-    relax(out, nodes);
+    // 引擎卡片看板用整齐网格排版，不能再做全局推开（会把行列推歪）
+    if (view !== 'engine') relax(out, nodes);
     return out;
   }
   /* 在一块矩形区域内把一组节点铺成二维网格（列数按可用宽度算），确定性、不抖动 */
@@ -418,15 +421,13 @@
     if (state.view !== 'engine') return '';
     var geom = state.laneGeom || [];
     if (!geom.length) return '';
-    var s = '', narrow = state.w < 640;
-    geom.forEach(function (ln, i) {
-      // 类名必须与 graph.css 的 .g-lane-bg / .g-lane-alt 对应：历史上写成了 g-lane-0/1，
-      // 于是 rect 没有样式、用默认黑色填充把整块画布压暗。
-      s += '<rect class="' + (i % 2 ? 'g-lane-alt' : 'g-lane-bg') + '" x="0" y="' + ln.y.toFixed(1) + '" width="' + state.w + '" height="' + ln.h.toFixed(1) + '"/>';
-      s += '<line class="g-lane-rule" x1="0" y1="' + ln.y.toFixed(1) + '" x2="' + state.w + '" y2="' + ln.y.toFixed(1) + '"/>';
-      // 泳道名固定在左上角，不再垂直居中（居中被节点压住，且与引擎节点标签重复）
+    var narrow = state.w < 640, cardX = narrow ? 10 : 20, cardW = state.w - cardX * 2;
+    var s = '';
+    geom.forEach(function (ln) {
+      s += '<rect class="g-card-bg" x="' + cardX + '" y="' + ln.y.toFixed(1) + '" width="' + cardW.toFixed(1) + '" height="' + ln.h.toFixed(1) + '" rx="12"/>';
       var nm = (narrow ? LANE_SHORT_NARROW[ln.name] : LANE_SHORT[ln.name]) || ln.name;
-      s += '<text class="g-lane-label" x="8" y="' + (ln.y + (narrow ? 14 : 15)).toFixed(1) + '">' + esc(nm) + '</text>';
+      s += '<text class="g-card-title" x="' + (cardX + 44) + '" y="' + (ln.y + (narrow ? 17 : 20)).toFixed(1) + '">' + esc(nm) + '</text>';
+      s += '<text class="g-card-count" x="' + (cardX + cardW - 14) + '" y="' + (ln.y + (narrow ? 17 : 20)).toFixed(1) + '" text-anchor="end">' + ln.n + ' 个节点</text>';
     });
     return s;
   }
@@ -452,9 +453,21 @@
     var t0 = performance.now();
     var doc = state.doc, nm = nodeMap();
     state.positions = layout(state.view);
+    // 引擎卡片看板的总高由内容决定（12 张卡片纵排），画布跟着长高、页面滚动；
+    // 不把 12 张卡硬压进一屏，那正是之前「一堆点」的来源。
+    if (state.needH && state.needH > state.h) {
+      state.h = state.needH;
+      var svgEl = $('gsvg');
+      if (svgEl) {
+        svgEl.setAttribute('viewBox', '0 0 ' + state.w + ' ' + state.h);
+        svgEl.style.height = state.h + 'px';
+      }
+    }
     var t1 = performance.now();
     var edgesS = laneDecor() + dualDecor() + evoDecor();
-    doc.edges.forEach(function (e) {
+    // 卡片看板不画关系线：节点已按引擎归位，跨卡片的长斜线只会变成噪声；
+    // 关系在「技术域/双栈对照」视图和详情面板的「关系」分区里看。
+    if (state.view !== 'engine') doc.edges.forEach(function (e) {
       var a = state.positions[e.from], b = state.positions[e.to];
       if (!a || !b) return;
       edgesS += '<line class="edge edge-' + esc(e.type) + '" data-from="' + esc(e.from) + '" data-to="' + esc(e.to) +
@@ -469,14 +482,16 @@
       var ico = tm.ico;
       // 引擎视图里泳道名已经写在左上角，engine 节点再挂一个同名标签就是重复；
       // 只保留鼠标悬停/选中时才出现的标签（CSS .node.hov .node-label）。
-      var label = (state.view === 'engine' && n.type === 'engine') ? '' : shortName(n);
+      // 引擎卡片视图：标签水平排在圆点右侧，一行一个节点（卡片网格的行高刚好容下一行）
+      var horiz = (state.view === 'engine');
+      var label = (horiz && n.type === 'engine') ? '' : shortName(n, horiz && state.w >= 640 ? 12 : 9);
       var isAsc = nodeStack(n) === 'ascend';
       nodesS += '<g class="node t-' + esc(n.type) + (isAsc ? ' s-ascend' : '') + (state.selected === n.id ? ' selected' : '') + '" data-id="' + esc(n.id) +
         '" transform="translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ')">' +
         '<circle class="node-circle" r="' + r + '" cx="0" cy="0"/>' +
-        (isAsc ? '<text class="asc-flag" x="0" y="' + (-(r + 5)) + '" text-anchor="middle">昇</text>' : '') +
+        (isAsc && !horiz ? '<text class="asc-flag" x="0" y="' + (-(r + 5)) + '" text-anchor="middle">昇</text>' : '') +
         '<text class="node-ico" x="0" y="' + (r > 11 ? 4 : 3) + '">' + esc(ico) + '</text>' +
-        '<text class="node-label" x="0" y="' + (r + 14) + '" text-anchor="middle">' + esc(label) + '</text></g>';
+        '<text class="node-label" x="' + (horiz ? (r + 6) : 0) + '" y="' + (horiz ? 4 : (r + 14)) + '"' + (horiz ? '' : ' text-anchor="middle"') + '>' + esc(label) + '</text></g>';
       map[n.id] = true;
     });
     $('gnodes').innerHTML = nodesS;
@@ -577,7 +592,8 @@
     list.sort(function (a, b) {
       return a.p - b.p || (a.b.y1 - b.b.y1) || (a.b.x1 - b.b.x1) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
     });
-    var kept = [], pad = 4, MAXLBL = state.w < 640 ? 30 : 55;
+    // 卡片看板里每个节点一格、标签水平排，不会互相压，因此全显示；散点视图才需要上限
+    var kept = [], pad = 4, MAXLBL = state.view === 'engine' ? 9999 : (state.w < 640 ? 30 : 55);
     list.forEach(function (it) {
       // 标签上限：超过就一律隐藏，鼠标悬停/选中时 CSS 会强制显示，避免满屏小字
       if (kept.length >= MAXLBL) { it.el.classList.add('lo'); it.el.style.visibility = 'hidden'; return; }
