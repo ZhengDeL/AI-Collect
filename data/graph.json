@@ -1,9 +1,9 @@
 {
  "schema_version": "1.0",
- "generated_at": "2026-11-22T17:41:10+08:00",
+ "generated_at": "2026-11-22T17:43:41+08:00",
  "counts": {
-  "nodes": 215,
-  "edges": 221
+  "nodes": 214,
+  "edges": 225
  },
  "views": [
   {
@@ -7030,7 +7030,7 @@
    "type": "impl",
    "engine": "mindie",
    "name": "Modeling｜AclGraphBackend 图捕获与回放",
-   "tech": "tech/aclgraph",
+   "tech": "tech/ascend-aclgraph-replay",
    "module": "mindie_llm/runtime/compilation/aclgraph_backend.py",
    "symbols": [
     "AclGraphBackend",
@@ -11678,46 +11678,6 @@
    "updated_by": "正德"
   },
   {
-   "id": "tech/aclgraph",
-   "name": "ACL Graph（昇腾图执行）",
-   "alias": [
-    "aclgraph",
-    "npugraph_ex"
-   ],
-   "one_line": "昇腾侧把固定 shape 的执行流捕获成图，降低 NPU 下发开销。",
-   "why": "昇腾解码阶段同样受 host 下发限制，图模式是低延迟推理的必要手段。",
-   "principle": "在 ACL 层捕获算子下发序列生成图，重放时一次提交；要求静态 shape 与稳定地址，动态 batch 需要按 capture size 枚举，且 capture size 必须与 (K+1) 对齐（投机解码时）。",
-   "stack": [
-    "ascend"
-   ],
-   "domains": [
-    "graph-compile"
-   ],
-   "engines": [
-    "vllm-ascend",
-    "mindie"
-   ],
-   "maturity": "emerging",
-   "pitfalls": [
-    {
-     "hit": "capture size 与投机 token 数不匹配时报图捕获失败",
-     "fix": "把 cudagraph_capture_sizes 设为 n*(K+1) 的倍数"
-    }
-   ],
-   "hardware_scope": [
-    "a2-910b",
-    "a3-910-93"
-   ],
-   "urls": [
-    "https://github.com/vllm-project/vllm-ascend"
-   ],
-   "evidence": "A",
-   "status": "verified",
-   "type": "tech",
-   "updated_at": "2026-11-22",
-   "updated_by": "正德"
-  },
-  {
    "id": "tech/mtp",
    "name": "MTP 多 token 预测",
    "alias": [
@@ -12084,7 +12044,7 @@
   },
   {
    "from": "impl/vllm-ascend-aclgraph-capture-replay",
-   "to": "tech/aclgraph",
+   "to": "tech/ascend-aclgraph-replay",
    "type": "implements",
    "note": "NPU 平台将 vLLM 的静态图接口映射到 torch.npu.NPUGraph。"
   },
@@ -12282,7 +12242,7 @@
   },
   {
    "from": "impl/mindie-aclgraph",
-   "to": "tech/aclgraph",
+   "to": "tech/ascend-aclgraph-replay",
    "type": "implements",
    "note": "AclGraphBackend 对支持的 decode 形状捕获并回放 NPUGraph，prefill 或超出捕获尺寸时使用 eager。"
   },
@@ -12569,6 +12529,34 @@
    "type": "tradeoff",
    "note": "Lookahead 将更多候选验证放进一次前向，与连续组批共同使用设备预算。评估两者组合时，应同时测每步已提交 token、在途请求数和流式尾延迟。",
    "source": "https://arxiv.org/abs/2402.02057"
+  },
+  {
+   "from": "tech/ascend-fia-tnd-query-limit",
+   "to": "tech/flashattention-two",
+   "type": "asc_equivalent",
+   "note": "两条栈的融合注意力：昇腾侧用 FIA 承接 FlashAttention 同类计算，但 TND 布局下单序列查询跨度有上限，批形状要先按上限校验。",
+   "source": "https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/800alpha003/apiref/opapiaclnn/opapi_07_0016.html"
+  },
+  {
+   "from": "tech/ascend-aclgraph-replay",
+   "to": "tech/cuda-graph-capture",
+   "type": "asc_equivalent",
+   "note": "图捕获与重放的两栈实现：ACLGraph 捕获固定 shape 的 NPU 任务序列再回放，对应 NVIDIA 侧 CUDA Graph；不支持的形状回退 eager。",
+   "source": "https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/800alpha003/devaids/auxiliarydevtool/atlasprofiling_16_0089.html"
+  },
+  {
+   "from": "tech/ascend-msmodelslim-calibration",
+   "to": "tech/quantization-calibration-fallback",
+   "type": "asc_equivalent",
+   "note": "离线量化与校准：msModelSlim 导出昇腾后端可加载的低位检查点并用独立样本验证，对应 NVIDIA 侧的校准集与逐层回退；昇腾侧只支持 W8A8 与稀疏量化组合。",
+   "source": "https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/800alpha003/mindstudio/msmodelslim/msmodelslim_0001.html"
+  },
+  {
+   "from": "tech/ascend-atb-execution",
+   "to": "tech/inference-operator-fusion",
+   "type": "asc_equivalent",
+   "note": "算子库这层：昇腾用 ATB 把 Transformer 高频运算封成带工作区规划的加速库算子，NVIDIA 侧对应 TensorRT-LLM 的融合算子与插件。",
+   "source": "https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/800alpha003/devaids/atlasatb/atlasatb_0001.html"
   },
   {
    "from": "impl/mindie-continuous-batching",
