@@ -1,9 +1,9 @@
 {
  "schema_version": "1.0",
- "generated_at": "2026-11-22T17:05:36+08:00",
+ "generated_at": "2026-11-22T17:16:23+08:00",
  "counts": {
-  "nodes": 201,
-  "edges": 178
+  "nodes": 213,
+  "edges": 221
  },
  "views": [
   {
@@ -67,6 +67,10 @@
     {
      "hit": "Unable to recognize chip name: {chip_name}, please manually set env SOC_VERSION",
      "fix": "源码触发版本：vLLM Ascend c64ace678d12d5a48671d929c76f723f8158876c。当构建逻辑无法从已识别列表映射设备名时抛出。按实机 SoC 和安装矩阵设置 SOC_VERSION 后重建；源为异常模板，实机报错记录未查到。"
+    },
+    {
+     "hit": "Unable to aclrtHostRegister, errcode: 507899",
+     "fix": "触发版本：vLLM Ascend 0.11.0、驱动工具 25.5.1、固件 7.8（LMCache Ascend main，末级 CANN 版本未公开）。原作者后续做了 910B 上 ACL API 单测。按该案例的厂商答复排查注册标志，910B 路径避用 310 系列的 ACL_HOST_REGISTER_MAPPED；aclrtMallocHost 返回的内存无需二次注册。改用支持的固定内存路径后重新校验启动，原帖未给完整修复后的服务回跑。"
     }
    ],
    "hardware_scope": [
@@ -76,7 +80,7 @@
     "https://docs.vllm.ai/projects/ascend/en/main/getting_started/installation.html",
     "https://docs.vllm.ai/projects/ascend/en/main/developer_guide/contribution/dependency_version_management.html"
    ],
-   "urls_more": 3,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -96,9 +100,10 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/setup.py#L125"
+    "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/setup.py#L125",
+    "https://github.com/LMCache/LMCache-Ascend/issues/197"
    ],
-   "gain_note": "具备一手同栈运行路径对照。运行时分派开销的拆解见报告的 host/device trace；CANN 版本升级收益未查到。",
+   "gain_note": "一手同栈运行路径对照已记录。CANN 升级收益未查到。LMCache Ascend #197 记录了 vLLM Ascend 0.11.0 注册 host 内存时报错，但未找到公开的有效修复回跑，暂作排查线索。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -106,6 +111,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -151,9 +160,12 @@
     "https://www.hiascend.com/doc_center/source/en/CANNCommunityEdition/910/acce/ascendtb/ascendtb_01_0005.html",
     "https://github.com/vllm-project/vllm-ascend/issues/18337"
    ],
-   "urls_more": 2,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
+   "impls": [
+    "impl/atb-split-operation-dispatch"
+   ],
    "implementation_notes": [
     {
      "path": "atb/operation.h",
@@ -184,6 +196,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -268,6 +284,10 @@
     {
      "date": "2026-11-22",
      "change": "补可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -307,7 +327,7 @@
    "pitfalls": [
     {
      "hit": "未查到",
-     "fix": "未查到。CANN 9.1 官方资料列出 AOE_ERROR_DYNAMIC_GRAPH 等 API 返回码，未提供可核对的实际触发日志及修复回跑。"
+     "fix": "未查到带触发版本的真实报错。厂商 AOE 案例给出操作系统杀掉 aoe 的原始日志，并建议加 Host 内存，但案例未披露 CANN 版本。9.1 API 指南仅列错误码。"
     }
    ],
    "hardware_scope": [
@@ -317,9 +337,14 @@
     "https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/800alpha002/devaids/devtools/aoe/aoepar_16_001.html",
     "https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/83RC1/devaids/aoe/aoepar_16_060.html"
    ],
-   "urls_more": 3,
+   "urls_more": 7,
    "evidence": "A",
    "status": "candidate",
+   "impls": [
+    "impl/cann-ge-op-tune-compile",
+    "impl/torchair-aoe-config-entry",
+    "impl/torchair-aoe-session-dispatch"
+   ],
    "gain_note": "未查到。CANN 8.2.RC1 的 ResNet18 文档给出调优命令与 xx% 报告示例，该示例没有测量值。需固定 CANN、设备型号与卡数、输入 shape 和 batch，同一 OM 单独切换调优库后做双跑。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -328,6 +353,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -378,6 +407,10 @@
     {
      "hit": "Failed to get acl to npu flow events.",
      "fix": "触发版本：vLLM 与 vLLM Ascend 0.8.5、PyTorch 与 torch_npu 2.5.1；V1 的 Qwen2-7B 离线采集。维护者建议升级到兼容的插件 release/RC 后重新采集，并检查 ACL-to-NPU flow 和显存事件是否恢复。源帖未给出首个修复版本。"
+    },
+    {
+     "hit": "corrupted size vs. prev_size",
+     "fix": "触发版本：vLLM 0.27.1+empty，vLLM Ascend 0.19.1rc2.dev1908+g67dd25526，CANN 9.1.0，torch_npu 2.10.0.post4；采集栈且后台线程停止 profiler。照原帖将 torch_profiler_with_stack 设为 false，并让正常工作路径停止采集；源帖验证 no-stack 同负载采集能够完成。"
     }
    ],
    "hardware_scope": [
@@ -387,7 +420,7 @@
     "https://docs.vllm.ai/projects/ascend/en/main/developer_guide/performance_and_debug/service_profiling_guide.html",
     "https://www.hiascend.com/doc_center/source/zh/canncommercial/81RC1/devaids/devtools/profiling/CANN%E5%95%86%E7%94%A8%E7%89%88%208.1.RC1%20%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E5%B7%A5%E5%85%B7%E7%94%A8%E6%88%B7%E6%8C%87%E5%8D%97%2001.pdf"
    ],
-   "urls_more": 4,
+   "urls_more": 5,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -409,7 +442,8 @@
    ],
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/profiler.py#L140",
-    "https://github.com/vllm-project/vllm-ascend/issues/1210"
+    "https://github.com/vllm-project/vllm-ascend/issues/1210",
+    "https://github.com/vllm-project/vllm-ascend/issues/16577"
    ],
    "gain_note": "TPOT 用于标出采集干扰。测量作者后来撤回了 trace 截断的判断，未复现原截断推断。本条仅保留该帖列出的采集开关对照；底层 CANN 与 torch_npu 小版本未查到。",
    "owner_team": "架构",
@@ -419,6 +453,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -473,9 +511,12 @@
     "https://docs.vllm.ai/projects/ascend/en/main/getting_started/installation.html",
     "https://docs.vllm.ai/projects/ascend/en/main/user_guide/support_matrix/supported_models.html"
    ],
-   "urls_more": 5,
+   "urls_more": 6,
    "evidence": "A",
    "status": "candidate",
+   "impls": [
+    "impl/vllm-ascend-310p-attention-dispatch"
+   ],
    "implementation_notes": [
     {
      "engine": "vllm-ascend",
@@ -499,6 +540,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -591,6 +636,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -628,7 +677,7 @@
    "pitfalls": [
     {
      "hit": "未查到",
-     "fix": "未查到校准阶段同时具备原文、触发工具版本和修法的日志。#4293 的原始报错发生在引擎加载权重阶段，未披露 msModelSlim 生成版本；#17476 是转换后精度回归。"
+     "fix": "未查到触发侧 msModelSlim 版本。#3467 的 Qwen3-8B W4A8 在导出时记录原文 `RuntimeError: The size of tensor a (65536) must match the size of tensor b (16) at non-singleton dimension 0`。跟帖改用 vLLM Ascend v0.15.0rc1 镜像和 msit 的 br_release_MindStudio_8.1.RC2_TR5_20260624 分支后成功导出；因故障侧的量化工具版本未公开，此线索不计为齐全。"
     }
    ],
    "hardware_scope": [
@@ -641,9 +690,13 @@
     "https://github.com/Ascend/msModelSlim",
     "https://arxiv.org/abs/2211.10438"
    ],
-   "urls_more": 4,
+   "urls_more": 8,
    "evidence": "A",
    "status": "candidate",
+   "impls": [
+    "impl/msmodelslim-ascendv1-checkpoint-saver",
+    "impl/msmodelslim-v1-calibration-pipeline"
+   ],
    "implementation_notes": [
     {
      "engine": "vllm-ascend",
@@ -662,7 +715,7 @@
      "source": "https://github.com/Ascend/msModelSlim/blob/20db10875b2c3f55ce9c8731ed544effbf051e0e/msmodelslim/cli/__main__.py#L692"
     }
    ],
-   "gain_note": "未查到。msModelSlim 26.1.0 的 Qwen3.6-27B W8A8 文档给出做法，未发布同推理卡数、batch、序列长及固定基线的校准对照。可见的 W8A8 预测吞吐对比未披露校准工具版本或校准集，无法核对校准的独立影响。",
+   "gain_note": "未查到条件齐全的对照。msModelSlim 官方 Qwen3-32B 调优案例给出在 Atlas 800I A3、CANN 9.0.0、vLLM Ascend 0.22.1rc1 上的 GPQA 校准前后结果，但未披露工具版本、实际参与卡数、评测 batch 或长度。校准样本取自同一评测集的 badcase，因此也缺独立留出集验证。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -670,6 +723,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -712,7 +769,7 @@
    "pitfalls": [
     {
      "hit": "Block size must be a multiple of 16.",
-     "fix": "用该版本 FlashAttention 后端支持的页大小，重新启动并确认其他缓存组也接受该尺寸。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。用该版本 FlashAttention 后端支持的页大小，重新启动并确认其他缓存组也接受该尺寸。"
     }
    ],
    "hardware_scope": [
@@ -754,11 +811,16 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
     "attention-kernel"
-   ]
+   ],
+   "gain_note": "未查到针对整模型推理的同口径对照。原论文中的约 2× 为 attention kernel 前后向测试，公开的是合成张量 shape，端到端结果则为训练。"
   },
   {
    "id": "tech/flashattention-three",
@@ -796,7 +858,7 @@
    "pitfalls": [
     {
      "hit": "Only Hopper supports different V headdim",
-     "fix": "FA3 上游内核检查。对 Q/V 头维不同的检查点，在非 Hopper 上选经过验证支持此维度组合的注意力后端，或切换到受支持的 Hopper 设备。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 v2.8.3）。FA3 上游内核检查。对 Q/V 头维不同的检查点，在非 Hopper 上选经过验证支持此维度组合的注意力后端，或切换到受支持的 Hopper 设备。"
     }
    ],
    "hardware_scope": [
@@ -839,6 +901,10 @@
     {
      "date": "2026-11-22",
      "change": "补可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -846,7 +912,8 @@
    ],
    "pitfall_sources": [
     "https://github.com/Dao-AILab/flash-attention/blob/v2.8.3/hopper/flash_api.cpp#L745-L753"
-   ]
+   ],
+   "gain_note": "未查到 FA3 对 FA2 同模型同批长的整模型 A/B。原论文的加速比针对 H100 上不同序列长度和头维的单注意力张量；SM90 稀疏 MLA 的实测另见相应节点。"
   },
   {
    "id": "tech/flashinfer-attention",
@@ -937,6 +1004,10 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量和可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -1053,6 +1124,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -1089,7 +1164,7 @@
    "pitfalls": [
     {
      "hit": "Window left is not the same for all layers. One potential fix is to set disable_sliding_window=True",
-     "fix": "这个分支要求所有层使用同一左窗口。保留模型语义时选择支持层间窗口差异的后端。只有模型允许全局替代并通过精度和显存复测时，才使用源码提示的关闭窗口方案。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这个分支要求所有层使用同一左窗口。保留模型语义时选择支持层间窗口差异的后端。只有模型允许全局替代并通过精度和显存复测时，才使用源码提示的关闭窗口方案。"
     }
    ],
    "hardware_scope": [
@@ -1102,7 +1177,7 @@
     "https://docs.vllm.ai/en/stable/design/hybrid_kv_cache_manager/",
     "https://arxiv.org/abs/2310.06825"
    ],
-   "urls_more": 2,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -1120,7 +1195,7 @@
      "source": "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/single_type_kv_cache_manager.py#L503"
     }
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到固定模型、batch、长度和版本的窗口开关 A/B。#42024 只测滑窗 KV 节省策略的启动容量估计，计算路径的滑窗始终启用。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -1132,6 +1207,10 @@
     {
      "date": "2026-11-22",
      "change": "补可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -1179,7 +1258,7 @@
    "pitfalls": [
     {
      "hit": "cu_seqlens_q must have dtype int32",
-     "fix": "把查询累计长度张量放在内核要求的 CUDA 设备上并转换成连续 int32。检查首值为零、末值等于打包查询数，同时独立核对键端累计长度。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 v2.8.3）。把查询累计长度张量放在内核要求的 CUDA 设备上并转换成连续 int32。检查首值为零、末值等于打包查询数，同时独立核对键端累计长度。"
     }
    ],
    "hardware_scope": [
@@ -1218,6 +1297,10 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量和可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -1225,7 +1308,8 @@
    ],
    "pitfall_sources": [
     "https://github.com/Dao-AILab/flash-attention/blob/v2.8.3/csrc/flash_attn/flash_api.cpp#L544-L554"
-   ]
+   ],
+   "gain_note": "未查到。PyTorch 的 nested / padded 对照给出模块级实测，页面未列被测 GPU 型号与安装版本；FlashInfer 论文的变长张量实验同时改变内核，不能直接归因于 packing。"
   },
   {
    "id": "tech/cuda-graph-capture",
@@ -1314,6 +1398,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -1359,7 +1447,7 @@
    "pitfalls": [
     {
      "hit": "compile_cache_save_format must be 'binary' or 'unpacked', got: {value}",
-     "fix": "这是源码异常模板。把缓存保存格式改成当前版本接受的 binary 或 unpacked，然后核对缓存目录权限。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是源码异常模板。把缓存保存格式改成当前版本接受的 binary 或 unpacked，然后核对缓存目录权限。"
     }
    ],
    "hardware_scope": [
@@ -1402,6 +1490,10 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量数据"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -1502,6 +1594,10 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量数据"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -1546,7 +1642,7 @@
    "pitfalls": [
     {
      "hit": "Block size must be a multiple of 16.",
-     "fix": "将该 Triton 注意力路径的 KV 页大小设为允许的十六倍数，并确认模型的其他缓存组也能使用该值。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。将该 Triton 注意力路径的 KV 页大小设为允许的十六倍数，并确认模型的其他缓存组也能使用该值。"
     }
    ],
    "hardware_scope": [
@@ -1588,11 +1684,16 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量数据"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
     "graph-compile"
-   ]
+   ],
+   "gain_note": "未查到四项齐备的基线。公开 Triton 教程列出注意力微基准，但对应表没有将设备型号、卡数、Triton 版本与该行锁定，也没有模型推理对照。"
   },
   {
    "id": "tech/ascend-aclgraph-replay",
@@ -1622,6 +1723,12 @@
     {
      "metric": "FULL_DECODE_ONLY 动态候选长度下的重放适配，关闭填充 → 恢复填充",
      "value": "107 → 368 tok/s，原表 ITL 112.1 → 24.7 ms。4×910B4、DP2/TP2、27B W8A8、vLLM 0.26.0 / Ascend 0.26.0rc1、CANN 9.1.0，2,048 输入 / 256 输出、并发 16，同一动态候选策略下的修复对照。",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/16637",
+     "evidence": "B"
+    },
+    {
+     "metric": "动态请求批的 ACLGraph padding 修复对照",
+     "value": "未修复 107 tok/s、decode TPOT p50 112.1 ms；补 padding 后 368 tok/s、24.7 ms。版本：vLLM 0.26.0 / Ascend 0.26.0rc1 源码构建，CANN 9.1.0。设备：4×Ascend 910B4，DP2×TP2。负载：匿名 Qwen3.5 系列 27B hybrid W8A8，2048 输入、256 输出、并发 16，FULL_DECODE_ONLY。对照：未打 padding 修复的同一动态 MTP 和同一 benchmark 客户端。",
      "source": "https://github.com/vllm-project/vllm-ascend/issues/16637",
      "evidence": "B"
     }
@@ -1673,6 +1780,10 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量和可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -1681,7 +1792,7 @@
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm-ascend/issues/13792"
    ],
-   "gain_note": "实测：vLLM 0.26.0 / Ascend 0.26.0rc1，CANN 9.1.0，4×910B4，DP2×TP2，Qwen3.5 系列 27B W8A8（具体 checkpoint 未公开），2,048 输入/256 输出、并发 16。使用未打 padding 修复的相同动态 MTP 配置作对照。112.1/24.7 ms 是 decode TPOT p50。"
+   "gain_note": "公开模型为 Qwen3.5 家族 27B W8A8，精确权重名未披露。原表 112.1/24.7 ms 是 decode TPOT p50。"
   },
   {
    "id": "tech/inference-operator-fusion",
@@ -1720,7 +1831,7 @@
    "pitfalls": [
     {
      "hit": "unsupported fused rmsnorm+quant op for {key}",
-     "fix": "这是融合 pattern 的源码断言模板。检查量化类型、尺度粒度和目标后端是否在支持表，必要时关闭对应 norm-quant 融合后复测输出和性能。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是融合 pattern 的源码断言模板。检查量化类型、尺度粒度和目标后端是否在支持表，必要时关闭对应 norm-quant 融合后复测输出和性能。"
     }
    ],
    "hardware_scope": [
@@ -1759,6 +1870,10 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量和可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -1766,7 +1881,8 @@
    ],
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/compilation/passes/fusion/rms_quant_fusion.py#L132-L149"
-   ]
+   ],
+   "gain_note": "未查到。现有内核实验给出 FlashNormAttention 的最高加速，缺与该峰值绑定的模型、当前框架版本以及服务 batch/输入输出长度。"
   },
   {
    "id": "tech/paged-attention",
@@ -1809,7 +1925,7 @@
    "pitfalls": [
     {
      "hit": "No free blocks available",
-     "fix": "这条异常源于空闲块队列为空。检查请求需分配的页数、活跃引用和可逐出页面，降低超量请求的并发或在设备余量允许时增加 KV 缓存容量。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这条异常源于空闲块队列为空。检查请求需分配的页数、活跃引用和可逐出页面，降低超量请求的并发或在设备余量允许时增加 KV 缓存容量。"
     }
    ],
    "hardware_scope": [
@@ -1852,6 +1968,10 @@
     {
      "date": "2026-11-22",
      "change": "补可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -1859,7 +1979,8 @@
    ],
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/kv_cache_utils.py#L219-L230"
-   ]
+   ],
+   "gain_note": "未查到满足版本和实验变量独立条件的结果。原论文为 vLLM 对 FasterTransformer、Orca 的系统级端到端对照，并非同版本/调度器单切 PagedAttention。"
   },
   {
    "id": "tech/kv-block-reference-counting",
@@ -1898,7 +2019,7 @@
    "pitfalls": [
     {
      "hit": "Cannot get {num_blocks} free blocks from the pool",
-     "fix": "这是源码中的异常模板。让调度器按空闲页限额申请，必要时触发抢占或降低并发，再核对引用与等待队列。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是源码中的异常模板。让调度器按空闲页限额申请，必要时触发抢占或降低并发，再核对引用与等待队列。"
     }
    ],
    "hardware_scope": [
@@ -1943,11 +2064,16 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量数据"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
     "kv-cache"
-   ]
+   ],
+   "gain_note": "未查到能固定运行版本、硬件、批次和采样长度的直接 A/B。PagedAttention 论文图 15 对照的是共享策略整体的缓存节省，单图与具体运行提交未绑定。"
   },
   {
    "id": "tech/kv-cache-memory-layout",
@@ -1979,7 +2105,7 @@
    "pitfalls": [
     {
      "hit": "Unknown cache layout format {cache_layout}.",
-     "fix": "这是源码异常模板。清除不兼容的布局覆盖，或使用该后端接受的 NHD/HND 并让写入、读取及跨实例传输端使用相同布局。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是源码异常模板。清除不兼容的布局覆盖，或使用该后端接受的 NHD/HND 并让写入、读取及跨实例传输端使用相同布局。"
     }
    ],
    "hardware_scope": [
@@ -1989,7 +2115,7 @@
     "https://docs.flashinfer.ai/tutorials/kv_layout.html",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/utils.py#L53"
    ],
-   "urls_more": 1,
+   "urls_more": 2,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2007,7 +2133,7 @@
      "source": "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/utils.py#L53"
     }
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到同机器、模型及长度下只切 NHD/HND 的 A/B。FlashInfer #5601 核实了错误标注引起维度解释问题，不能用报错组作为性能基线。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -2019,6 +2145,10 @@
     {
      "date": "2026-11-22",
      "change": "补可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -2073,6 +2203,10 @@
     {
      "hit": "Unrecognized FP8 dtype: {kv_cache_dtype}",
      "fix": "这是源码异常模板。将 KV dtype 改为后端支持的 FP8 变体，或回退 auto 后重做精度和容量比较。"
+    },
+    {
+     "hit": "Unrecognized FP8 dtype: fp8_e5m2",
+     "fix": "触发版本：vLLM 0.10.1.1 官方镜像，CUDA 12.8，8×H20，Qwen3-235B 在 FlashAttention 后端显式使用 fp8_e5m2。可先回退 auto，以恢复受支持的缓存 dtype，再按该构建的支持矩阵选择 FP8；升级后回归启动、输出精度及吞吐。"
     }
    ],
    "hardware_scope": [
@@ -2082,7 +2216,7 @@
     "https://docs.vllm.ai/en/stable/features/quantization/quantized_kvcache/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/cache.py#L74"
    ],
-   "urls_more": 2,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2101,7 +2235,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/flash_attn.py#L175"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/flash_attn.py#L175",
+    "https://github.com/vllm-project/vllm/issues/23922"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -2110,6 +2245,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -2146,7 +2285,7 @@
    "pitfalls": [
     {
      "hit": "Hybrid KV cache manager was explicitly enabled but is not supported in this configuration. Consider omitting the --no-disable-hybrid-kv-cache-manager flag to let vLLM decide automatically.",
-     "fix": "去掉强制开启参数，让引擎按当前模型与后端能力选择；再验证各缓存组是否符合模型语义。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。去掉强制开启参数，让引擎按当前模型与后端能力选择；再验证各缓存组是否符合模型语义。"
     }
    ],
    "hardware_scope": [
@@ -2185,6 +2324,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -2221,6 +2364,10 @@
     {
      "hit": "No available memory for the cache blocks.",
      "fix": "先检查权重与运行缓冲的峰值；有余量时提高 gpu_memory_utilization、释放同卡进程或改用更合适的模型分片。"
+    },
+    {
+     "hit": "ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing the engine.",
+     "fix": "触发版本：vLLM 0.8.5 的 V1，单张 A800 上以 gpu_memory_utilization=0.4 加载 Qwen3-8B。源帖作者确认提高到 0.9 后消失；执行前应先查同卡占用和预留余量，按目标并发测足所需 KV 容量。"
     }
    ],
    "hardware_scope": [
@@ -2230,7 +2377,7 @@
     "https://docs.vllm.ai/en/stable/configuration/optimization/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/kv_cache_utils.py#L789"
    ],
-   "urls_more": 1,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2250,9 +2397,10 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/kv_cache_utils.py#L697"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/kv_cache_utils.py#L697",
+    "https://github.com/vllm-project/vllm/issues/17431"
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到固定输入/输出与并发的两档显存预算实测。#14314 有 Kimi-K3 1M 上限的初始化内存估算，基线还卡在通信会合。#17431 是启动复现和修法，未报告负载测试。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -2260,6 +2408,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -2305,7 +2457,7 @@
    "pitfalls": [
     {
      "hit": "At most {limit} {modality}(s) may be provided in one prompt.",
-     "fix": "这是源码异常模板。减少请求中的图片或视频项。若只是服务配置上限且模型本身支持更多项，再调整 --limit-mm-per-prompt，并复核视觉 token 与上下文预算。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是源码异常模板。减少请求中的图片或视频项。若只是服务配置上限且模型本身支持更多项，再调整 --limit-mm-per-prompt，并复核视觉 token 与上下文预算。"
     }
    ],
    "hardware_scope": [
@@ -2348,6 +2500,10 @@
     {
      "date": "2026-11-22",
      "change": "补可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -2355,7 +2511,8 @@
    ],
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/multimodal/processing/context.py#L430-L449"
-   ]
+   ],
+   "gain_note": "未查到。已有 1/4 是 Qwen2.5-VL 空间 merge 的 token 数推导。需在固定主干、精度与 batch 下，单独改变可选择的视觉 token 预算并公开对照。"
   },
   {
    "id": "tech/multimodal-encoder-disaggregation",
@@ -2394,7 +2551,7 @@
    "pitfalls": [
     {
      "hit": "Please specify ec_role when ec_connector is set, supported roles are {get_args(ECRole)}",
-     "fix": "这是源码异常模板。在设置 ec_connector 时同时配置与当前 worker 对应的受支持 ec_role。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是源码异常模板。在设置 ec_connector 时同时配置与当前 worker 对应的受支持 ec_role。"
     }
    ],
    "hardware_scope": [
@@ -2440,11 +2597,16 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量数据"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
     "multimodal"
-   ]
+   ],
+   "gain_note": "未查到逐臂明确编码批次与输入输出长度的对照。EAServe 图 9 的模型为 LLaVA-v1.6-34B，8× RTX 6000 Ada、500 请求、泊松到达，三轮取中位，对照 vLLM 0.14.1 与 Dynamo 0.9.0。其 1.93 req/s 是 S3（50 s / 120 ms）goodput，含联合调优。"
   },
   {
    "id": "tech/multimodal-encoder-output-cache",
@@ -2475,7 +2637,7 @@
    "pitfalls": [
     {
      "hit": "Encoder cache miss for {mm_hash}.",
-     "fix": "这是设备端取编码输出的断言模板。先检查相同媒体哈希的编码任务是否执行并写入 runner 缓存，再核对其引用是否在文本消费前被清理。验证时保持处理器版本和输入顺序一致。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是设备端取编码输出的断言模板。先检查相同媒体哈希的编码任务是否执行并写入 runner 缓存，再核对其引用是否在文本消费前被清理。验证时保持处理器版本和输入顺序一致。"
     }
    ],
    "hardware_scope": [
@@ -2485,7 +2647,7 @@
     "https://docs.vllm.ai/en/stable/features/multimodal_inputs/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/encoder_cache_manager.py#L17"
    ],
-   "urls_more": 1,
+   "urls_more": 2,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2504,7 +2666,7 @@
      "source": "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/encoder_cache_manager.py#L17"
     }
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到绑定精确原型构建的同口径数据。vLLM #56242 的模型级对照已具备 InternVL3_5-38B-HF BF16、6×H20、每请求 4 图和约 400/32 输入输出 token、128 条同到达轨迹，报告只切共享 encoder 输出复用后的 p50 TTFT 为 1.209→0.819 s。页面中的 6e1d051fc 明确绑定另一节的 GPU 验证，整组对照是原型实验，最终重构后未重跑。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -2516,6 +2678,10 @@
     {
      "date": "2026-11-22",
      "change": "补可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -2555,6 +2721,10 @@
     {
      "hit": "'mm_shm_cache_max_object_size_mb' should only be set when 'mm_processor_cache_type' is 'shm'.",
      "fix": "共享内存对象上限只在 shm 路径配置；使用其他缓存类型时删除该覆盖值。"
+    },
+    {
+     "hit": "AssertionError: Expected a cached item",
+     "fix": "触发版本：vLLM 0.31.0，暂停/恢复和并发图片请求下的 processor cache 生命周期竞态。源帖补丁在 lookup/merge 路径把已失效项当作 miss，并重新准备该输入；使用包含修复的构建回归普通和流式响应。补丁只处理 P0 的错误。"
     }
    ],
    "hardware_scope": [
@@ -2564,7 +2734,7 @@
     "https://docs.vllm.ai/en/stable/features/multimodal_inputs/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/multimodal/cache.py#L326"
    ],
-   "urls_more": 1,
+   "urls_more": 2,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2584,9 +2754,10 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/multimodal.py#L232"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/multimodal.py#L232",
+    "https://github.com/vllm-project/vllm/issues/62121"
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到严格的模型批次/输入输出长度及代码版本齐全的 A/B。#62121 有 Qwen2-VL-2B、A800 的补丁前后 P0 断言计数，复测使用 main 及未标定 patch，发布版触发日志来自另一个环境。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -2594,6 +2765,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -2629,7 +2804,7 @@
    "pitfalls": [
     {
      "hit": "No video streams found in container",
-     "fix": "确认输入包含可读视频流，再按目标后端支持的格式重新封装或转码。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。确认输入包含可读视频流，再按目标后端支持的格式重新封装或转码。"
     }
    ],
    "hardware_scope": [
@@ -2639,7 +2814,7 @@
     "https://docs.vllm.ai/en/stable/features/multimodal_inputs/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/multimodal/video.py#L52"
    ],
-   "urls_more": 1,
+   "urls_more": 2,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2661,7 +2836,7 @@
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/multimodal/video.py#L377"
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到固定推理栈、卡数、batch、视频覆盖范围和同一 checkpoint 的采样帧率/帧数 A/B。#61681 固定为 2 fps，研究的是 encoder data/weights 模式。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -2669,6 +2844,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -2704,7 +2883,7 @@
    "pitfalls": [
     {
      "hit": "未查到",
-     "fix": "未查到"
+     "fix": "未查到真正异常原文。#61681 的请求和 JSON 模式校验成功，错的是视觉内容。该组合可暂用 weights 模式或正常权重加载，并对相同媒体回归。"
     }
    ],
    "hardware_scope": [
@@ -2714,8 +2893,12 @@
     "https://docs.vllm.ai/en/stable/features/multimodal_inputs/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/multimodal.py#L144"
    ],
+   "urls_more": 2,
    "evidence": "A",
    "status": "candidate",
+   "impls": [
+    "impl/vllm-qwen3-vl-encoder-data-parallel"
+   ],
    "implementation_notes": [
     {
      "engine": "vllm",
@@ -2731,7 +2914,7 @@
      "source": "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/multimodal.py#L144"
     }
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到条件齐全的性能 A/B。#61681 在 vLLM 0.31.0、双 B200、GLM-5.3-Flash NVFP4 出现 data/weights 视觉结果差异；讨论给出 sharded_state 交互证据，未公布固定 token 长及两臂相同脚本的重复性能测试。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -2739,6 +2922,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -2781,6 +2968,12 @@
      "value": "Llama-3.1-8B BF16，131 → 218 tok/s。vLLM 0.29.0，论文表 III 对 c≤64 每档取重复均值再取峰值，GPU 数随部署改变。",
      "source": "https://arxiv.org/html/2611.20289",
      "evidence": "C"
+    },
+    {
+     "metric": "双 GB10 之间的 TP2 输出吞吐",
+     "value": "Llama-3.1-8B BF16，测试范围内峰值 131→218 tok/s；并发 1 由 13.2→25.0 tok/s。版本：vLLM 0.29.0（论文 §II/III）。设备：NVIDIA DGX Spark，基线 1 台、TP2 为 2 台各一 GPU（GB10、RDMA）。负载：贪心，固定 token 桶 128/128、1024/256、4096/256、8192/512，前缀缓存关闭；并发 1/4/8/16/32/64，三轮独立启动。对照：单 Spark、TP1，峰值在该并发范围内分别取最大。",
+     "source": "https://arxiv.org/html/2611.20289",
+     "evidence": "C"
     }
    ],
    "cost": [
@@ -2791,6 +2984,10 @@
     {
      "hit": "Total number of attention heads ({total_num_attention_heads}) must be divisible by tensor parallel size ({tensor_parallel_size}).",
      "fix": "这是源码异常模板。将 TP 度数设为总注意力头数的因子，并复核 KV 头复制规则和量化权重分片边界。"
+    },
+    {
+     "hit": "Total number of attention heads (32) must be divisible by tensor parallel size",
+     "fix": "触发版本：vLLM 0.8.5.dev443（b90b0852e），#17604 中 TP 3、5、6、7 触发注意力头对齐错误。把 TP 选为总头数的因子，另核对 AWQ MoE kernel 的 K 维切分约束。"
     }
    ],
    "hardware_scope": [
@@ -2805,7 +3002,7 @@
     "https://docs.vllm.ai/en/stable/serving/parallelism_scaling/",
     "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/support_matrix/supported_features.html"
    ],
-   "urls_more": 4,
+   "urls_more": 5,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2834,13 +3031,18 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量和可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
     "parallel"
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/model.py#L1123-L1130"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/model.py#L1123-L1130",
+    "https://github.com/vllm-project/vllm/issues/17604"
    ]
   },
   {
@@ -2873,6 +3075,18 @@
      "value": "Qwen3.6-35B-A3B NVFP4，峰值输出 368 / 374 tok/s。并发 1 时中位请求均值 ITL 9.9 / 14 ms。vLLM 0.29.0，论文表 III。",
      "source": "https://arxiv.org/html/2611.20289",
      "evidence": "C"
+    },
+    {
+     "metric": "双 GB10 的 PP2 对照",
+     "value": "Qwen3.6-35B-A3B NVFP4，TP2/PP2 峰值输出 368/374 tok/s；并发 1 的请求平均 ITL 的中位数为 9.9/14 ms。版本：vLLM 0.29.0。设备：两台 NVIDIA DGX Spark 各一 GB10 GPU（RDMA）。负载：固定 token 桶 128/128、1024/256、4096/256、8192/512，贪心，前缀缓存关闭；并发 1/4/8/16/32/64，重复启动三轮。对照：同卡数 TP2。论文未证明 c=64 时的吞吐差异超出不确定区间。",
+     "source": "https://arxiv.org/html/2611.20289",
+     "evidence": "C"
+    },
+    {
+     "metric": "昇腾 A3 P/D 部署的 prefill 多轴并行对照",
+     "value": "切换 prefill 拓扑后，端到端输出吞吐 1032→1552 tok/s、TTFT p95 42.8→9.5 s。版本：quay.io/ascend/vllm-ascend:kimi-k3.1-pro-a3；源帖未列镜像内具体包版本。设备：12 节点、每节点 16 个 Ascend 910C NPU，4P+8D。负载：Kimi-K3.1-Pro W4A8 + DSpark，64K 输入（6.4K 新 token）、1K 输出、并发 64。对照：prefill DP4/TP16，测试臂为 DP1/PP4/PCP4/TP4，节点内 EP16。拓扑有多项变化，不能把全部改善归给 PP。",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/22601",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -2883,6 +3097,10 @@
     {
      "hit": "Pipeline parallelism is not supported for this model. Supported models implement the `SupportsPP` interface.",
      "fix": "将 PP 暂时设为 1，或切换到实现 SupportsPP 的模型架构及对应引擎版本，再验证阶段交接和单请求输出。"
+    },
+    {
+     "hit": "NotImplementedError: Pipeline parallelism is not supported for this model. Supported models implement the `SupportsPP` interface.",
+     "fix": "触发版本：vLLM 0.22.1rc1.dev490+g4a560dd8d，#45455 中 MiniMax-M3 在 PP>1 时启动失败。改用 PP=1（前提是显存放得下），或升级到该架构声明 SupportsPP 并通过同模型 PP 回归的发布版本。"
     }
    ],
    "hardware_scope": [
@@ -2896,7 +3114,7 @@
     "https://docs.vllm.ai/en/stable/serving/parallelism_scaling/",
     "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/support_matrix/supported_features.html"
    ],
-   "urls_more": 3,
+   "urls_more": 5,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2925,13 +3143,18 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量和可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
     "parallel"
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/model.py#L1135-L1142"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/model.py#L1135-L1142",
+    "https://github.com/vllm-project/vllm/issues/45455"
    ]
   },
   {
@@ -2965,7 +3188,7 @@
    "pitfalls": [
     {
      "hit": "Number of experts in the model must be greater than 0 when expert parallelism is enabled.",
-     "fix": "检查模型是否为受支持的 MoE。密集模型关闭 enable_expert_parallel，再按显存与并发需求选择 TP、PP 或副本。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。检查模型是否为受支持的 MoE。密集模型关闭 enable_expert_parallel，再按显存与并发需求选择 TP、PP 或副本。"
     }
    ],
    "hardware_scope": [
@@ -2976,7 +3199,7 @@
     "https://docs.vllm.ai/en/stable/serving/expert_parallel_deployment/",
     "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/support_matrix/supported_features.html"
    ],
-   "urls_more": 2,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2995,7 +3218,7 @@
      "source": "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/fused_moe/layer.py#L219"
     }
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到。B200 长上下文对照的两臂均用 EP8，只切 attention 的 DP/TP。需固定 TP、DP、专家数、负载及版本，测单独切换专家分片路径。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -3007,6 +3230,10 @@
     {
      "date": "2026-11-22",
      "change": "补可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -3056,6 +3283,10 @@
     {
      "hit": "data_parallel_size_local ({self.data_parallel_size_local}) must be <= data_parallel_size ({self.data_parallel_size})",
      "fix": "这是源码异常模板。将每节点副本数设为不大于全局副本数，并核对各节点 rank 编号。"
+    },
+    {
+     "hit": "RuntimeError: Message from engine with unexpected data parallel rank: 1",
+     "fix": "触发版本：vLLM 0.9.0，多节点运行 data_parallel.py。启动时保证每个 worker 与前端看到相同的全局 DP size、同一协调地址、唯一全局 rank 和有效的本地 DP size。用该版本支持的多节点启动入口，复测节点间注册；源帖没有报告首个修复版本。"
     }
    ],
    "hardware_scope": [
@@ -3066,7 +3297,7 @@
     "https://docs.vllm.ai/en/stable/serving/data_parallel_deployment/",
     "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/support_matrix/supported_features.html"
    ],
-   "urls_more": 3,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -3086,7 +3317,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/parallel.py#L427"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/parallel.py#L427",
+    "https://github.com/vllm-project/vllm/issues/18553"
    ],
    "gain_note": "可用于评估 MLA 上 DP 与 TP 的长上下文并发权衡。两臂都为 EP8，数字不表示 MoE 专家分片单独带来的收益。",
    "owner_team": "架构",
@@ -3096,6 +3328,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -3130,6 +3366,12 @@
      "value": "约 1/C，C 为 DCP 度数，按理想切分推导",
      "source": "https://docs.vllm.ai/en/stable/serving/context_parallel_deployment/",
      "evidence": "A"
+    },
+    {
+     "metric": "固定长上下文的 DCP 解码吞吐",
+     "value": "128K 上下文、并发 128：DCP1、DCP4、DCP8 分别为 374.1、383.9、416.2 tok/s。版本：镜像 voipmonitor/vllm:cu130-mtp-tuned-v3-20260423，基底 7dab799d36af5c3eb4dd980f248ab4ba7a56e170 加原帖所列三个 Python 文件改动。设备：8× RTX PRO 6000 Blackwell SM120，TP8。负载：Kimi-K2.6 + K2.5 EAGLE3-MLA 草稿，3 draft token、TRITON_MLA、FP8 KV，skip-prefill 预置 128K KV，每档解码 10 s。对照：相同镜像、固定投机配置与并发的 DCP1。",
+     "source": "https://github.com/vllm-project/vllm/issues/40608",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -3140,6 +3382,10 @@
     {
      "hit": "dcp_comm_backend='a2a' requires decode_context_parallel_size > 1.",
      "fix": "使用大于 1 且能整除 TP 并行度的 DCP，或切换到该版本支持的非 a2a DCP 后端。"
+    },
+    {
+     "hit": "AttributeError: 'FlashInferMLASparseMetadata' object has no attribute 'decode'",
+     "fix": "触发版本：vLLM 0.28.0，GLM-5.3 DSA sparse attention，DCP>1。按原作者验证可回退至原部署的 0.27.0，或在目标版本设 DCP=1 后回归输出。0.29.0 能启动仍有错误输出案例，升级需回归短/长上下文精度。"
     }
    ],
    "hardware_scope": [
@@ -3149,7 +3395,7 @@
     "https://docs.vllm.ai/en/stable/serving/context_parallel_deployment/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/parallel.py#L308"
    ],
-   "urls_more": 1,
+   "urls_more": 5,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -3168,7 +3414,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/parallel.py#L480"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/parallel.py#L480",
+    "https://github.com/vllm-project/vllm/issues/54300"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -3177,11 +3424,16 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
     "parallel"
-   ]
+   ],
+   "gain_note": "解码是时间窗吞吐，输出长度随进展变化。源帖中的另一套重构镜像只验证了服务启动，吞吐值仅对应原有镜像。"
   },
   {
    "id": "tech/expert-parallel-load-balancing",
@@ -3214,7 +3466,7 @@
    "pitfalls": [
     {
      "hit": "Async EPLB is only supported with the default policy.",
-     "fix": "使用该版本默认 EPLB 策略，或在自定义策略下关闭异步 EPLB。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。使用该版本默认 EPLB 策略，或在自定义策略下关闭异步 EPLB。"
     }
    ],
    "hardware_scope": [
@@ -3247,7 +3499,7 @@
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/parallel.py#L101"
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到版本/设备/负载完整且只切 EPLB 的记录。Wide-EP 公布样例多同时改变专家重排、通信后端和节点数；需相同流量 trace 的启停对照。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -3255,6 +3507,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -3307,6 +3563,10 @@
     {
      "hit": "Invalid hash_block_size={hash_block_size}; all KV cache group block sizes must be divisible by hash_block_size. Got group block sizes={group_block_sizes}.",
      "fix": "这是源码异常模板。选择能整除所有 KV 缓存组块尺寸的哈希块长，或恢复自动值，并重新验证命中粒度。"
+    },
+    {
+     "hit": "AssertionError",
+     "fix": "触发版本：vLLM 0.4.3，异步引擎打开前缀缓存时，assert len(next_token_ids) == len(query_indices) 触发。源帖关闭 enable_prefix_caching 后可用，0.7.0 也有同一断言的独立复现；切换到通过配对重放测试的构建前可保持该功能关闭。"
     }
    ],
    "hardware_scope": [
@@ -3317,7 +3577,7 @@
     "https://docs.vllm.ai/en/stable/design/prefix_caching/",
     "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/support_matrix/supported_features.html"
    ],
-   "urls_more": 4,
+   "urls_more": 5,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -3336,7 +3596,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/kv_cache_utils.py#L627"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/kv_cache_utils.py#L627",
+    "https://github.com/vllm-project/vllm/issues/7003"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -3349,6 +3610,10 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量数据"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -3393,7 +3658,7 @@
    "pitfalls": [
     {
      "hit": "The arguments enable-hierarchical-cache and disable-radix-cache are mutually exclusive and cannot be used at the same time.",
-     "fix": "SGLang 此版本的 HiCache 需要启用 RadixCache。保留层级缓存时移除 disable-radix-cache，确需禁用基数树时同时关闭层级缓存。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 1519acf37c23f2189adb93f57ca9cd2db1bebf18）。SGLang 此版本的 HiCache 需要启用 RadixCache。保留层级缓存时移除 disable-radix-cache，确需禁用基数树时同时关闭层级缓存。"
     }
    ],
    "hardware_scope": [
@@ -3406,7 +3671,7 @@
     "https://arxiv.org/abs/2312.07104",
     "https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/mem_cache/radix_cache.py"
    ],
-   "urls_more": 3,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -3435,6 +3700,10 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量和可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -3442,7 +3711,8 @@
    ],
    "pitfall_sources": [
     "https://github.com/sgl-project/sglang/blob/1519acf37c23f2189adb93f57ca9cd2db1bebf18/python/sglang/srt/server_args.py#L3401-L3406"
-   ]
+   ],
+   "gain_note": "未查到固定同引擎版本、卡数和序列长度的 RadixCache 结构 on/off 对照。SGLang 论文的 0.2 s 是树结构计时分项，两个引擎的对比也有队列、内核差别。"
   },
   {
    "id": "tech/prefix-cache-salting",
@@ -3473,7 +3743,7 @@
    "pitfalls": [
     {
      "hit": "Parameter 'cache_salt' must be a non-empty string if provided.",
-     "fix": "使用由可信请求上下文生成的非空字符串，或按业务共享策略省略字段。复测同域和跨域请求的缓存命中。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。使用由可信请求上下文生成的非空字符串，或按业务共享策略省略字段。复测同域和跨域请求的缓存命中。"
     }
    ],
    "hardware_scope": [
@@ -3513,6 +3783,10 @@
     {
      "date": "2026-11-22",
      "change": "补可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -3559,7 +3833,7 @@
    "pitfalls": [
     {
      "hit": "Unknown eviction policy: {self.eviction_policy}.",
-     "fix": "这是 SGLang RadixCache 初始化异常的首句模板。配置有效策略名称 lru，并复核所用版本是否支持其他策略以及是否实际启用了对应缓存。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 1519acf37c23f2189adb93f57ca9cd2db1bebf18）。这是 SGLang RadixCache 初始化异常的首句模板。配置有效策略名称 lru，并复核所用版本是否支持其他策略以及是否实际启用了对应缓存。"
     }
    ],
    "hardware_scope": [
@@ -3601,6 +3875,10 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量和可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -3608,7 +3886,8 @@
    ],
    "pitfall_sources": [
     "https://github.com/sgl-project/sglang/blob/1519acf37c23f2189adb93f57ca9cd2db1bebf18/python/sglang/srt/mem_cache/radix_cache.py#L310-L331"
-   ]
+   ],
+   "gain_note": "未查到固定软件版本和请求长度/批次的结果；§5.2 图 13 用单 H200、Qwen3-Coder-30B、10,000 条 FreeInference Trace 与 48 GiB KV 比较两策略，未将软件提交及单请求长度与该图绑定。"
   },
   {
    "id": "tech/cacheblend",
@@ -3647,7 +3926,7 @@
    "pitfalls": [
     {
      "hit": "blend engine requires supported_transfer_mode 'lmcache_driven' or 'auto', got '{mode}'",
-     "fix": "这是 LMCache 多进程建引擎时的异常模板。启用 blend 时将传输模式设为 lmcache_driven 或 auto，确认连接器使用匹配的传输方式。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 5e90e8be1cd08ff2a14795430a065c5a9f42c3a5）。这是 LMCache 多进程建引擎时的异常模板。启用 blend 时将传输模式设为 lmcache_driven 或 auto，确认连接器使用匹配的传输方式。"
     }
    ],
    "hardware_scope": [
@@ -3689,6 +3968,10 @@
     {
      "date": "2026-11-22",
      "change": "补可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -3696,7 +3979,8 @@
    ],
    "pitfall_sources": [
     "https://github.com/LMCache/LMCache/blob/5e90e8be1cd08ff2a14795430a065c5a9f42c3a5/lmcache/v1/multiprocess/modules/blend/module.py#L85-L95"
-   ]
+   ],
+   "gain_note": "未查到能绑定性能图具体引擎构建、模型、并发与长度的对照。论文结果覆盖多模型、多任务和设备，不能只凭汇总的最大倍数补这些条件。"
   },
   {
    "id": "tech/kv-aware-request-routing",
@@ -3737,7 +4021,7 @@
    "pitfalls": [
     {
      "hit": "model_name is required for keyed router tracking hashes",
-     "fix": "仅针对启用加键哈希的 Dynamo 路由初始化。连接路由器时传入稳定的模型标识，并确认 worker 侧使用相同模型与哈希口径。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 666bc9d7d1f929727521264246b4d5b8a81e93ea）。仅针对启用加键哈希的 Dynamo 路由初始化。连接路由器时传入稳定的模型标识，并确认 worker 侧使用相同模型与哈希口径。"
     }
    ],
    "hardware_scope": [
@@ -3780,6 +4064,10 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量和可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -3787,7 +4075,8 @@
    ],
    "pitfall_sources": [
     "https://github.com/ai-dynamo/dynamo/blob/666bc9d7d1f929727521264246b4d5b8a81e93ea/lib/llm/src/kv_router.rs#L661-L682"
-   ]
+   ],
+   "gain_note": "未查到同版本同部署、只切换路由的严格数据。Preble 的跨模型结果同时改变全局路由和本地调度，论文的量值不能沿用为 Dynamo 的单开关结果。"
   },
   {
    "id": "tech/int8-w8a8",
@@ -3835,7 +4124,7 @@
    "pitfalls": [
     {
      "hit": "No compressed-tensors compatible scheme was found.",
-     "fix": "在该 vLLM 后端确认权重及激活的位宽、量化类型和粒度都能映射到 W8A8 scheme。改用目标后端明确支持的导出方案。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。在该 vLLM 后端确认权重及激活的位宽、量化类型和粒度都能映射到 W8A8 scheme。改用目标后端明确支持的导出方案。"
     }
    ],
    "hardware_scope": [
@@ -3849,7 +4138,7 @@
     "https://arxiv.org/abs/2211.10438",
     "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/support_matrix/supported_features.html"
    ],
-   "urls_more": 3,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -3878,6 +4167,10 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量和可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -3885,7 +4178,8 @@
    ],
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/quantization/compressed_tensors/compressed_tensors.py#L690-L718"
-   ]
+   ],
+   "gain_note": "未查到四项齐备的实测。SmoothQuant 表 8 未钉 FasterTransformer 提交；QwQ-32B 的 Ascend v0.8.4rc2/910B3 TP4 实测两臂都完成 10 个请求，但未公开输入长度分布或并发配置。"
   },
   {
    "id": "tech/activation-aware-weight-quantization",
@@ -3915,6 +4209,12 @@
      "value": "理想数据区 1/4，另计尺度、零点和打包对齐",
      "source": "https://arxiv.org/abs/2306.00978",
      "evidence": "C"
+    },
+    {
+     "metric": "AWQ 相对 BF16 的生成速度",
+     "value": "1 输入 token：BF16 46.30、AWQ 92.66 tok/s；30,720 输入 token：BF16 37.18、AWQ 59.01 tok/s。版本：vLLM 0.6.3、CUDA 12.1、PyTorch 2.4.0、FlashAttention 2.6.3。设备：单张 NVIDIA A100 80GB。负载：Qwen2.5-14B-Instruct，batch=1，表列 1 或 30,720 输入 token，均生成 2048 token。对照：同环境的原始 BF16 检查点。",
+     "source": "https://qwen.readthedocs.io/en/v2.5/benchmark/speed_benchmark.html",
+     "evidence": "A"
     }
    ],
    "cost": [
@@ -3925,6 +4225,10 @@
     {
      "hit": "The input size is not aligned with the quantized weight shape. This can be caused by too large tensor parallel size.",
      "fix": "减小 TP 或更换与本地分片形状相容的量化组配置，并重新加载检查点。"
+    },
+    {
+     "hit": "ValueError: The input size is not aligned with the quantized weight shape. This can be caused by too large tensor parallel size.",
+     "fix": "触发版本：vLLM 0.7.3，Qwen2.5-VL-72B-Instruct-AWQ 走 awq_marlin 且 TP4。检查视觉塔及语言模型的分片输入维度是否对齐量化分组，选能整除的 TP 或使用后端明确支持的量化包，复测启动及 VL 输出。"
     }
    ],
    "hardware_scope": [
@@ -3937,7 +4241,7 @@
     "https://arxiv.org/abs/2306.00978",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/quantization/awq.py#L34"
    ],
-   "urls_more": 1,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -3956,7 +4260,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/quantization/awq.py#L199"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/quantization/awq.py#L199",
+    "https://github.com/vllm-project/vllm/issues/13980"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -3965,6 +4270,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -3999,6 +4308,12 @@
      "value": "1/4，未计尺度、索引和打包对齐",
      "source": "https://arxiv.org/abs/2210.17323",
      "evidence": "C"
+    },
+    {
+     "metric": "GPTQ-Int4 相对 BF16 的生成速度",
+     "value": "1 输入 token：BF16 46.30、GPTQ-Int4 98.02 tok/s；30,720 输入 token：BF16 37.18、GPTQ-Int4 60.91 tok/s。版本：vLLM 0.6.3、CUDA 12.1、PyTorch 2.4.0、FlashAttention 2.6.3。设备：单张 NVIDIA A100 80GB。负载：Qwen2.5-14B-Instruct，batch=1，表列 1 或 30,720 输入 token，均生成 2048 token。对照：同环境的原始 BF16 检查点。",
+     "source": "https://qwen.readthedocs.io/en/v2.5/benchmark/speed_benchmark.html",
+     "evidence": "A"
     }
    ],
    "cost": [
@@ -4009,6 +4324,10 @@
     {
      "hit": "The input size is not aligned with the quantized weight shape. This can be caused by too large tensor parallel size.",
      "fix": "降低 TP，并确认量化 group_size 与本地输入维度对齐。"
+    },
+    {
+     "hit": "ValueError: The input size is not aligned with the quantized weight shape. This can be caused by too large tensor parallel size.",
+     "fix": "触发版本：vLLM 0.5.3.post1，#7075 的 DeepSeek-V2-Lite-gptq-4bit 载入；旧构建需本地分片输入维度对齐量化 group 与 kernel tile。减小 TP（或换满足该模型分组的构建/量化包）并验证加载及短输出；不宜直接修改 kernel 对齐常量。"
     }
    ],
    "hardware_scope": [
@@ -4021,7 +4340,7 @@
     "https://arxiv.org/abs/2210.17323",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/quantization/gptq.py#L44"
    ],
-   "urls_more": 1,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -4040,7 +4359,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/quantization/gptq.py#L257"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/quantization/gptq.py#L257",
+    "https://github.com/vllm-project/vllm/issues/7075"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -4049,6 +4369,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -4100,6 +4424,10 @@
     {
      "hit": "The block-wise quantization only supports dynamic activation scheme for now, but got {activation_scheme} activation scheme.",
      "fix": "该版本的块级权重路径需使用动态激活方案，改用匹配的量化检查点或选择非块级路径。"
+    },
+    {
+     "hit": "Fatal Python error: Segmentation fault",
+     "fix": "触发版本：vLLM 0.19.1rc1.dev198+g2d80cf9d6 和 PyTorch 2.11.0+cu130；在 B200 的 FlashInfer FP8 GEMM warmup autotune。按源帖使用 VLLM_DISABLED_KERNELS=FlashInferFP8ScaledMMLinearKernel 绕过这一 scaled MM kernel，确认替代 kernel 选择并验证 FP8 输出。"
     }
    ],
    "hardware_scope": [
@@ -4112,7 +4440,7 @@
     "https://docs.vllm.ai/en/stable/features/quantization/fp8/",
     "https://arxiv.org/abs/2209.05433"
    ],
-   "urls_more": 3,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -4131,7 +4459,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/quantization/fp8.py#L126"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/quantization/fp8.py#L126",
+    "https://github.com/vllm-project/vllm/issues/39814"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -4140,6 +4469,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -4184,7 +4517,7 @@
    "pitfalls": [
     {
      "hit": "moe_backend='{runner_backend}' is not supported for MXFP4 MoE.",
-     "fix": "这是 vLLM MXFP4 MoE 后端选择器的异常首句模板。删除不支持的显式后端覆盖，或选该提交映射表中又满足当前 GPU、激活格式和专家分片约束的后端。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是 vLLM MXFP4 MoE 后端选择器的异常首句模板。删除不支持的显式后端覆盖，或选该提交映射表中又满足当前 GPU、激活格式和专家分片约束的后端。"
     }
    ],
    "hardware_scope": [
@@ -4226,6 +4559,10 @@
     {
      "date": "2026-11-22",
      "change": "补可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -4233,7 +4570,8 @@
    ],
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/fused_moe/oracle/mxfp4.py#L170-L190"
-   ]
+   ],
+   "gain_note": "未查到同权重、卡数、批长和版本下的 MXFP4→BF16 实测对照。公开 gpt-oss 测试多比较两引擎的同一 MXFP4 权重，不能给出格式切换收益。"
   },
   {
    "id": "tech/quantization-calibration-fallback",
@@ -4272,7 +4610,7 @@
    "pitfalls": [
     {
      "hit": "A scheme must be defined for each layer",
-     "fix": "使用 compressed-tensors 加载时，检查未回退的层都有可识别的量化方案，回退层确实被 ignore 命中。重新导出模型与量化元数据后验证加载及推理。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。使用 compressed-tensors 加载时，检查未回退的层都有可识别的量化方案，回退层确实被 ignore 命中。重新导出模型与量化元数据后验证加载及推理。"
     }
    ],
    "hardware_scope": [
@@ -4285,7 +4623,7 @@
     "https://github.com/vllm-project/llm-compressor",
     "https://arxiv.org/abs/2211.10438"
    ],
-   "urls_more": 3,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -4314,6 +4652,10 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量和可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -4321,7 +4663,8 @@
    ],
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/layers/quantization/compressed_tensors/compressed_tensors.py#L947-L956"
-   ]
+   ],
+   "gain_note": "未查到条件齐备的敏感层回退实验。厂商 GPQA 案例确实比较回退与全量化版本，未披露实际评测卡数、batch、序列长度和工具版本。SmoothQuant 表 3 未将结果与这些条件绑定。"
   },
   {
    "id": "tech/continuous-batching",
@@ -4363,7 +4706,7 @@
    "pitfalls": [
     {
      "hit": "max_num_batched_tokens ({self.max_num_batched_tokens}) is smaller than max_model_len ({max_model_len}).",
-     "fix": "这是源码异常首句模板。若关闭分块预填充，需让单轮 token 预算容纳最长提示，或降低模型长度上限。重新启用分块前先核对后端支持。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是源码异常首句模板。若关闭分块预填充，需让单轮 token 预算容纳最长提示，或降低模型长度上限。重新启用分块前先核对后端支持。"
     }
    ],
    "hardware_scope": [
@@ -4406,6 +4749,10 @@
     {
      "date": "2026-11-22",
      "change": "补可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -4413,7 +4760,8 @@
    ],
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/scheduler.py#L259-L271"
-   ]
+   ],
+   "gain_note": "未查到与同版本整模型静态 batching 直接比较的可回源数据。Orca 原论文的 36.9× 涵盖整套系统、选择性批处理及调度；保留论文原口径。"
   },
   {
    "id": "tech/chunked-prefill",
@@ -4445,6 +4793,12 @@
      "value": "最高 2.3×，系统级对比",
      "source": "https://arxiv.org/abs/2401.08671",
      "evidence": "C"
+    },
+    {
+     "metric": "分块预填充对 vLLM 的 TTFT／TPOT 取舍",
+     "value": "开启 2048-token 分块后，vLLM TTFT p50 为关闭时约 1/3.35，TPOT 112→125 ms。版本：vLLM 0.6.3（V0）；SGLang 0.4.1 是配置恒定的实验参照。设备：单张 NVIDIA L4 24GB。负载：Llama-3.1-8B-Instruct BF16，4096 输入，共享 90% 前缀，planner/worker 输出上限 128、aggregator 256；0.28 agent 图/s（每图 6 请求），在线动态批，三个配对 seed。对照：同版 vLLM 不启用分块的默认臂；独立云环境存在小幅系统漂移，SGLang 用于偏差检查。",
+     "source": "https://arxiv.org/html/2611.05991",
+     "evidence": "C"
     }
    ],
    "cost": [
@@ -4455,6 +4809,10 @@
     {
      "hit": "Chunked prefill must be enabled to set max_num_partial_prefills > 1.",
      "fix": "启用分块预填充，或将 max_num_partial_prefills 恢复为 1。"
+    },
+    {
+     "hit": "AssertionError",
+     "fix": "触发版本：vLLM 0.29.0 官方 cu129 及 cu130 wheel。多条长请求同时 chunked prefill 时，混合 GDN 模型可能在 prefill 未完成时返回 token，令 async_scheduler.py 的占位计数断言中止。#57562 验证在相同分块配置加 --no-async-scheduling 后请求完成。"
     }
    ],
    "hardware_scope": [
@@ -4469,7 +4827,7 @@
     "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/support_matrix/supported_features.html",
     "https://docs.vllm.ai/en/stable/configuration/optimization/"
    ],
-   "urls_more": 4,
+   "urls_more": 6,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -4488,7 +4846,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/scheduler.py#L291"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/scheduler.py#L291",
+    "https://github.com/vllm-project/vllm/issues/57562"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -4497,11 +4856,16 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
     "scheduling"
-   ]
+   ],
+   "gain_note": "论文 §6.2 的单设置对照，按开放式到达的 agent 图触发，不使用固定 batch。它与 FastGen 原始系统级最高倍数分开解读。"
   },
   {
    "id": "tech/kv-recompute-preemption",
@@ -4531,6 +4895,12 @@
      "value": "IMO-AnswerBench 的 p99 TPOT 为 104.5 → 51.5 ms，吞吐为 4,100 → 4,592 tok/s。Qwen3-32B、H200 DP4/TP2、4 req/s、固定输出回放。论文报告为替代策略对照。",
      "source": "https://arxiv.org/html/2611.20106",
      "evidence": "C"
+    },
+    {
+     "metric": "重新计算恢复与保存完整解码状态的长输出回放",
+     "value": "Recompute 的 p99 TPOT 104.5 ms、累计输出吞吐 4100 tok/s；Stint 分别是 51.5 ms、4592 tok/s。版本：两臂为 Stint 论文维护的 vLLM 0.9.2 实验构建。设备：8×H200 141GB、DP4×TP2。负载：Qwen3-32B BF16，399 个 IMO-AnswerBench 公开输入，固定输出回放中位 17,089 token，4 req/s 泊松到达，动态 batch、每轮 2048-token 预算。对照：同 GPU KV 容量，FCFS、无预测器和无 CPU KV 池的 Recompute；替代臂同时变化受害者选择、存储、传输和恢复。",
+     "source": "https://arxiv.org/html/2611.20106",
+     "evidence": "C"
     }
    ],
    "cost": [
@@ -4539,8 +4909,8 @@
    ],
    "pitfalls": [
     {
-     "hit": "未查到",
-     "fix": "未查到"
+     "hit": "ValueError: seq_group.get_last_latency() should not be called if the seq_group is in prefill phase.",
+     "fix": "触发版本：vLLM 0.6.3.dev173+g36ea7907.d20241011。实机日志先出现 RECOMPUTE 抢占，恢复 prefill 时延迟统计误走 decode 取样。临时切 FCFS 规避该优先级抢占分支。升级后用相同压测回归阶段状态和时延统计。"
     }
    ],
    "hardware_scope": [
@@ -4553,9 +4923,12 @@
     "https://docs.vllm.ai/en/stable/configuration/optimization/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/sched/scheduler.py#L965"
    ],
-   "urls_more": 1,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
+   "impls": [
+    "impl/sglang-decode-retraction-reprefill"
+   ],
    "implementation_notes": [
     {
      "engine": "vllm",
@@ -4582,10 +4955,18 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量数据"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
     "scheduling"
+   ],
+   "gain_note": "真实对照给出复算策略相对于 Stint 整套恢复策略的代价。输入是公开固定题集，输出按原始运行长度回放；没有逐请求手工固定 batch。",
+   "pitfall_sources": [
+    "https://github.com/vllm-project/vllm/issues/9342"
    ]
   },
   {
@@ -4625,7 +5006,7 @@
    "pitfalls": [
     {
      "hit": "ValueError: seq_group.get_last_latency() should not be called if the seq_group is in prefill phase.",
-     "fix": "这是旧版 vLLM 0.6.3 开发构建的优先级抢占案例。受影响部署可先恢复 FCFS 并验证服务稳定，升级后应一起回归恢复预填充、优先级抢占与指标采集。"
+     "fix": "触发版本：vLLM 0.6.3.dev173+g36ea7907.d20241011，#9342 中优先级策略的恢复 prefill 进入 decode 延迟统计。受影响部署先切 FCFS 或使用包含修复的版本，回归抢占恢复和每阶段指标。"
     }
    ],
    "hardware_scope": [
@@ -4667,6 +5048,10 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量和可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -4674,7 +5059,8 @@
    ],
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/issues/9342"
-   ]
+   ],
+   "gain_note": "未查到门槛齐备的优先级单开关性能实测。Kairos 的同硬件模型结果是定制系统与基线的整体比较，源未将该指标与独立优先级配置、固定软件构建绑定。"
   },
   {
    "id": "tech/async-scheduling",
@@ -4719,6 +5105,10 @@
     {
      "hit": "Async scheduling is not compatible with disable_padded_drafter_batch=True.",
      "fix": "关闭异步调度，或在当前推测解码后端支持时使用填充 draft 批次。"
+    },
+    {
+     "hit": "AssertionError",
+     "fix": "触发版本：vLLM 0.20.1。流水并行最后 rank 在 async scheduling + KV offload 路径碰到 assert not pp.is_last_rank。短期使用 --no-async-scheduling；源帖验证 v0.20.2 含 #40749 修复，但需同时复测 offload 与内存分配配置。"
     }
    ],
    "hardware_scope": [
@@ -4728,7 +5118,7 @@
     "https://docs.vllm.ai/en/stable/configuration/optimization/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/sched/async_scheduler.py#L12"
    ],
-   "urls_more": 2,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -4747,7 +5137,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/vllm.py#L791"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/vllm.py#L791",
+    "https://github.com/vllm-project/vllm/issues/41612"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -4760,6 +5151,10 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量数据"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -4803,7 +5198,7 @@
    "pitfalls": [
     {
      "hit": "max_num_batched_tokens ({self.max_num_batched_tokens}) must be greater than or equal to max_num_seqs ({self.max_num_seqs}).",
-     "fix": "这是源代码的异常模板。降低 --max-num-seqs 或增加 --max-num-batched-tokens，并重新核对每轮预算。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是源代码的异常模板。降低 --max-num-seqs 或增加 --max-num-batched-tokens，并重新核对每轮预算。"
     }
    ],
    "hardware_scope": [
@@ -4846,11 +5241,16 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量数据"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
     "scheduling"
-   ]
+   ],
+   "gain_note": "未查到。vLLM #62689 报告 MRV2 原型对照，原帖未公开引擎版本/构建及每请求序列长度分布。需在固定模型、并发、长度和版本下只改变单轮 token 预算。"
   },
   {
    "id": "tech/openai-compatible-serving",
@@ -4882,7 +5282,7 @@
    "pitfalls": [
     {
      "hit": "Tokenizer not available when `skip_tokenizer_init=True`",
-     "fix": "启用 tokenizer 初始化，并用模型自带或明确兼容的 tokenizer 验证聊天模板和输出。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。启用 tokenizer 初始化，并用模型自带或明确兼容的 tokenizer 验证聊天模板和输出。"
     }
    ],
    "hardware_scope": [
@@ -4892,7 +5292,7 @@
     "https://docs.vllm.ai/en/stable/serving/online_serving/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/entrypoints/openai/chat_completion/serving.py#L86"
    ],
-   "urls_more": 1,
+   "urls_more": 2,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -4914,7 +5314,7 @@
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/entrypoints/openai/chat_completion/serving.py#L609"
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到相同推理后端和版本的 HTTP OpenAI 适配层与直接引擎调用对照。#58145 的同机 A/B 同时改变 Mistral parser 配置，归于工具解析节点。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -4922,6 +5322,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -4971,8 +5375,8 @@
    ],
    "pitfalls": [
     {
-     "hit": "未查到",
-     "fix": "未查到。#56892 是可复现的计数偏差，客户端未抛异常；仍缺与本技术直接相关的报错原文、触发版本和修法。"
+     "hit": "ValueError: seq_group.get_last_latency() should not be called if the seq_group is in prefill phase.",
+     "fix": "触发版本：vLLM 0.6.3.dev173+g36ea7907.d20241011。实机日志先出现 RECOMPUTE 抢占，恢复 prefill 时延迟统计误走 decode 取样。临时切 FCFS 规避该优先级抢占分支。升级后用相同压测回归阶段状态和时延统计。"
     }
    ],
    "hardware_scope": [
@@ -4982,9 +5386,13 @@
     "https://docs.vllm.ai/en/stable/usage/metrics/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/metrics/loggers.py#L404"
    ],
-   "urls_more": 1,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
+   "impls": [
+    "impl/vllm-bench-serving-stream-latency",
+    "impl/vllm-generation-latency-prometheus"
+   ],
    "implementation_notes": [
     {
      "engine": "vllm",
@@ -5013,10 +5421,17 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量数据"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
     "serving"
+   ],
+   "pitfall_sources": [
+    "https://github.com/vllm-project/vllm/issues/9342"
    ]
   },
   {
@@ -5048,7 +5463,7 @@
    "pitfalls": [
     {
      "hit": "collect_detailed_traces requires `--otlp-traces-endpoint` to be set.",
-     "fix": "配置可达的 OTLP 接收地址并安装所需依赖，或关闭详细追踪。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。配置可达的 OTLP 接收地址并安装所需依赖，或关闭详细追踪。"
     }
    ],
    "hardware_scope": [
@@ -5088,6 +5503,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -5124,7 +5543,7 @@
    "pitfalls": [
     {
      "hit": "\"GET /health HTTP/1.1\" 503 Service Unavailable",
-     "fix": "当引擎进程异常退出时先摘流，并检查 worker/engine 的首条异常和设备日志。修复进程启动失败之后，待 /health 恢复且短推理可用再纳入流量。"
+     "fix": "触发版本：vLLM 官方 v0.11.0 镜像，#27557 启动 Qwen3-VL-2B 后引擎退出。应先摘流，修复先于 EngineDeadError 的首个 worker 错误，再点检 /health 与短推理。503 是 worker 已死的信号，重试探针无法修复。"
     }
    ],
    "hardware_scope": [
@@ -5164,6 +5583,10 @@
     {
      "date": "2026-11-22",
      "change": "补可回源报错及修法"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -5211,7 +5634,7 @@
    "pitfalls": [
     {
      "hit": "When using ramp-up, do not specify --request-rate. The request rate will be controlled by ramp-up parameters. Please remove the --request-rate argument.",
-     "fix": "使用 ramp-up 时去掉固定 --request-rate；固定速率测试则关闭 ramp-up。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。使用 ramp-up 时去掉固定 --request-rate；固定速率测试则关闭 ramp-up。"
     }
    ],
    "hardware_scope": [
@@ -5254,6 +5677,10 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量数据"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -5303,7 +5730,7 @@
    "pitfalls": [
     {
      "hit": "Please specify kv_role when kv_connector is set, supported roles are {get_args(KVRole)}",
-     "fix": "这是源码异常模板。设置 connector 时同时配置该 worker 承担的受支持角色，并核对配对 worker 使用相容配置。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是源码异常模板。设置 connector 时同时配置该 worker 承担的受支持角色，并核对配对 worker 使用相容配置。"
     }
    ],
    "hardware_scope": [
@@ -5346,11 +5773,16 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
     "serving"
-   ]
+   ],
+   "gain_note": "未查到当前所列 7.4× 档位的软件版本、单请求批长和精确硬件配额可逐臂对齐的公开结果。DistServe 报告的 goodput 依赖 SLO 与 P/D 资源摆放，不能当作通用倍数。"
   },
   {
    "id": "tech/json-schema-constrained-decoding",
@@ -5389,7 +5821,7 @@
    "pitfalls": [
     {
      "hit": "The provided JSON schema contains features not supported by xgrammar.",
-     "fix": "将模式缩减为当前后端支持的关键字，或选择支持所需模式的后端，再运行边界测试。"
+     "fix": "触发版本：vLLM 0.8.2，#15762 中枚举等 schema 特征被当时的 xgrammar 拒绝。切换到支持该 schema 的引擎级后端设置，或者升级到含 PR #15594 的版本后复测；旧版请求级覆盖不允许与服务级配置冲突。"
     }
    ],
    "hardware_scope": [
@@ -5402,7 +5834,7 @@
     "https://docs.vllm.ai/en/stable/features/structured_outputs/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/structured_output/backend_xgrammar.py#L81"
    ],
-   "urls_more": 2,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -5422,7 +5854,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/structured_output/backend_xgrammar.py#L309"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/structured_output/backend_xgrammar.py#L309",
+    "https://github.com/vllm-project/vllm/issues/15762"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -5435,11 +5868,16 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量数据"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
     "structured-output"
-   ]
+   ],
+   "gain_note": "未查到被测 XGrammar 实现版本。论文 §4.2 提供 H100 上 Llama-3.1-8B-Instruct、平均 139 输入/53 输出 token 与 vLLM 0.6.3+Outlines 对照，XGrammar/SGLang 的精确软件构建未列出。"
   },
   {
    "id": "tech/context-free-grammar-decoding",
@@ -5480,6 +5918,10 @@
     {
      "hit": "Invalid grammar specification.",
      "fix": "用目标后端的 EBNF 方言重写模式，并单独编译最小文法确认语法。"
+    },
+    {
+     "hit": "vllm.exceptions.VLLMValidationError: Invalid grammar specification: 'triggers'",
+     "fix": "触发版本：vLLM 0.28.0 及 0.28.1rc1.dev337+g27a94d1ce，llguidance 1.7.6，strict tools 产生 XGrammar structural tags 却送入 guidance。显式选 xgrammar 并回归工具参数约束；若保留 guidance，则提供兼容文法。"
     }
    ],
    "hardware_scope": [
@@ -5492,7 +5934,7 @@
     "https://docs.vllm.ai/en/stable/features/structured_outputs/",
     "https://arxiv.org/abs/2411.15100"
    ],
-   "urls_more": 3,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -5512,7 +5954,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/structured_output/backend_xgrammar.py#L335"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/structured_output/backend_xgrammar.py#L335",
+    "https://github.com/vllm-project/vllm/issues/55152"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -5525,11 +5968,16 @@
     {
      "date": "2026-11-22",
      "change": "补同口径测量数据"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
     "structured-output"
-   ]
+   ],
+   "gain_note": "未查到被测 XGrammar/SGLang 实现版本。论文图 10 有分 batch 的 H100 在线实验，图 9 的 RTX 4090 单 token mask 数字不能直接当成服务吞吐。"
   },
   {
    "id": "tech/xgrammar-token-mask-engine",
@@ -5569,6 +6017,10 @@
     {
      "hit": "Invalid JSON grammar specification.",
      "fix": "先校验传入的是合法 JSON，再以当前 XGrammar 版本支持的结构约束重新编译。"
+    },
+    {
+     "hit": "The provided JSON schema contains features not supported by xgrammar.",
+     "fix": "触发版本：vLLM 0.8.2，#15762。用兼容后端作为服务默认，或验证 XGrammar 版本升级后该 schema 的枚举、pattern 和有效输出。"
     }
    ],
    "hardware_scope": [
@@ -5581,7 +6033,7 @@
     "https://docs.vllm.ai/en/stable/features/structured_outputs/",
     "https://arxiv.org/abs/2411.15100"
    ],
-   "urls_more": 2,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -5600,7 +6052,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/structured_output/backend_xgrammar.py#L303"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/structured_output/backend_xgrammar.py#L303",
+    "https://github.com/vllm-project/vllm/issues/15762"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -5609,11 +6062,16 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
     "structured-output"
-   ]
+   ],
+   "gain_note": "未查到图 9 绑定的 XGrammar 构建及采样 batch/序列长度。图 10 虽给端到端负载，仍缺该实验臂的精确软件版本。"
   },
   {
    "id": "tech/finite-choice-constrained-decoding",
@@ -5644,7 +6102,7 @@
    "pitfalls": [
     {
      "hit": "You can only use one kind of structured outputs constraint but multiple are specified: {self.__dict__}",
-     "fix": "这是源码异常模板。从同一请求移除重复约束类型，仅保留 choice；确需联合约束时先合成一个可验证的 grammar 或 schema。"
+     "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是源码异常模板。从同一请求移除重复约束类型，仅保留 choice；确需联合约束时先合成一个可验证的 grammar 或 schema。"
     }
    ],
    "hardware_scope": [
@@ -5675,7 +6133,7 @@
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/sampling_params.py#L68"
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到四项齐备、对固定备选项集的 choice on/off 对照。XGrammar 论文报告 JSON Schema 和 CFG 测试，不能将它的总体掩码效率直接套为 choice 性能。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -5683,6 +6141,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -5729,6 +6191,10 @@
     {
      "hit": "Tokenizer not available when `skip_tokenizer_init=True`",
      "fix": "启用 tokenizer 初始化，装载与检查点匹配的 tokenizer，再使用依赖它的工具解析路径。"
+    },
+    {
+     "hit": "KeyError: 'triggers'",
+     "fix": "触发版本：vLLM 0.28.0（llguidance 1.7.6，xgrammar 0.2.3），严格工具模式把工具解析器生成的 structural tags 交给 guidance。给这类模型设兼容的 xgrammar 后端，并针对 named、required 与流式三类工具调用做回归。"
     }
    ],
    "hardware_scope": [
@@ -5739,7 +6205,7 @@
     "https://docs.vllm.ai/en/stable/features/tool_calling/",
     "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/support_matrix/supported_features.html"
    ],
-   "urls_more": 3,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -5759,7 +6225,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/entrypoints/openai/chat_completion/serving.py#L1334"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/entrypoints/openai/chat_completion/serving.py#L1334",
+    "https://github.com/vllm-project/vllm/issues/55152"
    ],
    "gain_note": "一手结果来自 Mistral 的服务端输入预处理。保留多开关对照范围，不能归因到流式输出工具解析单独的代价。",
    "owner_team": "架构",
@@ -5769,6 +6236,10 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
@@ -5803,8 +6274,8 @@
    ],
    "pitfalls": [
     {
-     "hit": "未查到",
-     "fix": "未查到"
+     "hit": "Warning: The matcher has terminated after accepting the stop token, but is trying to accept new token with id 198.",
+     "fix": "触发版本：vLLM 0.25.1、XGrammar 0.2.1，MTP 和 JSON Schema/工具调用同用。同机回退 0.24.0 后作者仍记录警告，但长测未再死锁；针对状态回滚的修复另见 #37506，应在真实生产负载回归。可先关闭投机解码隔离问题。"
     }
    ],
    "hardware_scope": [
@@ -5817,9 +6288,12 @@
     "https://docs.vllm.ai/en/stable/features/structured_outputs/",
     "https://arxiv.org/abs/2411.15100"
    ],
-   "urls_more": 1,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
+   "impls": [
+    "impl/vllm-structured-speculative-grammar-rollback"
+   ],
    "implementation_notes": [
     {
      "engine": "vllm",
@@ -5835,7 +6309,7 @@
      "source": "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/structured_output/__init__.py#L35"
     }
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到严格对照。#49210 生产长测缺固定输入/输出长度，且降级同时改变 FlashInfer；比较用于定位版本回归，不能分离 rollback 单项代价。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -5843,10 +6317,17 @@
     {
      "date": "2026-11-22",
      "change": "初建"
+    },
+    {
+     "date": "2026-11-22",
+     "change": "复核实测的版本、设备、负载和对照，记录报错触发版本及仍缺条件。"
     }
    ],
    "tags": [
     "structured-output"
+   ],
+   "pitfall_sources": [
+    "https://github.com/vllm-project/vllm/issues/49210"
    ]
   },
   {
@@ -7873,6 +8354,450 @@
     "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/vllm_ascend/_310p/attention/attention_v1.py#L48-L76"
    ],
    "urls_more": 7,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-ascend-dynamic-batch-scheduler",
+   "type": "impl",
+   "engine": "vllm-ascend",
+   "name": "Ascend 动态批处理｜按 Decode 负载查表分配预算",
+   "tech": "tech/continuous-batching",
+   "module": "vllm_ascend/core/scheduler_dynamic_batch.py",
+   "symbols": [
+    "SchedulerDynamicBatch.schedule",
+    "BudgetRefiner.refine_budget",
+    "BudgetRefiner._get_max_budget"
+   ],
+   "config": [
+    "additional_config.SLO_limits_for_dynamic_batch"
+   ],
+   "defaults": {
+    "SLO_limits_for_dynamic_batch": -1
+   },
+   "version_seen": "vllm-project/vllm-ascend@367b8e62da799870a7476ce34f5f7658589a8aad",
+   "notes": "配置不为 -1 时平台选用 SchedulerDynamicBatch 并开启 Chunked Prefill。正值且 profile_table.csv 可用时，按当前 Decode 请求数量和平均上下文长度查表更新本轮 token 预算；值为 0 时使用静态预算，仍走 Decode 优先的调度路径。该提交注释限定动态查表支持 910B3。 若另外启用 profiling chunk，平台随后会选用 ProfilingChunkScheduler。",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/core/scheduler_dynamic_batch.py#L35-L76",
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/core/scheduler_dynamic_batch.py#L90-L119"
+   ],
+   "urls_more": 7,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-ascend-mooncake-layerwise-pd",
+   "type": "impl",
+   "engine": "vllm-ascend",
+   "name": "PD 分离｜Mooncake 按层推送 KV",
+   "tech": "tech/prefill-decode-disaggregation",
+   "module": "vllm_ascend/distributed/kv_transfer/kv_p2p/mooncake_layerwise_connector.py",
+   "symbols": [
+    "MooncakeLayerwiseConnector",
+    "MooncakeLayerwiseConnectorScheduler.build_connector_meta",
+    "MooncakeLayerwiseConnectorWorker.save_kv_layer",
+    "KVCacheSendingLayerThread._transfer_kv_cache"
+   ],
+   "config": [
+    "--kv-transfer-config",
+    "kv_connector",
+    "kv_role",
+    "kv_port",
+    "engine_id",
+    "kv_connector_extra_config.prefill.dp_size",
+    "kv_connector_extra_config.prefill.tp_size",
+    "kv_connector_extra_config.decode.dp_size",
+    "kv_connector_extra_config.decode.tp_size"
+   ],
+   "version_seen": "vllm-project/vllm-ascend@367b8e62da799870a7476ce34f5f7658589a8aad",
+   "notes": "以 MooncakeLayerwiseConnector 注册 P 端 kv_producer 与 D 端 kv_consumer。调度侧组织请求和块元数据，P 端在各层 KV 就绪后向发送线程交任务，线程用 batch_transfer_sync_write 写入 D 端指定缓冲区。",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/distributed/kv_transfer/kv_p2p/mooncake_layerwise_connector.py#L674-L707",
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/distributed/kv_transfer/kv_p2p/mooncake_layerwise_connector.py#L467-L491"
+   ],
+   "urls_more": 6,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-ascend-ascendstore-kv-pool",
+   "type": "impl",
+   "engine": "vllm-ascend",
+   "name": "AscendStore｜KV 池存储后端与读写线程",
+   "tech": "tech/kv-offload",
+   "module": "vllm_ascend/distributed/kv_transfer/kv_pool/ascend_store/pool_worker.py",
+   "symbols": [
+    "AscendStoreConnector",
+    "KVPoolWorker.register_kv_caches",
+    "KVPoolWorker.start_load_kv",
+    "KVPoolWorker.wait_for_save"
+   ],
+   "config": [
+    "--kv-transfer-config",
+    "kv_connector",
+    "kv_connector_extra_config.backend",
+    "kv_connector_extra_config.consumer_is_to_put",
+    "kv_connector_extra_config.load_async",
+    "kv_connector_extra_config.prefill_pp_size",
+    "kv_connector_extra_config.prefill_pp_layer_partition"
+   ],
+   "defaults": {
+    "backend": "mooncake",
+    "consumer_is_to_put": false,
+    "load_async": false,
+    "prefill_pp_size": 1,
+    "prefill_pp_layer_partition": null
+   },
+   "version_seen": "vllm-project/vllm-ascend@367b8e62da799870a7476ce34f5f7658589a8aad",
+   "notes": "AscendStoreConnector 实例化 KVPoolWorker，在 Mooncake、Memcache 或 Yuanrong 后端保存与读取 KV。代码在 MLA 分支以单 KV head 计算 TP 去重归属。文档说明支持通过 consumer_is_to_put 让 MLA 的 D 节点回填 KV，P 端开 PP 时补充其分层配置。",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/distributed/kv_transfer/kv_pool/ascend_store/pool_worker.py#L45-L58",
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/distributed/kv_transfer/kv_pool/ascend_store/pool_worker.py#L95-L110"
+   ],
+   "urls_more": 7,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-ascend-ascendstore-prefix-lookup",
+   "type": "impl",
+   "engine": "vllm-ascend",
+   "name": "AscendStore｜块哈希前缀命中与调度",
+   "tech": "tech/automatic-prefix-caching",
+   "module": "vllm_ascend/distributed/kv_transfer/kv_pool/ascend_store/pool_scheduler.py",
+   "symbols": [
+    "AscendStoreConnector.get_num_new_matched_tokens",
+    "KVPoolScheduler.get_num_new_matched_tokens",
+    "KVPoolScheduler.update_state_after_alloc",
+    "LookupKeyClient.lookup",
+    "LookupKeyServer"
+   ],
+   "config": [
+    "--kv-transfer-config",
+    "kv_connector_extra_config.lookup_rpc_port",
+    "kv_connector_extra_config.load_async",
+    "kv_connector_extra_config.consumer_is_to_load",
+    "kv_connector_extra_config.use_layerwise"
+   ],
+   "defaults": {
+    "load_async": false,
+    "consumer_is_to_load": false,
+    "use_layerwise": false
+   },
+   "version_seen": "vllm-project/vllm-ascend@367b8e62da799870a7476ce34f5f7658589a8aad",
+   "notes": "调度端按 request.block_hashes 和 KV 分组向 lookup 服务查询，减去本地已计算 token 来决定需要分配和加载的数量。请求全命中时留 1 个 token 计算；非 layerwise 路径可异步加载。这里的命中来自 AscendStore，节点内 block allocator 与本地 APC 继承 vLLM。",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/distributed/kv_transfer/kv_pool/ascend_store/pool_scheduler.py#L65-L84",
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/distributed/kv_transfer/kv_pool/ascend_store/pool_scheduler.py#L201-L270"
+   ],
+   "urls_more": 6,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-ascend-mla-kv-layout",
+   "type": "impl",
+   "engine": "vllm-ascend",
+   "name": "DeepSeek MLA｜潜变量与 RoPE 分量的 KV 布局",
+   "tech": "tech/kv-cache-memory-layout",
+   "module": "vllm_ascend/worker/model_runner_v1.py",
+   "symbols": [
+    "NPUModelRunner._get_attention_kv_cache_dims",
+    "NPUModelRunner._allocate_kv_cache_tensors",
+    "NPUModelRunner._reshape_kv_cache_tensors",
+    "AscendMLABackend.get_kv_cache_shape",
+    "AscendMLAImpl.exec_kv_decode"
+   ],
+   "config": [
+    "additional_config.enable_kv_nz",
+    "model_config.hf_text_config.kv_lora_rank",
+    "model_config.hf_text_config.qk_rope_head_dim"
+   ],
+   "defaults": {
+    "enable_kv_nz": false
+   },
+   "version_seen": "vllm-project/vllm-ascend@367b8e62da799870a7476ce34f5f7658589a8aad",
+   "notes": "MLA 的 cache 张量分别按 kv_lora_rank 与 qk_rope_head_dim 确定尾维，对应 latent KV 与 RoPE key。写缓存时 exec_kv_decode 将分量及 slot 索引传给 npu_kv_rmsnorm_rope_cache。启用 PA_NZ 的入口仅接受非稀疏的 DeepSeek MLA、PD 分离的 D 节点。",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/worker/model_runner_v1.py#L3574-L3593",
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/worker/model_runner_v1.py#L3666-L3703"
+   ],
+   "urls_more": 4,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-ascend-fia-tnd-attention",
+   "type": "impl",
+   "engine": "vllm-ascend",
+   "name": "Ascend FIA｜TND 融合注意力与查询长度门槛",
+   "tech": "tech/ascend-fia-tnd-query-limit",
+   "module": "vllm_ascend/attention/attention_v1.py",
+   "symbols": [
+    "AscendAttentionMetadataBuilder",
+    "AscendAttentionBackendImpl.forward_fused_infer_attention",
+    "torch_npu.npu_fused_infer_attention_score"
+   ],
+   "config": [
+    "--speculative-config",
+    "num_speculative_tokens"
+   ],
+   "defaults": {
+    "decode_threshold_without_speculation": 1
+   },
+   "version_seen": "vllm-project/vllm-ascend@367b8e62da799870a7476ce34f5f7658589a8aad",
+   "notes": "元数据构造以 1 + num_speculative_tokens 作为 Decode 分类阈值，启用投机时断言其不超过 16。常规 FIA 路径传入 TND layout、block_table 及 query/KV 序列边界。这里的 16 对应此提交的 TND 路径校验，其他布局由各自分支处理。",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/attention/attention_v1.py#L214-L254",
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/attention/attention_v1.py#L1042-L1077"
+   ],
+   "urls_more": 3,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-ascend-mla-attention-kernel",
+   "type": "impl",
+   "engine": "vllm-ascend",
+   "name": "Ascend MLA｜分离 RoPE 的 Prefill 和 Decode 内核",
+   "tech": "tech/multi-head-latent-attention",
+   "module": "vllm_ascend/attention/mla_v1.py",
+   "symbols": [
+    "AscendMLAImpl._forward_prefill",
+    "AscendMLAImpl._forward_decode",
+    "torch_npu.npu_fused_infer_attention_score",
+    "torch_npu.npu_fused_infer_attention_score_v2"
+   ],
+   "config": [
+    "additional_config.enable_kv_nz"
+   ],
+   "defaults": {
+    "enable_kv_nz": false
+   },
+   "version_seen": "vllm-project/vllm-ascend@367b8e62da799870a7476ce34f5f7658589a8aad",
+   "notes": "Prefill 将 RoPE 分量和内容分量传给 FIA；Decode 读取分量缓存，按分支准备 layout、block table 及序列长度，调用 FIA v2。捕获时通过 v2.out 和 graph task group 下发，完成注意力后执行 V 上投影。",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/attention/mla_v1.py#L104-L110",
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/attention/mla_v1.py#L1226-L1283"
+   ],
+   "urls_more": 4,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-ascend-modelslim-w8a8-w4a8-execution",
+   "type": "impl",
+   "engine": "vllm-ascend",
+   "name": "ModelSlim 权重执行｜动态 W8A8 与 W4A8",
+   "tech": "tech/int8-w8a8",
+   "module": "vllm_ascend/quantization/modelslim_config.py",
+   "symbols": [
+    "AscendModelSlimConfig.get_quant_method",
+    "AscendW8A8DynamicLinearMethod",
+    "AscendW4A8DynamicLinearMethod",
+    "AscendW4A8DynamicFusedMoEMethod"
+   ],
+   "config": [
+    "--quantization",
+    "quant_model_description.json 中的 <layer>.weight",
+    "quant_model_description.json 中的 group_size",
+    "quant_model_description.json 中的 version"
+   ],
+   "defaults": {
+    "w4a8_group_size_fallback": 256,
+    "w4a8_version_fallback": "0"
+   },
+   "version_seen": "vllm-project/vllm-ascend@367b8e62da799870a7476ce34f5f7658589a8aad",
+   "notes": "msModelSlim 权重用 --quantization ascend 进入插件，按量化描述和层类型选 scheme。W8A8_DYNAMIC Linear 先动态量化激活并生成逐 token scale，再调用 npu_quant_matmul。W4A8_DYNAMIC 同时注册 Linear 和 MoE，Linear 按权重版本处理 INT4 packing，随后将原始激活 x 与 INT4 权重送入 npu_weight_quant_batchmatmul。",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/quantization/modelslim_config.py#L366-L424",
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/quantization/modelslim_config.py#L503-L557"
+   ],
+   "urls_more": 7,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-ascend-fine-grained-tp",
+   "type": "impl",
+   "engine": "vllm-ascend",
+   "name": "Ascend 细粒度 TP｜为特定层创建独立通信组",
+   "tech": "tech/tensor-parallelism",
+   "module": "vllm_ascend/distributed/parallel_state.py",
+   "symbols": [
+    "init_ascend_model_parallel",
+    "get_mlp_tp_group",
+    "get_otp_group",
+    "get_lmhead_tp_group",
+    "get_embed_tp_group",
+    "OProjRowParallelOp"
+   ],
+   "config": [
+    "--tensor-parallel-size",
+    "--additional-config",
+    "finegrained_tp_config.oproj_tensor_parallel_size",
+    "finegrained_tp_config.lmhead_tensor_parallel_size",
+    "finegrained_tp_config.embedding_tensor_parallel_size",
+    "finegrained_tp_config.mlp_tensor_parallel_size"
+   ],
+   "defaults": {
+    "oproj_tensor_parallel_size": 0,
+    "lmhead_tensor_parallel_size": 0,
+    "embedding_tensor_parallel_size": 0,
+    "mlp_tensor_parallel_size": 0
+   },
+   "version_seen": "vllm-project/vllm-ascend@367b8e62da799870a7476ce34f5f7658589a8aad",
+   "notes": "从 PP×DP×TP rank 网格为四类层建通信组，同组大小可共享 GroupCoordinator。MLP、OProj 的专用线性算子读取对应组。OProj TP 在此提交的配置校验中要求图模式运行在 PD 分离的 D 节点。",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/distributed/parallel_state.py#L30-L45",
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/distributed/parallel_state.py#L111-L149"
+   ],
+   "urls_more": 4,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-ascend-moe-ep-dispatch-combine",
+   "type": "impl",
+   "engine": "vllm-ascend",
+   "name": "Ascend MoE EP｜专家路由与 Token 分发合并",
+   "tech": "tech/expert-parallelism",
+   "module": "vllm_ascend/ops/fused_moe/fused_moe.py",
+   "symbols": [
+    "AscendFusedMoE",
+    "select_moe_comm_method",
+    "setup_moe_comm_method",
+    "MoECommMethod.fused_experts"
+   ],
+   "config": [
+    "--enable-expert-parallel"
+   ],
+   "version_seen": "vllm-project/vllm-ascend@367b8e62da799870a7476ce34f5f7658589a8aad",
+   "notes": "MoE 层绑定 EP group 并计算本地专家范围。前向根据 SoC、EP 组大小、token 规模和量化等条件选择 AllGather、AllToAll、MC2 或 FusedMC2。通用执行顺序为 token_dispatch、专家计算、token_combine；融合分支有独立实现。",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/ops/fused_moe/fused_moe.py#L369-L389",
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/ops/fused_moe/fused_moe.py#L416-L462"
+   ],
+   "urls_more": 5,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-ascend-aclgraph-capture-replay",
+   "type": "impl",
+   "engine": "vllm-ascend",
+   "name": "ACLGraph｜按批描述捕获和重放 NPU 图",
+   "tech": "tech/ascend-aclgraph-replay",
+   "module": "vllm_ascend/compilation/acl_graph.py",
+   "symbols": [
+    "ACLGraphWrapper.__call__",
+    "NPUPlatform.get_static_graph_wrapper_cls",
+    "torch.npu.NPUGraph",
+    "torch.npu.graph",
+    "torch.npu.NPUGraph.replay"
+   ],
+   "config": [
+    "--compilation-config",
+    "cudagraph_mode",
+    "cudagraph_capture_sizes",
+    "--enforce-eager"
+   ],
+   "version_seen": "vllm-project/vllm-ascend@367b8e62da799870a7476ce34f5f7658589a8aad",
+   "notes": "vLLM 配置仍使用 cudagraph_mode 与捕获尺寸字段。Ascend 平台接入 ACLGraphWrapper，按 batch_descriptor 缓存图。首次遇到某个批描述时走 torch.npu.graph 捕获，后续对匹配模式和批描述重放；NONE 或运行模式不匹配时直接调用原 runnable。",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/compilation/acl_graph.py#L110-L132",
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/compilation/acl_graph.py#L140-L183"
+   ],
+   "urls_more": 6,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-ascend-mtp-eagle3-spec-decode",
+   "type": "impl",
+   "engine": "vllm-ascend",
+   "name": "Ascend 投机解码｜MTP / EAGLE-3 提议与验证",
+   "tech": "tech/mtp",
+   "module": "vllm_ascend/spec_decode/__init__.py",
+   "symbols": [
+    "get_spec_decode_method",
+    "AscendEagleProposer",
+    "AscendSpecDecodeBaseProposer._propose",
+    "NPUModelRunner._get_drafter",
+    "AscendRejectionSampler"
+   ],
+   "config": [
+    "--speculative-config",
+    "method",
+    "num_speculative_tokens"
+   ],
+   "version_seen": "vllm-project/vllm-ascend@367b8e62da799870a7476ce34f5f7658589a8aad",
+   "notes": "插件将 eagle、eagle3 与 mtp 分派给 AscendEagleProposer。NPUModelRunner 在最后 PP rank 构造 drafter 和 AscendRejectionSampler，将每请求 Decode token 数设为 1 + num_speculative_tokens。EAGLE-3 路径按 drafter 需求读取辅助隐藏状态。",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/spec_decode/__init__.py#L33-L49",
+    "https://github.com/vllm-project/vllm-ascend/blob/367b8e62da799870a7476ce34f5f7658589a8aad/vllm_ascend/spec_decode/eagle_proposer.py#L10-L19"
+   ],
+   "urls_more": 6,
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
@@ -10556,6 +11481,192 @@
  ],
  "edges": [
   {
+   "from": "impl/atb-split-operation-dispatch",
+   "to": "tech/ascend-atb-execution",
+   "type": "implements",
+   "note": "Split 的公开 API 和 OperationBase 将调用参数转成后端 Runner 及其工作区、tiling 和执行上下文。"
+  },
+  {
+   "from": "impl/atb-split-aclnn-launch",
+   "to": "tech/ascend-atb-execution",
+   "type": "implements",
+   "note": "SplitAclnnRunner 把 ATB Split 的参数转换为 ACLNN executor，并在 ATB Context 的 stream 上下发。"
+  },
+  {
+   "from": "impl/atb-split-mki-launch",
+   "to": "tech/ascend-atb-execution",
+   "type": "implements",
+   "note": "原生 Split Runner 构造 KernelGraph，选取支持当前输入的 MKI kernel 并提交至设备流。"
+  },
+  {
+   "from": "impl/torchair-aoe-config-entry",
+   "to": "tech/ascend-aoe-autotuning",
+   "type": "implements",
+   "note": "TorchAir 在编译配置入口校验调优模式和文件路径，并在静态 GE 图上触发一次调优。"
+  },
+  {
+   "from": "impl/torchair-aoe-session-dispatch",
+   "to": "tech/ascend-aoe-autotuning",
+   "type": "implements",
+   "note": "NpuAoe 将配置和 GE 图提交给 AOE 动态库的会话 API，形成可追踪的调优调度入口。"
+  },
+  {
+   "from": "impl/cann-ge-op-tune-compile",
+   "to": "tech/ascend-aoe-autotuning",
+   "type": "implements",
+   "note": "GE 的公开编译流程将知识库中的格式策略应用到计算图，并产出算子调优所需的编译结果。"
+  },
+  {
+   "from": "impl/cann-aoe-engine-internals-gap",
+   "to": "tech/ascend-aoe-autotuning",
+   "type": "implements",
+   "note": "该条记录 AOE 官方公开的配置及写回契约，并标明内部实现的源码缺口。"
+  },
+  {
+   "from": "impl/vllm-ascend-310p-build-target",
+   "to": "tech/ascend-310p-compatibility",
+   "type": "implements",
+   "note": "Dockerfile.310p 与 setup.py 在打包阶段选中 310P 芯片目标，让编译产物按对应 SoC 生成。"
+  },
+  {
+   "from": "impl/vllm-ascend-310p-attention-dispatch",
+   "to": "tech/ascend-310p-compatibility",
+   "type": "implements",
+   "note": "兼容注意力路径为 310P 使用专用的 KV Cache 布局和 torch_npu 注意力调用。"
+  },
+  {
+   "from": "impl/msmodelslim-v1-calibration-pipeline",
+   "to": "tech/ascend-msmodelslim-calibration",
+   "type": "implements",
+   "note": "校准样本在 modelslim_v1 主阶段驱动量化处理器估计参数，形成可配置的离线流水线。"
+  },
+  {
+   "from": "impl/msmodelslim-ascendv1-checkpoint-saver",
+   "to": "tech/ascend-msmodelslim-calibration",
+   "type": "implements",
+   "note": "AscendV1Saver 将校准量化的结果导出为检查点权重和量化描述文件。"
+  },
+  {
+   "from": "impl/vllm-qwen3-vl-encoder-data-parallel",
+   "to": "tech/multimodal-encoder-data-parallelism",
+   "type": "implements",
+   "note": "Qwen3-VL 以媒体输入为单位分片并汇聚视觉特征，在 TP 组内实现编码器数据并行。"
+  },
+  {
+   "from": "impl/sglang-decode-retraction-reprefill",
+   "to": "tech/kv-recompute-preemption",
+   "type": "implements",
+   "note": "SGLang 的非 PD decode 撤回路径释放 KV，重新排队后通过 Prefill 重建可恢复请求的执行状态。"
+  },
+  {
+   "from": "impl/vllm-generation-latency-prometheus",
+   "to": "tech/inference-latency-observability",
+   "type": "implements",
+   "note": "服务侧把请求生命周期及输出事件的时间戳转为 TTFT、ITL、TPOT 和排队时间直方图。"
+  },
+  {
+   "from": "impl/vllm-bench-serving-stream-latency",
+   "to": "tech/inference-latency-observability",
+   "type": "implements",
+   "note": "vllm bench serve 从调用方视角计算流式 TTFT、ITL、TPOT 并输出选定的分位数。"
+  },
+  {
+   "from": "impl/vllm-structured-speculative-grammar-rollback",
+   "to": "tech/structured-constraint-state-rollback",
+   "type": "implements",
+   "note": "约束解码在验证各个草稿位置时暂推语法状态，撤回试探推进后仅提交最终输出 token。"
+  },
+  {
+   "from": "impl/vllm-ascend-dynamic-batch-scheduler",
+   "to": "tech/continuous-batching",
+   "type": "implements",
+   "note": "SchedulerDynamicBatch 按 Decode 负载重算每轮预算，持续将 Prefill 和 Decode 请求编排到批次。"
+  },
+  {
+   "from": "impl/vllm-ascend-dynamic-batch-scheduler",
+   "to": "tech/chunked-prefill",
+   "type": "implements",
+   "note": "调度器优先保留 Decode 的调度空间，并按剩余 token 预算安排分块 Prefill。"
+  },
+  {
+   "from": "impl/vllm-ascend-mooncake-layerwise-pd",
+   "to": "tech/prefill-decode-disaggregation",
+   "type": "implements",
+   "note": "MooncakeLayerwiseConnector 帮助 Prefill 和 Decode 分别运行，并在层级粒度交付 Decode 所需的 KV。"
+  },
+  {
+   "from": "impl/vllm-ascend-ascendstore-kv-pool",
+   "to": "tech/kv-offload",
+   "type": "implements",
+   "note": "KVPoolWorker 把设备 KV 块映射到可跨实例读取的外部存储，并按角色处理写入与加载。"
+  },
+  {
+   "from": "impl/vllm-ascend-ascendstore-prefix-lookup",
+   "to": "tech/automatic-prefix-caching",
+   "type": "implements",
+   "note": "KVPoolScheduler 让同前缀请求自动复用外部池中可命中的 KV 块。"
+  },
+  {
+   "from": "impl/vllm-ascend-mla-kv-layout",
+   "to": "tech/kv-cache-memory-layout",
+   "type": "implements",
+   "note": "NPUModelRunner 用分量各自的维度分配和重塑 MLA KV block，写入时由后端处理 PA 或 PA_NZ 布局。"
+  },
+  {
+   "from": "impl/vllm-ascend-fia-tnd-attention",
+   "to": "tech/ascend-fia-tnd-query-limit",
+   "type": "implements",
+   "note": "元数据构造和算子入参共同适配 TND 融合注意力对单请求查询长度的限制。"
+  },
+  {
+   "from": "impl/vllm-ascend-mla-attention-kernel",
+   "to": "tech/multi-head-latent-attention",
+   "type": "implements",
+   "note": "AscendMLAImpl 使用低秩缓存和独立 RoPE 分量计算注意力，并在 NPU 上选用适用的融合算子。"
+  },
+  {
+   "from": "impl/vllm-ascend-modelslim-w8a8-w4a8-execution",
+   "to": "tech/int8-w8a8",
+   "type": "implements",
+   "note": "量化注册表将 W8A8 描述映射到逐 token 动态激活量化和 INT8 矩阵乘实现。"
+  },
+  {
+   "from": "impl/vllm-ascend-fine-grained-tp",
+   "to": "tech/tensor-parallelism",
+   "type": "implements",
+   "note": "插件为 MLP、OProj、词嵌入和输出投影建立可独立配置的 TP 通信组。"
+  },
+  {
+   "from": "impl/vllm-ascend-moe-ep-dispatch-combine",
+   "to": "tech/expert-parallelism",
+   "type": "implements",
+   "note": "EP 把专家分到各 rank，经 token 分发执行本地专家，再合并路由结果。"
+  },
+  {
+   "from": "impl/vllm-ascend-aclgraph-capture-replay",
+   "to": "tech/ascend-aclgraph-replay",
+   "type": "implements",
+   "note": "ACLGraphWrapper 使用 NPU 图的捕获和重放减少重复的主机侧算子下发。"
+  },
+  {
+   "from": "impl/vllm-ascend-aclgraph-capture-replay",
+   "to": "tech/aclgraph",
+   "type": "implements",
+   "note": "NPU 平台将 vLLM 的静态图接口映射到 torch.npu.NPUGraph。"
+  },
+  {
+   "from": "impl/vllm-ascend-mtp-eagle3-spec-decode",
+   "to": "tech/mtp",
+   "type": "implements",
+   "note": "MTP 提议和 NPU rejection sampling 通过同一模型运行链衔接。"
+  },
+  {
+   "from": "impl/vllm-ascend-mtp-eagle3-spec-decode",
+   "to": "tech/eagle-3",
+   "type": "implements",
+   "note": "EAGLE-3 由 AscendEagleProposer 处理，在需要时从目标模型读取辅助隐藏状态。"
+  },
+  {
    "from": "impl/vllm-scheduler",
    "to": "tech/continuous-batching",
    "type": "implements",
@@ -11324,6 +12435,78 @@
    "to": "engine/vllm-ascend",
    "type": "runs_on",
    "note": "vLLM Ascend 310P｜兼容 Attention 后端 实现在 vLLM-Ascend 里"
+  },
+  {
+   "from": "impl/vllm-ascend-dynamic-batch-scheduler",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Ascend 动态批处理｜按 Decode 负载查表分配预算 实现在 vLLM-Ascend 里"
+  },
+  {
+   "from": "impl/vllm-ascend-mooncake-layerwise-pd",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "PD 分离｜Mooncake 按层推送 KV 实现在 vLLM-Ascend 里"
+  },
+  {
+   "from": "impl/vllm-ascend-ascendstore-kv-pool",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "AscendStore｜KV 池存储后端与读写线程 实现在 vLLM-Ascend 里"
+  },
+  {
+   "from": "impl/vllm-ascend-ascendstore-prefix-lookup",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "AscendStore｜块哈希前缀命中与调度 实现在 vLLM-Ascend 里"
+  },
+  {
+   "from": "impl/vllm-ascend-mla-kv-layout",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "DeepSeek MLA｜潜变量与 RoPE 分量的 KV 布局 实现在 vLLM-Ascend 里"
+  },
+  {
+   "from": "impl/vllm-ascend-fia-tnd-attention",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Ascend FIA｜TND 融合注意力与查询长度门槛 实现在 vLLM-Ascend 里"
+  },
+  {
+   "from": "impl/vllm-ascend-mla-attention-kernel",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Ascend MLA｜分离 RoPE 的 Prefill 和 Decode 内核 实现在 vLLM-Ascend 里"
+  },
+  {
+   "from": "impl/vllm-ascend-modelslim-w8a8-w4a8-execution",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "ModelSlim 权重执行｜动态 W8A8 与 W4A8 实现在 vLLM-Ascend 里"
+  },
+  {
+   "from": "impl/vllm-ascend-fine-grained-tp",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Ascend 细粒度 TP｜为特定层创建独立通信组 实现在 vLLM-Ascend 里"
+  },
+  {
+   "from": "impl/vllm-ascend-moe-ep-dispatch-combine",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Ascend MoE EP｜专家路由与 Token 分发合并 实现在 vLLM-Ascend 里"
+  },
+  {
+   "from": "impl/vllm-ascend-aclgraph-capture-replay",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "ACLGraph｜按批描述捕获和重放 NPU 图 实现在 vLLM-Ascend 里"
+  },
+  {
+   "from": "impl/vllm-ascend-mtp-eagle3-spec-decode",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Ascend 投机解码｜MTP / EAGLE-3 提议与验证 实现在 vLLM-Ascend 里"
   },
   {
    "from": "impl/vllm-qwen3-vl-encoder-data-parallel",
