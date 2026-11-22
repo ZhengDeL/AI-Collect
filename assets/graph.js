@@ -624,14 +624,52 @@
     html += sec(4, '在哪些引擎里 · 怎么实现', implHtml);
     // 5 实测收益
     var g = n.gain || [];
-    var gtab = g.length ? '<table class="gp-table"><tr><th>指标</th><th>数值</th><th>来源</th><th>证据</th></tr>' +
+    // 引擎/硬件节点自身不收录基准时，聚合挂在该引擎下的技术节点实测数字（如实标注，不冒充引擎级基准）
+    var gNote = '';
+    if (!g.length && (n.type === 'engine' || n.type === 'hardware')) {
+      var eshort = String(n.id || '').split('/')[1] || '';
+      var agg = [];
+      state.doc.nodes.forEach(function (t) {
+        if (t.type !== 'tech' || !t.gain || !t.gain.length) return;
+        var eng = t.engines || [];
+        var hit = eng.some(function (x) { x = String(x); return x === n.id || x === eshort || x === 'engine/' + eshort; });
+        if (!hit) return;
+        t.gain.forEach(function (x) { agg.push({ tn: t.name || t.id, g: x }); });
+      });
+      if (agg.length) {
+        g = agg.slice(0, 6).map(function (a) {
+          return { metric: '〔' + a.tn + '〕' + (a.g.metric || ''), value: a.g.value, source: a.g.source, evidence: a.g.evidence };
+        });
+        gNote = '<p class="gp-impl-meta">引擎级基准本图未单独收录；下表是本引擎相关技术节点已收录的实测数字，注明技术名以便追溯。</p>';
+      }
+    }
+    var gtab = g.length ? gNote + '<table class="gp-table"><tr><th>指标</th><th>数值</th><th>来源</th><th>证据</th></tr>' +
       g.map(function (x) { return '<tr><td>' + esc(x.metric || '') + '</td><td>' + esc(x.value || '') + '</td><td>' + val(x.source) + '</td><td>' + esc(x.evidence || '') + '</td></tr>'; }).join('') + '</table>'
       : '<p class="gp-none">未查到</p>';
     html += sec(5, '实测收益', gtab);
     // 6 代价与坑
     var cHtml = '<ul class="gp-list">' + ((n.cost || []).length ? (n.cost || []).map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') : '<li class="gp-none">未查到</li>') + '</ul>';
     var pf = n.pitfalls || [];
-    cHtml += pf.length ? pf.map(function (p) { return '<div class="gp-pit"><b>坑</b> ' + esc(p.hit || '') + '<br><b>修法</b> ' + esc(p.fix || '') + '</div>'; }).join('') : '<p class="gp-none">坑：未查到</p>';
+    // 引擎/硬件节点同理：聚合挂在它下面的技术节点的代价与坑，注明来源技术
+    if (!(n.cost || []).length && !pf.length && (n.type === 'engine' || n.type === 'hardware')) {
+      var es2 = String(n.id || '').split('/')[1] || '';
+      var costAgg = [], pfAgg = [];
+      state.doc.nodes.forEach(function (t) {
+        if (t.type !== 'tech') return;
+        var eng = t.engines || [];
+        var hit = eng.some(function (x) { x = String(x); return x === n.id || x === es2 || x === 'engine/' + es2; });
+        if (!hit) return;
+        (t.cost || []).forEach(function (c) { costAgg.push({ tn: t.name || t.id, c: c }); });
+        (t.pitfalls || []).forEach(function (p) { pfAgg.push({ tn: t.name || t.id, p: p }); });
+      });
+      if (costAgg.length || pfAgg.length) {
+        cHtml = '<p class="gp-impl-meta">引擎级代价本图未单独收录；以下是本引擎相关技术节点的代价与坑，注明技术名以便追溯。</p><ul class="gp-list">' +
+          costAgg.slice(0, 5).map(function (a) { return '<li>〔' + esc(a.tn) + '〕' + esc(a.c) + '</li>'; }).join('') + '</ul>' +
+          pfAgg.slice(0, 5).map(function (a) { return '<div class="gp-pit"><b>坑</b> 〔' + esc(a.tn) + '〕' + esc(a.p.hit || '') + '<br><b>修法</b> ' + esc(a.p.fix || '') + '</div>'; }).join('');
+      }
+    } else if (pf.length) {
+      cHtml += pf.map(function (p) { return '<div class="gp-pit"><b>坑</b> ' + esc(p.hit || '') + '<br><b>修法</b> ' + esc(p.fix || '') + '</div>'; }).join('');
+    }
     html += sec(6, '代价与坑', cHtml);
     // 7 关系（按边类型分组，每条 note，可点击）
     var rels = state.doc.edges.filter(function (e) { return e.from === n.id || e.to === n.id; });
