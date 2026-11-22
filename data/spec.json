@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-21",
+  "date": "2026-11-22",
   "items": [
     {
       "line": "nvidia",
@@ -486,6 +486,44 @@
       "evidence": "A",
       "url": "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/speculative_decoding.html",
       "status": "可上生产"
+    },
+    {
+      "line": "ascend",
+      "family": "draft",
+      "name": "MindIE · MTP（DeepSeek 原生多 Token 预测）",
+      "mechanism": "模型自带的 MTP 头在推理时一次预测多个 token（num_speculative_tokens 控制投机 token 数），主模型批量验证后一次前进多个 token，属于「模型内建 draft」而非外挂草稿模型。",
+      "engine": "MindIE LLM",
+      "versions": "MindIE LLM 3.1.0（配套 CANN 9.0.1）；特性页写仅 DeepSeek-R1/V3 的 W8A8 与 KV Cache int8 权重支持，但同版本 DeepSeek-V3.2 部署指南已给出 MTP 配置（backendType=torch），支持面以部署指南为准。",
+      "config": "config.json → ModelDeployConfig.ModelConfig.plugin_params = '{\"plugin_type\":\"mtp\",\"num_speculative_tokens\":1}'；DeepSeek-V3.2 示例用 num_speculative_tokens=2 + backendType=torch；启动 ./bin/mindieservice_daemon（whl 包用 mindie_llm_server）。",
+      "gain": "官方未给吞吐倍数（未查到）；官方配置建议：低时延场景 num_speculative_tokens 用 1 或 2，高吞吐场景建议不超过 1。DeepSeek-V3.2 部署指南只给可开，不给加速数字。",
+      "cost": "MTP 头随权重自带，额外权重开销相对整模型小；num_speculative_tokens=2 时每步多验证一个 token，高并发下会挤占算力（官方因此建议高吞吐用 1）。与并行解码、Multi-LoRA、SplitFuse 互斥；PD 混部叠 CP/SP 时只能配 1；不支持 n/best_of/beam_search/logprobs。",
+      "pitfalls": {
+        "hit": "照特性页限制判断，误以为只有 DeepSeek-R1/V3 能开 MTP；实际 3.1.0 的 DeepSeek-V3.2 部署指南已经给了 MTP 配置。",
+        "fix": "以模型部署指南为准：V3.2 走 backendType=torch + MTP；R1/V3 的 W8A8 权重走 atb 后端。配完用一次 max_tokens>1 的请求确认确实多 token 前进。"
+      },
+      "evidence": "A",
+      "url": "https://mindie-llm-doc.readthedocs.io/zh-cn/latest/user_guide/feature/mtp/",
+      "status": "可上生产"
+    },
+    {
+      "line": "ascend",
+      "family": "other",
+      "name": "MindIE · 并行解码（lookahead 猜词 / memory_decoding 前缀树）",
+      "mechanism": "同一特性页下的两种草稿来源，二选一：lookahead 走 Jacobi 迭代，按 level(N)/window(W)/guess_set_size(G) 生成候选 token；memory_decoding 用 trie 前缀树缓存模型历史输入输出，按 decoding_length 取候选。两者都由主模型批量验证后多 token 前进。",
+      "engine": "MindIE LLM",
+      "versions": "MindIE LLM 3.1.0（配套 CANN 9.0.1）；并行解码自 MindIE 1.0.RC3 文档已存在；平台限 Atlas 800I A2 与 Atlas 300I Duo。",
+      "config": "config.json → ModelDeployConfig：speculationGamma 必配（lookahead 默认 4/5/5 时给 30，memory_decoding 时 ≥decoding_length）；ModelConfig.plugin_params 二选一：lookahead 用 '{\"plugin_type\":\"la\",\"level\":4,\"window\":5,\"guess_set_size\":5}'，memory_decoding 用 '{\"plugin_type\":\"memory_decoding\",\"decoding_length\":16,\"dynamic_algo\":true}'；dynamic_algo=true 时 ScheduleConfig.maxIterTimes ≥ 期望输出长度+speculationGamma；启动 ./bin/mindieservice_daemon（whl 包用 mindie_llm_server）。",
+      "gain": "官方只给定性、不给倍数（未查到）：小 batch、长输入、足够长输出（代码生成/对话）才有收益，贪婪解码收益最大，采样与惩罚类后处理会吃掉收益；memory_decoding 更适合代码生成/检索等重复度高的场景。",
+      "cost": "开启后用 Prompt 建前缀树与草稿 token map，prefill 阶段抬高 TTFT，前缀树随历史增长占内存；不支持流式与 n/best_of/beam/logprobs/top_logprobs（惩罚仅重复惩罚），不能开 HealthCheck；与 PD 分离、Multi-LoRA、SplitFuse、长序列、MTP、异步调度、多机推理互斥；仅 W8A8 与稀疏量化；模型限 LLaMA3/Qwen2/Qwen2.5/Qwen3-14B/Qwen3-32B；lookahead 与 memory_decoding 不可同开。",
+      "pitfalls": {
+        "hit": "两个高频错配：lookahead 的 speculationGamma 按默认参数配小（4/5/5 需 ≥(N-1)*(W+G)=30，官方示例正是 30），候选序列被截断；memory_decoding 开 dynamic_algo=true 但 maxIterTimes 只按期望输出长度配，未加 speculationGamma，长输出被提前截断。",
+        "fix": "lookahead：speculationGamma ≥ (N-1)*(W+G)，默认 4/5/5 直接给 30；memory_decoding：maxIterTimes ≥ 期望最大输出长度+speculationGamma（例：输出 512、gamma 16 → ≥528），且 speculationGamma ≥ decoding_length。两条都要先确认机型和模型在支持名单内、权重为 W8A8、关掉流式与 n/beam/logprobs。"
+      },
+      "evidence": "A",
+      "url": "https://mindie-llm-doc.readthedocs.io/zh-cn/latest/user_guide/feature/speculative_decoding/",
+      "status": "实验性"
     }
-  ]
+  ],
+  "version": "v1",
+  "generated_at": "2026-11-22T09:11:36+08:00"
 }
