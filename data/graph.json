@@ -1,9 +1,9 @@
 {
  "schema_version": "1.0",
- "generated_at": "2026-11-22T14:28:30+08:00",
+ "generated_at": "2026-11-22T17:05:36+08:00",
  "counts": {
-  "nodes": 170,
-  "edges": 156
+  "nodes": 201,
+  "edges": 178
  },
  "views": [
   {
@@ -51,6 +51,14 @@
     "vllm-ascend"
    ],
    "maturity": "mainstream",
+   "gain": [
+    {
+     "metric": "运行路径切换对纯 prefill TTFT 的影响",
+     "value": "eager 42.56 ms，FULL_AND_PIECEWISE 47.54 ms；源报告分别为 96.9K 与 86.8K prefill tok/s。版本：vLLM/vLLM Ascend 0.23.0、CANN 9.1.1、torch_npu 2.10.0.post6。设备：Atlas 800I A3（910_9391），TP1 用 1 个 NPU die。负载：Qwen2.5-Coder-7B-W8A8，并发 1，约 4125 输入 token，max_tokens=1。对照：同版同机 --enforce-eager。本数据反映 vLLM 运行路径开销，不能外推为 CANN 版本差。",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/20963",
+     "evidence": "B"
+    }
+   ],
    "cost": [
     "驱动、运行库与扩展构建需要配套。",
     "运行时同步会影响主机与设备重叠。"
@@ -58,7 +66,7 @@
    "pitfalls": [
     {
      "hit": "Unable to recognize chip name: {chip_name}, please manually set env SOC_VERSION",
-     "fix": "这是源码异常模板。首先确认节点实际芯片和插件版本，再按照官方安装矩阵设置 SOC_VERSION 后重新构建。"
+     "fix": "源码触发版本：vLLM Ascend c64ace678d12d5a48671d929c76f723f8158876c。当构建逻辑无法从已识别列表映射设备名时抛出。按实机 SoC 和安装矩阵设置 SOC_VERSION 后重建；源为异常模板，实机报错记录未查到。"
     }
    ],
    "hardware_scope": [
@@ -68,7 +76,7 @@
     "https://docs.vllm.ai/projects/ascend/en/main/getting_started/installation.html",
     "https://docs.vllm.ai/projects/ascend/en/main/developer_guide/contribution/dependency_version_management.html"
    ],
-   "urls_more": 2,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -90,7 +98,7 @@
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/setup.py#L125"
    ],
-   "gain_note": "未查到",
+   "gain_note": "具备一手同栈运行路径对照。运行时分派开销的拆解见报告的 host/device trace；CANN 版本升级收益未查到。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -122,6 +130,9 @@
    "domains": [
     "ascend-native"
    ],
+   "engines": [
+    "mindie"
+   ],
    "maturity": "mainstream",
    "cost": [
     "工作区及输入输出格式必须与接口契约一致。",
@@ -129,16 +140,18 @@
    ],
    "pitfalls": [
     {
-     "hit": "未查到",
-     "fix": "未查到"
+     "hit": "aclrtAllocatorGetByStream failed: stream is not registered with any allocator",
+     "fix": "触发版本：vLLM 0.30.0 与 transformers 5.19，Atlas 300I Duo（310P3）上的 EmbeddingGemma2；源帖未列故障侧插件单独版本。按 PR #18335 让 ENCODER_ONLY 注意力走原生 Torch FP32 路径，重启进程并与 HF 参考输出对照；不要在报错后的进程里继续复用权重。"
     }
    ],
    "hardware_scope": [
     "昇腾产品，以所引 ATB 版本及算子 API 的产品支持范围为准"
    ],
    "urls": [
-    "https://www.hiascend.com/doc_center/source/en/CANNCommunityEdition/910/acce/ascendtb/ascendtb_01_0005.html"
+    "https://www.hiascend.com/doc_center/source/en/CANNCommunityEdition/910/acce/ascendtb/ascendtb_01_0005.html",
+    "https://github.com/vllm-project/vllm-ascend/issues/18337"
    ],
+   "urls_more": 2,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -151,9 +164,19 @@
       "Execute"
      ],
      "source": "https://www.hiascend.com/doc_center/source/en/CANNCommunityEdition/910/acce/ascendtb/ascendtb_01_0005.html"
+    },
+    {
+     "engine": "mindie",
+     "path": "conf/config.json",
+     "version_seen": "MindIE 1.0.RC3",
+     "module": "ModelConfig",
+     "config": [
+      "backendType=atb"
+     ],
+     "source": "https://www.hiascend.com/doc_center/source/zh/mindie/10RC3/mindieservice/servicedev/mindie_service0285.html"
     }
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到。310P3 EmbeddingGemma2 首次调用 ATB 的错误与替代路径均有记录，但 ATB 臂失败，没有同负载的有效吞吐、延迟或精度对照。MindIE 1.0.RC3 文档给出后端开关，未报告同模型、同卡数、同批长的 atb/ms 对照。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -165,6 +188,9 @@
    ],
    "tags": [
     "ascend-native"
+   ],
+   "pitfall_sources": [
+    "https://github.com/vllm-project/vllm-ascend/issues/18337"
    ]
   },
   {
@@ -198,6 +224,10 @@
     {
      "hit": "Communication_Error_Bind_IP_Port(EI0020): Failed to enable listening for the NPU network adapter socket.",
      "fix": "该案例发生在共享设备的多个进程绑定 NPU 监听资源时。检查冲突的设备与端口范围，按所用 CANN 版本支持的端口配置为实例分配独立范围，重启后核对建组日志。"
+    },
+    {
+     "hit": "HCCL function error: hcclGetRootInfo(&hcclID), error code is 19 (call network api fail)",
+     "fix": "触发版本：vLLM Ascend v0.30.0rc1 镜像，Atlas 800I A2 上以 TP2 启动 Qwen3.8-27B-W8A8。按原报错作者验证的规避法，为各 rank 显式指定可达且 UP 的 HCCL_SOCKET_IFNAME，重启后检查建组成功。"
     }
    ],
    "hardware_scope": [
@@ -207,7 +237,7 @@
     "https://www.hiascend.com/doc_center/source/zh/canncommercial/80RC2/developmentguide/hccl/hcclug/CANN%208.0.RC2%20%E9%9B%86%E5%90%88%E9%80%9A%E4%BF%A1%E7%94%A8%E6%88%B7%E6%8C%87%E5%8D%97%2001.pdf",
     "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/vllm_ascend/worker/worker.py#L1498"
    ],
-   "urls_more": 1,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -226,7 +256,7 @@
      "source": "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/vllm_ascend/worker/worker.py#L1498"
     }
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到。#5591 有 TP16 集合通信相关端到端实验，精确 DeepSeek checkpoint、Ascend 插件版本和卡子型号未公开，且不同实验臂同时切了多个通信/调度开关。需在固定 NPU 型号、模型、batch 和序列长下独立切换目标集合通信路径。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -244,7 +274,8 @@
     "ascend-native"
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm-ascend/issues/11968"
+    "https://github.com/vllm-project/vllm-ascend/issues/11968",
+    "https://github.com/vllm-project/vllm-ascend/issues/19320"
    ]
   },
   {
@@ -276,7 +307,7 @@
    "pitfalls": [
     {
      "hit": "未查到",
-     "fix": "未查到"
+     "fix": "未查到。CANN 9.1 官方资料列出 AOE_ERROR_DYNAMIC_GRAPH 等 API 返回码，未提供可核对的实际触发日志及修复回跑。"
     }
    ],
    "hardware_scope": [
@@ -286,10 +317,10 @@
     "https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/800alpha002/devaids/devtools/aoe/aoepar_16_001.html",
     "https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/83RC1/devaids/aoe/aoepar_16_060.html"
    ],
-   "urls_more": 1,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
-   "gain_note": "未查到",
+   "gain_note": "未查到。CANN 8.2.RC1 的 ResNet18 文档给出调优命令与 xx% 报告示例，该示例没有测量值。需固定 CANN、设备型号与卡数、输入 shape 和 batch，同一 OM 单独切换调优库后做双跑。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -327,6 +358,14 @@
     "vllm-ascend"
    ],
    "maturity": "mainstream",
+   "gain": [
+    {
+     "metric": "在线开启 torch-NPU profiling 时的平均 TPOT",
+     "value": "无 profiler 的较慢状态样本为 75.60–77.13 ms（7 次里 5 次），开启 profiler 的同名 C2 场景报告 612.11 ms。版本：vLLM 0.32.0、vLLM Ascend v0.32.0rc1（24487f4f）；CANN 和 torch_npu 小版本未披露。设备：Atlas A3 单节点 16 dies，DP4×TP4，16 rank。负载：DeepSeek-V4.1-Flash W8A8，同时 2 请求，512K 输入 token、20 输出 token。对照：同拓扑和负载，不开启 profiler。",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/21904",
+     "evidence": "B"
+    }
+   ],
    "cost": [
     "启用堆栈采集将明显增大文件和主机开销。",
     "跨 rank 归因要求时间与迭代边界对齐。"
@@ -335,6 +374,10 @@
     {
      "hit": "torch_profiler_dir must be set when profiler is 'torch'",
      "fix": "在 vLLM profiler 配置中补充可写的 torch_profiler_dir，并确认所用 Ascend 插件兼容该入口。"
+    },
+    {
+     "hit": "Failed to get acl to npu flow events.",
+     "fix": "触发版本：vLLM 与 vLLM Ascend 0.8.5、PyTorch 与 torch_npu 2.5.1；V1 的 Qwen2-7B 离线采集。维护者建议升级到兼容的插件 release/RC 后重新采集，并检查 ACL-to-NPU flow 和显存事件是否恢复。源帖未给出首个修复版本。"
     }
    ],
    "hardware_scope": [
@@ -344,7 +387,7 @@
     "https://docs.vllm.ai/projects/ascend/en/main/developer_guide/performance_and_debug/service_profiling_guide.html",
     "https://www.hiascend.com/doc_center/source/zh/canncommercial/81RC1/devaids/devtools/profiling/CANN%E5%95%86%E7%94%A8%E7%89%88%208.1.RC1%20%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E5%B7%A5%E5%85%B7%E7%94%A8%E6%88%B7%E6%8C%87%E5%8D%97%2001.pdf"
    ],
-   "urls_more": 2,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -365,9 +408,10 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/profiler.py#L140"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/profiler.py#L140",
+    "https://github.com/vllm-project/vllm-ascend/issues/1210"
    ],
-   "gain_note": "未查到",
+   "gain_note": "TPOT 用于标出采集干扰。测量作者后来撤回了 trace 截断的判断，未复现原截断推断。本条仅保留该帖列出的采集开关对照；底层 CANN 与 torch_npu 小版本未查到。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -404,14 +448,22 @@
     "vllm-ascend"
    ],
    "maturity": "emerging",
+   "gain": [
+    {
+     "metric": "310P3 跨卡与卡内 TP2 的稳态解码吞吐",
+     "value": "同卡双芯 HCCS 4.6 tok/s，跨两卡 PCIe 4.6 tok/s。版本：vLLM Ascend v0.27.1rc1-310p。设备：Atlas 300I Duo（310P3），单卡双芯对比双卡各取一芯，均 TP2。负载：Hy-Memory-30B-A3B FP16，eager、greedy、batch=1，每条解码 256 token，输入长度未公开。对照：同卡双芯 HCCS，唯一报告的变项为 TP rank 布局。",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/19314",
+     "evidence": "B"
+    }
+   ],
    "cost": [
     "能力随插件与模型版本变化，需版本组合验证。",
     "不同执行模式可能涉及单独的内核和精度边界。"
    ],
    "pitfalls": [
     {
-     "hit": "未查到",
-     "fix": "未查到"
+     "hit": "aclrtAllocatorGetByStream failed: stream is not registered with any allocator",
+     "fix": "触发版本：vLLM 0.30.0 与 transformers 5.19，Atlas 300I Duo（310P3）上的 EmbeddingGemma2；源帖未列故障侧插件单独版本。按 PR #18335 让 ENCODER_ONLY 注意力走原生 Torch FP32 路径，重启进程并与 HF 参考输出对照；不要在报错后的进程里继续复用权重。"
     }
    ],
    "hardware_scope": [
@@ -421,7 +473,7 @@
     "https://docs.vllm.ai/projects/ascend/en/main/getting_started/installation.html",
     "https://docs.vllm.ai/projects/ascend/en/main/user_guide/support_matrix/supported_models.html"
    ],
-   "urls_more": 2,
+   "urls_more": 5,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -439,7 +491,7 @@
      "source": "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/Dockerfile.310p#L56"
     }
    ],
-   "gain_note": "未查到",
+   "gain_note": "有一手解码实验，公开长度是解码段 256 token。源帖 1227 token 属独立 prefill 项。此例只说明该模型该批次两种 TP 布局结果相同。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -451,6 +503,9 @@
    ],
    "tags": [
     "ascend-native"
+   ],
+   "pitfall_sources": [
+    "https://github.com/vllm-project/vllm-ascend/issues/18337"
    ]
   },
   {
@@ -477,6 +532,14 @@
     "vllm-ascend"
    ],
    "maturity": "mainstream",
+   "gain": [
+    {
+     "metric": "TND 16 查询分组的算子数值对照",
+     "value": "16 个固定随机种子中 4 个出现 BF16 元素漂移。版本：CANN 8.5.1、torch_npu 2.6.0.post5。设备：Ascend 910B ×1。负载：模拟 Qwen3-8B BF16 的 TP2 单 rank 注意力张量，batch=1、上下文 497 token、16 个 query、含草稿 KV 共 513 token。对照：相同张量，每个 query 分开调用 FIA 并使用其因果 KV 长度。",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/17520",
+     "evidence": "B"
+    }
+   ],
    "cost": [
     "限制受具体算子、布局及选用的元数据路径约束。",
     "批内边界错误可能影响后续重排和图回放。"
@@ -485,6 +548,10 @@
     {
      "hit": "decode_threshold exceeded                 npu_fused_infer_attention_score TND layout's limit of 16,                 got {self.decode_threshold}",
      "fix": "这是源码异常模板。对该构建器将 num_speculative_tokens 与基础查询位置的和保持在 16 以内，或改用已验证满足查询长度的后端。"
+    },
+    {
+     "hit": "When layout is TND, queryT(16) must be equal to the last element of actualSequenceLengthQ(13)",
+     "fix": "触发版本：vLLM 0.19.1、vLLM Ascend 0.19.1rc1、CANN 8.5.1。ngram 与 FULL 图联用时，维护者复现并指向 _pad_query_start_loc_for_fia。规避方法是取消 FULL 图或关 ngram，按原请求做回归；修复方向是令 TND 打包的 query 行数等于 actualSequenceLengthQ 末值。源 issue 未记录合入修复。"
     }
    ],
    "hardware_scope": [
@@ -494,6 +561,7 @@
     "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/vllm_ascend/attention/attention_v1.py#L263-L271",
     "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/vllm_ascend/attention/attention_v1.py#L230"
    ],
+   "urls_more": 2,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -512,9 +580,10 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/vllm_ascend/attention/attention_v1.py#L263-L271"
+    "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/vllm_ascend/attention/attention_v1.py#L263-L271",
+    "https://github.com/vllm-project/vllm-ascend/issues/9088"
    ],
-   "gain_note": "未查到",
+   "gain_note": "一手实测覆盖 16 查询时的算子数值取舍。未查到同一版本跨 16→17 的整模型吞吐对照。报错中的 16 是该批 queryT，与构建器的单序列上限含义不同。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -559,7 +628,7 @@
    "pitfalls": [
     {
      "hit": "未查到",
-     "fix": "未查到"
+     "fix": "未查到校准阶段同时具备原文、触发工具版本和修法的日志。#4293 的原始报错发生在引擎加载权重阶段，未披露 msModelSlim 生成版本；#17476 是转换后精度回归。"
     }
    ],
    "hardware_scope": [
@@ -572,7 +641,7 @@
     "https://github.com/Ascend/msModelSlim",
     "https://arxiv.org/abs/2211.10438"
    ],
-   "urls_more": 1,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -593,7 +662,7 @@
      "source": "https://github.com/Ascend/msModelSlim/blob/20db10875b2c3f55ce9c8731ed544effbf051e0e/msmodelslim/cli/__main__.py#L692"
     }
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到。msModelSlim 26.1.0 的 Qwen3.6-27B W8A8 文档给出做法，未发布同推理卡数、batch、序列长及固定基线的校准对照。可见的 W8A8 预测吞吐对比未披露校准工具版本或校准集，无法核对校准的独立影响。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -807,6 +876,12 @@
      "value": "降低 29%–69%。论文跨测试场景结果，覆盖内核选型与调度，对应服务端 ITL 口径。",
      "source": "https://arxiv.org/abs/2501.01005",
      "evidence": "C"
+    },
+    {
+     "metric": "稀疏 MLA 后端端到端输出吞吐",
+     "value": "默认 FLASHINFER_MLA_SPARSE_SM90 为 162.9 tok/s，强制 FLASH_ATTN_MLA_SPARSE 为 249.3 tok/s。版本：vLLM 0.28.1rc1.dev580+g385dce36b、FlashInfer 0.6.18、PyTorch 2.13.0+cu130。设备：8× NVIDIA H100 80GB HBM3，单机 TP8。负载：GLM-5.3-Flash，300 random 输入、256 输出、请求并发 1、20 个请求、2 个预热。对照：同部署默认 FlashInfer MLA；只切换后端。这是两个 MLA 实现的对照。",
+     "source": "https://github.com/vllm-project/vllm/issues/56564",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -817,6 +892,10 @@
     {
      "hit": "FlashInfer backend currently does not support attention sinks, please use trtllm on blackwell or flash attention on earlier GPUs.",
      "fix": "按照该提交的分支条件检查 prefill 和 decode，带 sinks 的模型在 Blackwell 上可用兼容的 TRT-LLM 路径，较早 GPU 需选支持该模型的 FlashAttention 后端。"
+    },
+    {
+     "hit": "Error: Failed to initialize the TMA descriptor 1",
+     "fix": "触发版本：vLLM 0.28.1rc1.dev580+g385dce36b，在 H100 TP8 的 GLM-5.3-Flash 强制 FLASH_ATTN_MLA_SPARSE。回退 FLASHINFER_MLA_SPARSE_SM90 可避开该日志，代价见吞吐对照。维护者的单算子对照指出零宽 RoPE 的描述符初始化是触发条件。"
     }
    ],
    "hardware_scope": [
@@ -829,7 +908,7 @@
     "https://docs.flashinfer.ai/api/attention.html",
     "https://arxiv.org/abs/2501.01005"
    ],
-   "urls_more": 2,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -864,8 +943,10 @@
     "attention-kernel"
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/flashinfer.py#L920-L930"
-   ]
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/backends/flashinfer.py#L920-L930",
+    "https://github.com/vllm-project/vllm/issues/56563"
+   ],
+   "gain_note": "一手端到端样本说明同硬件下 FlashInfer 的特定 MLA 路径可能慢于 FlashAttention。保留论文中的跨场景结果作为背景，按相应模型和后端解读。"
   },
   {
    "id": "tech/multi-head-latent-attention",
@@ -897,6 +978,12 @@
      "value": "93.3%",
      "source": "https://arxiv.org/abs/2405.04434",
      "evidence": "C"
+    },
+    {
+     "metric": "稀疏 MLA 后端端到端输出吞吐",
+     "value": "默认 FLASHINFER_MLA_SPARSE_SM90 为 162.9 tok/s，强制 FLASH_ATTN_MLA_SPARSE 为 249.3 tok/s。版本：vLLM 0.28.1rc1.dev580+g385dce36b、FlashInfer 0.6.18、PyTorch 2.13.0+cu130。设备：8× NVIDIA H100 80GB HBM3，单机 TP8。负载：GLM-5.3-Flash，300 random 输入、256 输出、请求并发 1、20 个请求、2 个预热。对照：同部署默认 FlashInfer MLA；只切换后端。这是两个 MLA 实现的对照。",
+     "source": "https://github.com/vllm-project/vllm/issues/56564",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -907,6 +994,10 @@
     {
      "hit": "FlashMLA Dense is only supported on Hopper devices.",
      "fix": "在其他设备上选其支持的 MLA 后端，并核对该后端与检查点的支持情况。"
+    },
+    {
+     "hit": "Error: Failed to initialize the TMA descriptor 1",
+     "fix": "触发版本：vLLM 0.28.1rc1.dev580+g385dce36b，在 H100 TP8 的 GLM-5.3-Flash 强制 FLASH_ATTN_MLA_SPARSE。回退 FLASHINFER_MLA_SPARSE_SM90 可避开该日志，代价见吞吐对照。维护者的单算子对照指出零宽 RoPE 的描述符初始化是触发条件。"
     }
    ],
    "hardware_scope": [
@@ -920,7 +1011,7 @@
     "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/support_matrix/supported_models.html",
     "https://arxiv.org/abs/2405.04434"
    ],
-   "urls_more": 4,
+   "urls_more": 6,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -952,7 +1043,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/ops/flashmla.py#L59"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/attention/ops/flashmla.py#L59",
+    "https://github.com/vllm-project/vllm/issues/56563"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -965,7 +1057,8 @@
    ],
    "tags": [
     "attention-kernel"
-   ]
+   ],
+   "gain_note": "定量使用同一 MLA 模型的后端对照。DeepSeek-V2 论文的缓存缩小比例还包含模型架构差异。"
   },
   {
    "id": "tech/sliding-window-attention",
@@ -1162,6 +1255,12 @@
      "value": "K 次常规 kernel 发射变为 1 次 graph launch，机制口径",
      "source": "https://docs.pytorch.org/docs/stable/notes/cuda.html#cuda-graphs",
      "evidence": "A"
+    },
+    {
+     "metric": "CUDA 图开关对长 prefill 首次失败的对照",
+     "value": "开图栈 3/3 次失败，eager 或 compile-only 配置合报 5–6 次里 2 次失败。版本：vLLM 0.30.0。设备：4× RTX PRO 6000 Blackwell（SM120），PCIe，TP4。负载：DeepSeek-V4.1-Flash，固定请求序列，首个超过约 35K 输入 token 的请求触发，单请求 prefill 场景；原始对照未报固定输出上限。对照：同一镜像、同顺序，图模式 NONE；样本很少，关闭图仍可触发故障。",
+     "source": "https://github.com/vllm-project/vllm/issues/56892",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -1172,6 +1271,10 @@
     {
      "hit": "compile_sizes contains {size} which would be padded to {padded}. All compile_sizes must be values that won't be changed by cudagraph padding. Use values from cudagraph_capture_sizes.",
      "fix": "这是源码异常模板。用 cudagraph_capture_sizes 中能保持原样的尺寸配置 compile_sizes，并核对捕获上限。"
+    },
+    {
+     "hit": "FAULT_PDE ACCESS_TYPE_VIRT_READ",
+     "fix": "触发版本：vLLM 0.30.0；DeepSeek-V4.1-Flash TP4、4× RTX PRO 6000 Blackwell，长 prefill 下开图易触发，关图也偶发。对受影响的长请求禁用该图路径并限制输入到已回归的长度。源帖未给可消除所有长请求故障的修复版本。"
     }
    ],
    "hardware_scope": [
@@ -1181,7 +1284,7 @@
     "https://docs.vllm.ai/en/stable/design/cuda_graphs/",
     "https://docs.pytorch.org/docs/stable/notes/cuda.html#cuda-graphs"
    ],
-   "urls_more": 2,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -1201,7 +1304,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/cudagraph_dispatcher.py#L103"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/cudagraph_dispatcher.py#L103",
+    "https://github.com/vllm-project/vllm/issues/56892"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -1214,7 +1318,8 @@
    ],
    "tags": [
     "graph-compile"
-   ]
+   ],
+   "gain_note": "保留同版本图开关的长输入可靠性数据。帖子另有解码吞吐对照，未报告其精确输入/输出长度，未将其用作合格增益。"
   },
   {
    "id": "tech/torch-compile-inference",
@@ -1264,7 +1369,7 @@
     "https://docs.vllm.ai/en/stable/design/torch_compile/",
     "https://docs.pytorch.org/docs/stable/torch.compiler.html"
    ],
-   "urls_more": 3,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -1301,7 +1406,8 @@
    ],
    "tags": [
     "graph-compile"
-   ]
+   ],
+   "gain_note": "未查到。#56892 在 vLLM 0.30.0 的 compile-only 与 eager 臂报告相同解码吞吐，但未公开解码臂的 batch、逐请求输入和输出长；教程的微基准缺设备型号，需用固定形状补跑。"
   },
   {
    "id": "tech/piecewise-graph-execution",
@@ -1333,6 +1439,12 @@
      "value": "两组采样温度下，分段图分别为 14/60、18/60，eager 为 0/60、0/60。16×910B2C、DP4×TP4、vLLM 0.20.2 / Ascend 0.20.2rc1、CANN 9.0.0。这是特定采样组合的可靠性对照。",
      "source": "https://github.com/vllm-project/vllm-ascend/issues/18754",
      "evidence": "B"
+    },
+    {
+     "metric": "部分图相对 eager 的混合负载代价",
+     "value": "TTFT 由 75.0 ms（eager）变为 55.5–60.1 ms（FULL_AND_PIECEWISE），平均 TPOT 29.2 ms 变为 12.0–12.2 ms。版本：vLLM/vLLM Ascend 0.23.0、CANN 9.1.1、torch_npu 2.10.0.post6。设备：Atlas 800I A3（910_9391），TP1 使用 1 NPU die。负载：Qwen2.5-Coder-7B-W8A8，100 请求、并发 1、约 4125 输入、max_tokens=1024，流式。对照：同版本 --enforce-eager；结果覆盖完整 graph-mode 差异。",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/20963",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -1343,6 +1455,10 @@
     {
      "hit": "Invalid backend for piecewise compilation: {self.backend}",
      "fix": "这是源码异常模板。使用当前版本认可的分段编译后端，并按该版本文档匹配图模式。"
+    },
+    {
+     "hit": "rtStreamEndCapture execution failed, reason=capture model contains a stream that was not joined to the original stream",
+     "fix": "触发版本：包含 TorchAir PR #2781 的构建，原帖未给 torch_npu 精确版本；vLLM Ascend Qwen3 FlashComm1 TP2 测试。更新至包含 Ascend 插件 #13692 配置传播修复以及 hcomm #4878 流捕获修复的构建，确认 PIECEWISE 下每个 worker 都收到有效配置。"
     }
    ],
    "hardware_scope": [
@@ -1352,7 +1468,7 @@
     "https://docs.vllm.ai/en/stable/design/cuda_graphs/",
     "https://docs.vllm.ai/en/stable/design/torch_compile/"
    ],
-   "urls_more": 4,
+   "urls_more": 6,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -1372,7 +1488,8 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/compilation.py#L985"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/compilation.py#L985",
+    "https://github.com/vllm-project/vllm-ascend/issues/13792"
    ],
    "owner_team": "架构",
    "updated_at": "2026-11-22",
@@ -1389,7 +1506,8 @@
    ],
    "tags": [
     "graph-compile"
-   ]
+   ],
+   "gain_note": "新版对照公开了模型、并发和输入/输出上限。#18754 的可靠性表可供参考，其模型和输入长度未公开。"
   },
   {
    "id": "tech/triton-inference-kernel",
@@ -1515,7 +1633,7 @@
    "pitfalls": [
     {
      "hit": "rtStreamEndCapture execution failed, reason=capture model contains a stream that was not joined to the original stream",
-     "fix": "见 vLLM-Ascend #13792 的 ERR00100 / 107025。用包含该版本配置传播修复的发布版，并按版本文档确认关闭 npugraph_ex 对所有 worker 生效。需要时用 eager 复测以区分流捕获与模型计算。"
+     "fix": "触发版本：包含 TorchAir PR #2781 的构建（具体 torch_npu 版本未公开），Qwen3 FlashComm1 TP2 测试。采用包含 vLLM Ascend #13692 与 hcomm #4878 的构建，回归流捕获并检查 worker 收到 PIECEWISE 禁用 npugraph_ex 的设置。"
     }
    ],
    "hardware_scope": [
@@ -1525,7 +1643,7 @@
     "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/feature_guide/graph_mode.html",
     "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/vllm_ascend/compilation/acl_graph.py#L71"
    ],
-   "urls_more": 2,
+   "urls_more": 5,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -1562,7 +1680,8 @@
    ],
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm-ascend/issues/13792"
-   ]
+   ],
+   "gain_note": "实测：vLLM 0.26.0 / Ascend 0.26.0rc1，CANN 9.1.0，4×910B4，DP2×TP2，Qwen3.5 系列 27B W8A8（具体 checkpoint 未公开），2,048 输入/256 输出、并发 16。使用未打 padding 修复的相同动态 MTP 配置作对照。112.1/24.7 ms 是 decode TPOT p50。"
   },
   {
    "id": "tech/inference-operator-fusion",
@@ -1938,6 +2057,12 @@
      "value": "约 1/2，忽略比例、对齐与元数据",
      "source": "https://docs.vllm.ai/en/stable/features/quantization/quantized_kvcache/",
      "evidence": "A"
+    },
+    {
+     "metric": "FP8 KV 的 prefill 与 decode 对照",
+     "value": "16K 输入下 BF16 KV / FP8 KV 的 prefill 为 11.790 / 12.206 s，decode 吞吐为 219.2 / 231.3 tok/s。版本：vLLM 0.26.0。设备：单张 A100 80GB。负载：Qwen3-8B BF16，客户端并发 8，256 decode token，固定 prefill 16K 档。对照：只切换 KV dtype（BF16→FP8 E4M3），同一 BF16 权重及服务设置。",
+     "source": "https://github.com/vllm-project/vllm/issues/42058",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -1957,7 +2082,7 @@
     "https://docs.vllm.ai/en/stable/features/quantization/quantized_kvcache/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/cache.py#L74"
    ],
-   "urls_more": 1,
+   "urls_more": 2,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -1989,7 +2114,8 @@
    ],
    "tags": [
     "kv-cache"
-   ]
+   ],
+   "gain_note": "位宽推导描述 KV 数据区，此处一手对照描述计算和带宽权衡。不同序列长度表现见原帖 1K–16K 各档。"
   },
   {
    "id": "tech/hybrid-kv-cache-manager",
@@ -2030,7 +2156,7 @@
     "https://docs.vllm.ai/en/stable/design/hybrid_kv_cache_manager/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/single_type_kv_cache_manager.py#L442"
    ],
-   "urls_more": 1,
+   "urls_more": 2,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2051,7 +2177,7 @@
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/vllm.py#L1311"
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到同一版本下 HMA 显式 on/off 的完成请求 A/B。#42024 在 vLLM 0.18.x、gpt-oss-120b dummy 加载、RTX PRO 6000 TP2 上只比较了连接器切换后的 131K 启动容量估计（11.65×/21.90×），没有实跑 batch 或同负载吞吐。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -2914,6 +3040,14 @@
     "vllm-ascend"
    ],
    "maturity": "mainstream",
+   "gain": [
+    {
+     "metric": "DP8 与 TP8 的同机长上下文对照",
+     "value": "DP8 的中位 TTFT 为 TP8 的约 1/3.44，聚合 uncached prefill 为 53,223 对 16,653 tok/s。版本：vLLM 0.25.0（dd10e03f95f94edbea1975c67ace3a35ec9a8a40）、CUDA 13.0、DeepEP 1.2.1+73b6ea4。设备：同一节点 8× B200 SXM6。负载：DeepSeek-V4-Flash-0731（7872f01b1d1fe23eabc4c98b48bffcef5a386062），并发 8，1M 输入、max_tokens=64，去前缀复用的 Federalist prose。对照：TP8+EP8；DP8 保持 EP8，仅副本化 attention/KV。这里用同节点桥接实验结果。",
+     "source": "https://github.com/vllm-project/vllm/issues/51454",
+     "evidence": "B"
+    }
+   ],
    "cost": [
     "每个独立副本需要重复驻留模型权重。",
     "局部缓存和活跃负载可能因路由策略失衡。"
@@ -2932,7 +3066,7 @@
     "https://docs.vllm.ai/en/stable/serving/data_parallel_deployment/",
     "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/support_matrix/supported_features.html"
    ],
-   "urls_more": 2,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2954,7 +3088,7 @@
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/parallel.py#L427"
    ],
-   "gain_note": "未查到",
+   "gain_note": "可用于评估 MLA 上 DP 与 TP 的长上下文并发权衡。两臂都为 EP8，数字不表示 MoE 专家分片单独带来的收益。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -3157,6 +3291,12 @@
      "value": "16K 输入单个配置：缓存命中时平均 TTFT 为冷缓存约 1/49，吞吐 2.32×。DGX Spark GB10、Qwen3-30B-A3B、vLLM 0.19.2rc1 cu130 nightly。报告同时指出应独立控制引擎预热。",
      "source": "https://github.com/vllm-project/vllm/issues/54227",
      "evidence": "B"
+    },
+    {
+     "metric": "首请求命中与无复用的 TTFT",
+     "value": "首请求冷缓存 348/353 ms，前置相同请求使之命中后 67/81 ms（各另测两轮）。版本：vLLM Python main 4527515cd、0.33.0 wheel 内核、PyTorch 2.14.0+cu130。设备：单张 A100 80GB。负载：Llama-3.1-8B-Instruct，4096 随机输入、32 输出、并发 1、每轮 10 请求。对照：每轮先清缓存，是否额外发 3 次与首请求相同的 warmup；可能叠加首次请求预热效应。",
+     "source": "https://github.com/vllm-project/vllm/issues/66698",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -3177,7 +3317,7 @@
     "https://docs.vllm.ai/en/stable/design/prefix_caching/",
     "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/support_matrix/supported_features.html"
    ],
-   "urls_more": 3,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -3213,7 +3353,8 @@
    ],
    "tags": [
     "prefix-cache"
-   ]
+   ],
+   "gain_note": "原帖指出了相同 warmup 提示占用 prefix cache 的偏差。其余请求 TTFT 中位数的差距很小，不应将首请求差值当全局增益。"
   },
   {
    "id": "tech/radix-attention",
@@ -3342,7 +3483,7 @@
     "https://docs.vllm.ai/en/stable/design/prefix_caching/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/kv_cache_utils.py#L539"
    ],
-   "urls_more": 1,
+   "urls_more": 2,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -3360,7 +3501,7 @@
      "source": "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/core/kv_cache_utils.py#L539"
     }
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到。同一硬件和负载的未隔离前缀命中数据可查到，使用唯一 cache_salt 在原帖只是修复建议。仍需固定模型、B/S、缓存预热与服务版本，对比同盐与异盐的命中/TTFT。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -3943,6 +4084,12 @@
      "value": "约 1/2，按位宽推导，另计尺度与对齐",
      "source": "https://docs.vllm.ai/en/stable/features/quantization/fp8/",
      "evidence": "A"
+    },
+    {
+     "metric": "FP8 权重和静态激活的服务延迟与吞吐",
+     "value": "BF16 权重 44.4 req/s、TTFT p50 547 ms；FP8 权重+BF16 KV 38.8 req/s、TTFT p50 660 ms，TPOT p50 为 13.7/7.7 ms。版本：vLLM 0.25.1，CUDA 13.0，FlashInfer 0.6.13，NVIDIA ModelOpt 0.46。设备：单张 B200（SM100）。负载：Mistral-24B，300 随机输入、64 输出、并发上限 64、1000 请求，预热后采样。对照：固定机器及 BF16 KV，BF16 权重路径比较 per-tensor-static-FP8 路径。",
+     "source": "https://github.com/vllm-project/vllm/issues/49723",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -3965,7 +4112,7 @@
     "https://docs.vllm.ai/en/stable/features/quantization/fp8/",
     "https://arxiv.org/abs/2209.05433"
    ],
-   "urls_more": 2,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -3997,7 +4144,8 @@
    ],
    "tags": [
     "quantization"
-   ]
+   ],
+   "gain_note": "这里比较 FP8 权重和激活的完整执行路径，保留 prefill 变慢且 TPOT 改善的实际取舍。FP8 KV 臂不参与该比较。"
   },
   {
    "id": "tech/mxfp4-weight-format",
@@ -4555,6 +4703,12 @@
      "value": "258.50 → 335.45 tok/s，20.44 → 15.27 ms。RTX 3080 Ti、Qwen3-0.6B、vLLM main a2fb482732，16,384 token 共享前缀，128 token 后缀，256 token 输出，并发 32，三轮交错测量。仅取两种设置的未打补丁基线列。",
      "source": "https://github.com/vllm-project/vllm/issues/61604",
      "evidence": "B"
+    },
+    {
+     "metric": "异步调度同一源码开关对照",
+     "value": "同步 258.50 tok/s、ITL 中位数 20.44 ms，异步 335.45 tok/s、15.27 ms。版本：vLLM main a2fb482732。设备：RTX 3080 Ti ×1。负载：Qwen3-0.6B，16,384 token 共享前缀+128 后缀，256 输出，200 prompts，并发 32，KV block 数设成使运行队列约容纳 4 条。对照：同一未打 hash 查找补丁版本，--no-async-scheduling；三轮交错测量。",
+     "source": "https://github.com/vllm-project/vllm/issues/61604",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -4803,6 +4957,12 @@
      "value": "10.96 ms（事件间隔口径）与 2.76 ms（首尾输出时差除以中间 token 间隔数）。8×RTX PRO 6000 Blackwell、DeepSeek-V4.1-Flash 实测，此对照只量化计数口径误差。",
      "source": "https://github.com/vllm-project/vllm/issues/56892",
      "evidence": "B"
+    },
+    {
+     "metric": "同一 SSE 样本的时间口径误差",
+     "value": "按 SSE chunk 的统计读到 10.96 ms，而基于首尾时差及实际输出 token 数的每 token 间隔均值为 2.76 ms。版本：vLLM 0.33.0rc1.dev988+gb4dffa509、FlashInfer 0.7.3。设备：8× RTX PRO 6000 Blackwell Max-Q（TP8）。负载：DeepSeek-V4.1-Flash，1222 输入、512 输出、batch/并发 1，生产闲置后单流请求。对照：同一响应中的 chunk 计数与 usage.completion_tokens；用后者计算均值仍无法恢复逐 token 分布。",
+     "source": "https://github.com/vllm-project/vllm/issues/56892",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -4812,7 +4972,7 @@
    "pitfalls": [
     {
      "hit": "未查到",
-     "fix": "未查到"
+     "fix": "未查到。#56892 是可复现的计数偏差，客户端未抛异常；仍缺与本技术直接相关的报错原文、触发版本和修法。"
     }
    ],
    "hardware_scope": [
@@ -4898,7 +5058,7 @@
     "https://opentelemetry.io/docs/specs/otlp/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/observability.py#L36"
    ],
-   "urls_more": 1,
+   "urls_more": 2,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -4920,7 +5080,7 @@
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/config/observability.py#L150"
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到。#60508 故障复盘明确 vLLM 0.26.0、OTel SDK 1.40.0、H100、Gemma 4 26B-A4B-IT，比较 traces 开启和加 NoOpMeterProvider。但两臂回放规模不同，生产样本的 batch、输入和输出长度未公开。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -4974,7 +5134,7 @@
     "https://kubernetes.io/docs/concepts/configuration/liveness-readiness-startup-probes/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/entrypoints/serve/instrumentator/health.py#L23"
    ],
-   "urls_more": 1,
+   "urls_more": 2,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -4992,7 +5152,7 @@
      "source": "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/entrypoints/serve/instrumentator/health.py#L23"
     }
    ],
-   "gain_note": "未查到",
+   "gain_note": "未查到固定模型、长度、并发、版本和卡数的探针负载对照。#60508 的 /health 超时是生产故障观察，探测节奏和带模型推理负载的基线未给出。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -5061,7 +5221,7 @@
     "https://docs.vllm.ai/en/stable/usage/metrics/",
     "https://docs.vllm.ai/en/stable/benchmarking/cli/"
    ],
-   "urls_more": 3,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -5098,7 +5258,8 @@
    ],
    "tags": [
     "serving"
-   ]
+   ],
+   "gain_note": "未查到。已有 vLLM V1 MRV2 的开放环 A/B 报告只有原型实现描述，未给引擎版本或负载分布。#66698 的负载并发 1，用于校验 warmup 与正式测量的隔离，不能替代 open-loop A/B。"
   },
   {
    "id": "tech/prefill-decode-disaggregation",
@@ -5552,6 +5713,14 @@
     "vllm-ascend"
    ],
    "maturity": "mainstream",
+   "gain": [
+    {
+     "metric": "Mistral 工具解析预处理功能组合的端到端开销",
+     "value": "关闭工具与推理解析相关配置时 3213 tok/s、平均 TTFT 101 ms；启用三项配置时 604 tok/s、平均 TTFT 39,013 ms。版本：vLLM 0.29.0、PyTorch 2.13.0+cu130。设备：两张 H200（TP2）。负载：Mistral-Small-4-119B-2603，200 请求，512 输入、256 输出，16 req/s，tool_choice=none。对照：同服务去掉 --tool-call-parser、--enable-auto-tool-choice、--reasoning-parser。三个开关同时改变，解析构造的热点来自报告的采样栈。",
+     "source": "https://github.com/vllm-project/vllm/issues/58145",
+     "evidence": "B"
+    }
+   ],
    "cost": [
     "模板、模型输出和解析器格式需要配套。",
     "应用负责参数语义校验和工具调用权限。"
@@ -5570,7 +5739,7 @@
     "https://docs.vllm.ai/en/stable/features/tool_calling/",
     "https://docs.vllm.ai/projects/ascend/en/latest/user_guide/support_matrix/supported_features.html"
    ],
-   "urls_more": 2,
+   "urls_more": 3,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -5592,7 +5761,7 @@
    "pitfall_sources": [
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/entrypoints/openai/chat_completion/serving.py#L1334"
    ],
-   "gain_note": "未查到",
+   "gain_note": "一手结果来自 Mistral 的服务端输入预处理。保留多开关对照范围，不能归因到流式输出工具解析单独的代价。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
@@ -5679,6 +5848,188 @@
    "tags": [
     "structured-output"
    ]
+  },
+  {
+   "id": "impl/atb-split-operation-dispatch",
+   "type": "impl",
+   "engine": "atb",
+   "name": "ATB Split｜算子创建、SoC 分流和工作区",
+   "tech": "tech/ascend-atb-execution",
+   "module": "src/ops/ops_infer/split/split_operation.cpp",
+   "symbols": [
+    "SplitOperation::ParamCheck",
+    "SplitOperation::CreateRunner",
+    "OperationBase::CreateRunnerFunc",
+    "OperationBase::Setup",
+    "OperationBase::Execute"
+   ],
+   "config": [
+    "SplitParam.splitDim",
+    "SplitParam.splitNum",
+    "SplitParam.splitSizes"
+   ],
+   "defaults": {
+    "splitDim": 0,
+    "splitNum": 2,
+    "splitSizes": []
+   },
+   "version_seen": "cann/ascend-transformer-boost@f4fd1569b712cda330236df81d1a496ae22ffa34",
+   "notes": "示例依次调用 CreateOperation、Setup、Execute。SplitOperation 校验切分维和输出数量，对 ASCEND_950 选 SplitAclnnRunner，另一分支选 SplitOpsRunner。OperationBase 准备 tiling 缓冲和工作区并委派给 runner。分支描述这个提交的 Split，平台支持受 kernel 包及参数校验约束。",
+   "urls": [
+    "https://gitcode.com/cann/ascend-transformer-boost/blob/f4fd1569b712cda330236df81d1a496ae22ffa34/src/ops/ops_infer/split/split_operation.cpp#L107-L154",
+    "https://gitcode.com/cann/ascend-transformer-boost/blob/f4fd1569b712cda330236df81d1a496ae22ffa34/src/atb/operation/operation_base.cpp#L468-L498"
+   ],
+   "urls_more": 5,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/atb-split-aclnn-launch",
+   "type": "impl",
+   "engine": "atb",
+   "name": "ATB Split｜ACLNN 两段式下发",
+   "tech": "tech/ascend-atb-execution",
+   "module": "src/ops/ops_infer/split/split_aclnn_runner.cpp",
+   "symbols": [
+    "SplitAclnnRunner::LoadAclnnFuncs",
+    "SplitAclnnRunner::SetAclNNWorkspaceExecutor",
+    "SplitAclnnRunner::LaunchAclnnKernel",
+    "AclnnRunner::ExecuteImpl"
+   ],
+   "config": [
+    "SplitParam.splitDim",
+    "SplitParam.splitNum",
+    "SplitParam.splitSizes"
+   ],
+   "defaults": {
+    "splitDim": 0,
+    "splitNum": 2,
+    "splitSizes": []
+   },
+   "version_seen": "cann/ascend-transformer-boost@f4fd1569b712cda330236df81d1a496ae22ffa34",
+   "notes": "splitSizes 非空选择 aclnnSplitWithSize，等分选择 aclnnSplitTensor。GetWorkspaceSize 接口返回工作区大小和 executor，LaunchAclnnKernel 将 workspaceBuffer、workspaceBufferSize、executor 和 Context 的执行流交给相应 ACLNN 执行接口。",
+   "urls": [
+    "https://gitcode.com/cann/ascend-transformer-boost/blob/f4fd1569b712cda330236df81d1a496ae22ffa34/src/ops/ops_infer/split/split_aclnn_runner.cpp#L27-L65",
+    "https://gitcode.com/cann/ascend-transformer-boost/blob/f4fd1569b712cda330236df81d1a496ae22ffa34/src/ops/ops_infer/split/split_aclnn_runner.cpp#L85-L140"
+   ],
+   "urls_more": 3,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/atb-split-mki-launch",
+   "type": "impl",
+   "engine": "atb",
+   "name": "ATB Split｜原生 KernelGraph 与 MKI 下发",
+   "tech": "tech/ascend-atb-execution",
+   "module": "src/ops/ops_infer/split/split_ops_runner.cpp",
+   "symbols": [
+    "SplitOpsRunner::SplitOpsRunner",
+    "OpsRunner::RunAllKernel",
+    "OpsRunner::RunKernel",
+    "MkiNodeImplement::OperationGetBestKernel",
+    "MkiNodeImplement::Run",
+    "SplitKernel::InitImpl",
+    "AsdOps::SplitOperation::GetBestKernel"
+   ],
+   "config": [
+    "SplitParam.splitDim",
+    "SplitParam.splitNum",
+    "SplitParam.splitSizes"
+   ],
+   "defaults": {
+    "splitDim": 0,
+    "splitNum": 2,
+    "splitSizes": []
+   },
+   "version_seen": "cann/ascend-transformer-boost@f4fd1569b712cda330236df81d1a496ae22ffa34",
+   "notes": "SplitOpsRunner 把参数封装进 KernelGraphNode。AsdOps::SplitOperation::GetBestKernel 根据 dtype、输出数及描述约束选核，SplitKernel::InitImpl 生成 tiling。OpsRunner 把当前 stream 交给节点，MkiNodeImplement 按 argsDeviceBuffer_ 是否存在选择 kernel_->RunWithArgs 或 kernel_->Run。公开 ATB 路径可追到这两个下发接口。",
+   "urls": [
+    "https://gitcode.com/cann/ascend-transformer-boost/blob/f4fd1569b712cda330236df81d1a496ae22ffa34/src/ops/ops_infer/split/split_ops_runner.cpp#L21-L53",
+    "https://gitcode.com/cann/ascend-transformer-boost/blob/f4fd1569b712cda330236df81d1a496ae22ffa34/src/atb/runner/ops_runner.cpp#L421-L451"
+   ],
+   "urls_more": 7,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/cann-ge-op-tune-compile",
+   "type": "impl",
+   "engine": "cann",
+   "name": "CANN GE｜算子调优图侧编译",
+   "tech": "tech/ascend-aoe-autotuning",
+   "module": "compiler/engines/nn_engine/optimizer/graph_optimizer/op_compiler/op_compiler_optune.cc",
+   "symbols": [
+    "OpCompilerOpTune::RunCompileProcess",
+    "OpCompilerFormatTune::SetTuneFormatReq",
+    "GenerateFormatTuneResult",
+    "CompileOpOnly"
+   ],
+   "config": [
+    "ge.mdl_bank_path",
+    "ge.op_bank_path",
+    "TUNE_BANK_PATH"
+   ],
+   "version_seen": "cann/ge@da50568fad3cea435f44a514e7358482f3894de8",
+   "notes": "GE FE 准备可调格式候选，执行预编译及 LxFusionOptimize，按知识库更新图上格式，再用 COMPILE_STRATEGY_OP_SPEC 重新编译算子并生成节点 JSON。GE 文档规定知识库的加载优先级，AOE 最优策略文件的写入源码另有证据缺口。",
+   "urls": [
+    "https://gitcode.com/cann/ge/blob/da50568fad3cea435f44a514e7358482f3894de8/compiler/engines/nn_engine/optimizer/graph_optimizer/op_compiler/op_compiler_optune.cc#L25-L64",
+    "https://gitcode.com/cann/ge/blob/da50568fad3cea435f44a514e7358482f3894de8/compiler/engines/nn_engine/optimizer/graph_optimizer/op_compiler/op_compiler_optune.cc#L65-L114"
+   ],
+   "urls_more": 2,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/cann-aoe-engine-internals-gap",
+   "type": "impl",
+   "engine": "cann",
+   "name": "AOE｜JSON 解析、搜索和产物写回源码缺口",
+   "tech": "tech/ascend-aoe-autotuning",
+   "module": "未查到",
+   "config": [
+    "aoe_config_file",
+    "tune_ops_name",
+    "tune_ops_type",
+    "tune_optimization_level",
+    "TUNE_BANK_PATH",
+    "ASCEND_CACHE_PATH",
+    "ASCEND_WORK_PATH"
+   ],
+   "version_seen": "源码提交未查到；CANN 9.0.0、8.3.RC1、8.0.RC2 官方文档",
+   "notes": "未查到 libaoe_tuning.so 内负责 JSON 解析、候选搜索调度和结果文件写入的实现文件或符号。已查 TorchAir 动态加载与调用、CANN GE 调优编译、asc-devkit 和 cann-recipes-infer。CANN 9.0.0 的 TensorFlow 接入文档公开 JSON 选项。CANN 8.0.RC2 文档给出的知识库路径优先级为 TUNE_BANK_PATH > ASCEND_CACHE_PATH > 默认，默认按 graph/op 和 SoC 分目录。文档所列默认 OM 输出在 WORK_PATH/aoe_workspace 下的 tunespace/result 目录，ASCEND_WORK_PATH 可重定向。CANN 8.3.RC1 的写回目录结构见对应版本文档。",
+   "urls": [
+    "https://www.hiascend.com/document/detail/zh/canncommercial/900/devaids/aoe/aoepar_16_074.html",
+    "https://www.hiascend.com/document/detail/zh/canncommercial/80RC2/devaids/auxiliarydevtool/aoerc_16_0012.html"
+   ],
+   "urls_more": 1,
+   "evidence": "D",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
   },
   {
    "id": "impl/mindie-continuous-batching",
@@ -6189,6 +6540,120 @@
     "https://github.com/Ascend/MindIE-LLM/blob/ec48dcdccefa0fb0d8b48f6d967edd76aeea58c8/mindie_llm/runtime/model_runner/model_runner.py#L250-L276"
    ],
    "urls_more": 2,
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/msmodelslim-v1-calibration-pipeline",
+   "type": "impl",
+   "engine": "msmodelslim",
+   "name": "msModelSlim｜YAML 校准与量化流水线",
+   "tech": "tech/ascend-msmodelslim-calibration",
+   "module": "msmodelslim/core/quant_service/modelslim_v1/quant_service.py",
+   "symbols": [
+    "ModelslimV1QuantService.quantize",
+    "ModelslimV1ServiceConfig",
+    "get_dataset_by_name",
+    "runner.run"
+   ],
+   "config": [
+    "--model_path",
+    "--save_path",
+    "--config",
+    "--device",
+    "apiversion",
+    "spec.dataset",
+    "spec.prior",
+    "spec.process",
+    "spec.save",
+    "spec.runner"
+   ],
+   "defaults": {
+    "device": "npu",
+    "dataset": "mix_calib.jsonl",
+    "runner": "auto",
+    "prior": [],
+    "process": [],
+    "save": []
+   },
+   "version_seen": "Ascend/msModelSlim@20db10875b2c3f55ce9c8731ed544effbf051e0e",
+   "notes": "CLI 用 --config 指定 YAML。modelslim_v1 服务按 spec.prior 运行先验阶段并传递上下文，主阶段加载 spec.dataset，按顺序添加量化处理器和保存器，经 runner.run(calib_data=...) 执行。auto 根据 device_indices 是否包含多设备选择逐层或数据并行逐层 runner。",
+   "urls": [
+    "https://github.com/Ascend/msModelSlim/blob/20db10875b2c3f55ce9c8731ed544effbf051e0e/msmodelslim/core/quant_service/modelslim_v1/quant_service.py#L122-L150",
+    "https://github.com/Ascend/msModelSlim/blob/20db10875b2c3f55ce9c8731ed544effbf051e0e/msmodelslim/core/quant_service/modelslim_v1/quant_service.py#L184-L234"
+   ],
+   "urls_more": 4,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/msmodelslim-ascendv1-checkpoint-saver",
+   "type": "impl",
+   "engine": "msmodelslim",
+   "name": "msModelSlim｜AscendV1 量化检查点导出",
+   "tech": "tech/ascend-msmodelslim-calibration",
+   "module": "msmodelslim/core/quant_service/modelslim_v1/save/ascendv1.py",
+   "symbols": [
+    "AscendV1Saver",
+    "AscendV1Saver.post_run",
+    "ASCENDV1_DESC_JSON_NAME",
+    "ASCENDV1_SAFETENSORS_NAME"
+   ],
+   "config": [
+    "--save_path",
+    "spec.save[].type"
+   ],
+   "version_seen": "Ascend/msModelSlim@20db10875b2c3f55ce9c8731ed544effbf051e0e",
+   "notes": "显式配置 spec.save[].type 为 ascendv1_saver。保存器写入量化张量及 quant_model_description.json，并在 post_run 写版本、model_quant_type、group_size、metadata 等信息，关闭 JSON 和 safetensors 写入器。权重输出基准名为 quant_model_weights.safetensors。",
+   "urls": [
+    "https://github.com/Ascend/msModelSlim/blob/20db10875b2c3f55ce9c8731ed544effbf051e0e/msmodelslim/core/quant_service/modelslim_v1/save/ascendv1.py#L135-L174",
+    "https://github.com/Ascend/msModelSlim/blob/20db10875b2c3f55ce9c8731ed544effbf051e0e/msmodelslim/core/quant_service/modelslim_v1/save/ascendv1.py#L222-L252"
+   ],
+   "urls_more": 4,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/sglang-decode-retraction-reprefill",
+   "type": "impl",
+   "engine": "sglang",
+   "name": "SGLang｜Decode 撤回、KV 释放和重新 Prefill",
+   "tech": "tech/kv-recompute-preemption",
+   "module": "python/sglang/srt/managers/scheduler_components/request_retirer.py",
+   "symbols": [
+    "RequestRetirer.retract",
+    "Scheduler.update_running_batch",
+    "ScheduleBatch.retract_decode",
+    "Req.reset_for_retract"
+   ],
+   "config": [
+    "SGLANG_RETRACT_DECODE_STEPS"
+   ],
+   "defaults": {
+    "SGLANG_RETRACT_DECODE_STEPS": 20
+   },
+   "version_seen": "sgl-project/sglang@448764da636a8500015f461afbb91e3d2d23c94f",
+   "notes": "Decode 分配不足触发 retract_decode，对可恢复请求释放设备 KV、清除前缀和计算进度并重新入队。非 PD decode 分支依据 req.resumable_by_reprefill 判定能否重算恢复。PD decode 另有主机 KV 备份和 rebootstrap 路径。SGLANG_RETRACT_DECODE_STEPS 属于撤回后为剩余请求预留空间的驱逐量估计。",
+   "urls": [
+    "https://github.com/sgl-project/sglang/blob/448764da636a8500015f461afbb91e3d2d23c94f/python/sglang/srt/managers/scheduler_components/request_retirer.py#L117-L139",
+    "https://github.com/sgl-project/sglang/blob/448764da636a8500015f461afbb91e3d2d23c94f/python/sglang/srt/managers/scheduler.py#L5249-L5286"
+   ],
+   "urls_more": 7,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
    "stack": [
     "nvidia"
    ],
@@ -7280,6 +7745,275 @@
    "updated_by": "正德"
   },
   {
+   "id": "impl/torchair-aoe-config-entry",
+   "type": "impl",
+   "engine": "torchair",
+   "name": "TorchAir AOE｜配置校验和 GE 图触发",
+   "tech": "tech/ascend-aoe-autotuning",
+   "module": "python/torchair/configs/aoe_config.py",
+   "symbols": [
+    "_AoeConfig.__init__",
+    "_AoeConfig.as_dict",
+    "FileValue",
+    "MustExistedPathValue",
+    "GeConcreteGraph.should_auto_tune",
+    "GeConcreteGraph.auto_tune"
+   ],
+   "config": [
+    "CompilerConfig.aoe_config.aoe_mode",
+    "CompilerConfig.aoe_config.work_path",
+    "CompilerConfig.aoe_config.aoe_config_file"
+   ],
+   "defaults": {
+    "aoe_mode": null,
+    "work_path": "./",
+    "aoe_config_file": null
+   },
+   "version_seen": "Ascend/torchair@e1118e8b0fc1b95190ab53b732c0872989550e20",
+   "notes": "该提交显式 aoe_mode 接受字符串 2，未设时不导出 AOE 选项。work_path 校验目录，aoe_config_file 校验已有文件。该 GE 路径只在配置启用的静态图触发一次 graph.auto_tune(inputs)。",
+   "urls": [
+    "https://github.com/Ascend/torchair/blob/e1118e8b0fc1b95190ab53b732c0872989550e20/python/torchair/configs/aoe_config.py#L9-L22",
+    "https://github.com/Ascend/torchair/blob/e1118e8b0fc1b95190ab53b732c0872989550e20/python/torchair/configs/_option_base.py#L128-L152"
+   ],
+   "urls_more": 3,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/torchair-aoe-session-dispatch",
+   "type": "impl",
+   "engine": "torchair",
+   "name": "TorchAir AOE｜调优会话提交",
+   "tech": "tech/ascend-aoe-autotuning",
+   "module": "torchair/concrete_graph/session.cpp",
+   "symbols": [
+    "Session::AutoTuneGraph",
+    "NpuAoe::AoeTuningInitialize",
+    "NpuAoe::LoadAoeFunc",
+    "NpuAoe::RunAoeTuning",
+    "AoeTuningGraph"
+   ],
+   "config": [
+    "aoe_mode",
+    "work_path",
+    "job_type",
+    "ge.aoe_config_file"
+   ],
+   "version_seen": "Ascend/torchair@e1118e8b0fc1b95190ab53b732c0872989550e20",
+   "notes": "Session::AutoTuneGraph 用 work_path 和 aoe_mode 初始化 AOE，其中 aoe_mode 传给底层 job_type；复制 GE 图后提交 NpuAoe。NpuAoe 动态加载 libaoe_tuning.so，创建会话、绑定 GE Session、图和样例输入，调用 AoeTuningGraph 后销毁会话。npu_aoe.cpp:38–39 检查 ge.aoe_config_file 却按 aoe_config_file 取值，实际传参效果尚未运行验证。",
+   "urls": [
+    "https://github.com/Ascend/torchair/blob/e1118e8b0fc1b95190ab53b732c0872989550e20/torchair/concrete_graph/session.cpp#L236-L250",
+    "https://github.com/Ascend/torchair/blob/e1118e8b0fc1b95190ab53b732c0872989550e20/torchair/concrete_graph/npu_aoe.cpp#L18-L49"
+   ],
+   "urls_more": 2,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-ascend-310p-build-target",
+   "type": "impl",
+   "engine": "vllm-ascend",
+   "name": "vLLM Ascend 310P｜构建目标与芯片标识",
+   "tech": "tech/ascend-310p-compatibility",
+   "module": "setup.py",
+   "symbols": [
+    "get_chip_type",
+    "gen_build_info"
+   ],
+   "config": [
+    "SOC_VERSION"
+   ],
+   "defaults": {
+    "Dockerfile_310p_SOC_VERSION": "ascend310p1"
+   },
+   "version_seen": "vllm-project/vllm-ascend@c64ace678d12d5a48671d929c76f723f8158876c",
+   "notes": "Dockerfile.310p 将 SOC_VERSION 默认设为 ascend310p1。setup.py 未获得显式 SOC_VERSION 时尝试用 npu-smi 识别芯片，生成 _build_info.py，并把映射后的 -DSOC_VERSION 传给 CMake。该默认值只适用于这个 Dockerfile。",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/setup.py#L74-L125",
+    "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/setup.py#L141-L166"
+   ],
+   "urls_more": 3,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-ascend-310p-attention-dispatch",
+   "type": "impl",
+   "engine": "vllm-ascend",
+   "name": "vLLM Ascend 310P｜兼容 Attention 后端",
+   "tech": "tech/ascend-310p-compatibility",
+   "module": "vllm_ascend/platform.py",
+   "symbols": [
+    "NPUPlatform._select_attn_backend_cls",
+    "AscendAttentionBackend310",
+    "AscendAttentionBackendImpl310.forward_paged_attention",
+    "AscendAttentionBackendImpl310.forward_prefill_310",
+    "AscendAttentionBackendImpl310.forward_chunked_prefill_310",
+    "NPUWorker310"
+   ],
+   "version_seen": "vllm-project/vllm-ascend@c64ace678d12d5a48671d929c76f723f8158876c",
+   "notes": "310P 硬件 profile 将默认 worker 指向 NPUWorker310，并选择 COMPATIBILITY 注意力族。平台分派到 AscendAttentionBackend310，KV 张量使用对齐到 16 的五维布局，后端含 paged decode、prefill 和 chunked prefill 分支。内核块大小支持 128 与 64，传入默认值受支持时保留，否则回退 128，实际使用值取决于传入的默认值。",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/vllm_ascend/platform.py#L329-L369",
+    "https://github.com/vllm-project/vllm-ascend/blob/c64ace678d12d5a48671d929c76f723f8158876c/vllm_ascend/_310p/attention/attention_v1.py#L48-L76"
+   ],
+   "urls_more": 7,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-qwen3-vl-encoder-data-parallel",
+   "type": "impl",
+   "engine": "vllm",
+   "name": "vLLM Qwen3-VL｜视觉编码器数据并行",
+   "tech": "tech/multimodal-encoder-data-parallelism",
+   "module": "vllm/model_executor/models/qwen3_vl.py",
+   "symbols": [
+    "Qwen3VLForConditionalGeneration",
+    "get_load_balance_assignment",
+    "run_dp_sharded_mrope_vision_model",
+    "tensor_model_parallel_all_gather"
+   ],
+   "config": [
+    "--mm-encoder-tp-mode",
+    "--tensor-parallel-size"
+   ],
+   "defaults": {
+    "mm_encoder_tp_mode": "weights"
+   },
+   "version_seen": "vllm-project/vllm@88d34c6409e9fb3c7b8ca0c04756f061d2099eb1",
+   "notes": "Qwen3-VL 图像和视频分支启用 data 时，在同一引擎的 TP ranks 上各持一份编码器权重，按输入 patch 数分配媒体数据，各 rank 独立编码，再 all-gather 并恢复输入顺序。支持范围由模型实现决定。",
+   "urls": [
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/models/qwen3_vl.py#L1592-L1647",
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/models/qwen3_vl.py#L2088-L2129"
+   ],
+   "urls_more": 6,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-generation-latency-prometheus",
+   "type": "impl",
+   "engine": "vllm",
+   "name": "vLLM｜生成延迟的 Prometheus 采集",
+   "tech": "tech/inference-latency-observability",
+   "module": "vllm/v1/metrics/loggers.py",
+   "symbols": [
+    "PrometheusStatLogger",
+    "IterationStats.update_from_output",
+    "IterationStats.update_from_finished_request"
+   ],
+   "version_seen": "vllm-project/vllm@88d34c6409e9fb3c7b8ca0c04756f061d2099eb1",
+   "notes": "vllm:time_to_first_token_seconds 记录请求到达至首输出，vllm:inter_token_latency_seconds 记录连续 NEW_TOKEN 输出事件间隔。vllm:request_time_per_output_token_seconds 在完成时记录 (末输出时刻−首输出时刻)/(输出 token 数−1)，输出数不满两个时记 0。vllm:request_queue_time_seconds 取首次 QUEUED 到首次 SCHEDULED。一次输出事件可能含多个 token。",
+   "urls": [
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/metrics/loggers.py#L754-L828",
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/metrics/loggers.py#L878-L894"
+   ],
+   "urls_more": 4,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-bench-serving-stream-latency",
+   "type": "impl",
+   "engine": "vllm",
+   "name": "vLLM Bench｜流式客户端 TTFT、ITL 和 TPOT",
+   "tech": "tech/inference-latency-observability",
+   "module": "vllm/benchmarks/serve.py",
+   "symbols": [
+    "calculate_metrics",
+    "async_request_openai_completions"
+   ],
+   "config": [
+    "--percentile-metrics",
+    "--metric-percentiles"
+   ],
+   "defaults": {
+    "generative_percentile_metrics": "ttft,tpot,itl",
+    "metric_percentiles": "99"
+   },
+   "version_seen": "vllm-project/vllm@88d34c6409e9fb3c7b8ca0c04756f061d2099eb1",
+   "notes": "OpenAI completions 客户端按流式 choices 块的到达时刻记录 TTFT 和块间 ITL。TPOT 使用 (末个 choices 块到达耗时−TTFT)/(输出 token 数−1)，输出数小于 2 时该请求不进入 TPOT 分布。客户端采样含传输等服务外开销，并使用独立的计时边界。",
+   "urls": [
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/benchmarks/serve.py#L392-L458",
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/benchmarks/serve.py#L1435-L1452"
+   ],
+   "urls_more": 2,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
+   "id": "impl/vllm-structured-speculative-grammar-rollback",
+   "type": "impl",
+   "engine": "vllm",
+   "name": "vLLM｜草稿 token 语法状态试探与回退",
+   "tech": "tech/structured-constraint-state-rollback",
+   "module": "vllm/v1/structured_output/__init__.py",
+   "symbols": [
+    "StructuredOutputManager.grammar_bitmask",
+    "XgrammarGrammar.accept_tokens",
+    "XgrammarGrammar.validate_tokens",
+    "XgrammarGrammar.rollback",
+    "GrammarMatcher.rollback"
+   ],
+   "config": [
+    "--structured-outputs-config",
+    "--speculative-config"
+   ],
+   "defaults": {
+    "structured_outputs_backend": "auto"
+   },
+   "version_seen": "vllm-project/vllm@88d34c6409e9fb3c7b8ca0c04756f061d2099eb1",
+   "notes": "调度期按草稿位置填 mask，暂时 accept_tokens 推进语法状态，计数后统一 rollback。XGrammar matcher 的回滚容量来自 num_speculative_tokens，候选校验也撤销试探推进。Scheduler 随后向语法提交实际保留的输出 token。",
+   "urls": [
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/structured_output/__init__.py#L186-L218",
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/v1/structured_output/__init__.py#L248-L275"
+   ],
+   "urls_more": 5,
+   "evidence": "A",
+   "updated_at": "2026-11-22",
+   "stack": [
+    "nvidia"
+   ],
+   "status": "candidate",
+   "updated_by": "正德"
+  },
+  {
    "id": "impl/vllm-scheduler",
    "type": "impl",
    "engine": "vllm",
@@ -7875,6 +8609,896 @@
    "updated_by": "正德"
   },
   {
+   "id": "case/20261118-01",
+   "type": "case",
+   "name": "DeepSeek-V4.1-Flash W4A8 在…",
+   "one_line": "推理框架(PD分离)",
+   "why": "DeepSeek-V4.1-Flash W4A8 在 A3(910C)+A2(910B3) 上跑通，含 PD 分离 CED 与 719 tok/s 聚合吞吐",
+   "principle": "起服方式：shell 脚本 + 环境变量　推理栈：vllm-ascend；A3 镜像 quay.nju.edu.cn/ascend/vllm-ascend:deepseek-v4.1-flash-a3；A2 基础镜像 ...:deepseek-v4.1-flash-openeuler，经 scripts/build_image.sh 烘焙为 dsv41-a2:v8",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "parallel",
+    "serving"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "engine_note": "vllm-ascend；A3 镜像 quay.nju.edu.cn/ascend/vllm-ascend:deepseek-v4.1-flash-a3；A2 基础镜像 ...:deepseek-v4.1-flash-openeuler，经 scripts/build_image.sh 烘焙为 dsv41-a2:v8",
+   "hardware_scope": [
+    "A3 / 910C / 910_93：8 卡 16 die（/dev/davinci0..15）；A2 / 910B / 910B3：8 卡 8 device（"
+   ],
+   "pitfalls": [
+    {
+     "hit": "长文静默读错：BAT_TOKENS=2048 未配 V41_KV32_REPACK=1 时，KV 池超 32 位块边界（33,994 块 > 上界），块号回绕",
+     "fix": "根因：块号回绕导致不同请求共享同一块　修法：BAT_TOKENS=2048 必须与 V41_KV32_REPACK=1 成对；重排把块上限 29,076→32,768（+12.7%）。实测越界组 24~25% 请求输出级偏离，A3 负控 12/12 FAIL"
+    },
+    {
+     "hit": "重启后起服卡在 `rtsMallocHost 207001`",
+     "fix": "根因：残留 VLLM::EngineCore / VLLM::Worker_* 进程；进程名里没有 `vllm serve`，pkill -f \"vllm serve\" 杀不到　修法：重启前确认无残留 EngineCore / Worker_* 进程再起服"
+    },
+    {
+     "hit": "健康检查永远是 503、看起来像服务挂死",
+     "fix": "根因：企业 Squid 代理劫持 127.0.0.1，返回 503 HTML 页面　修法：curl 返回 HTML 而非 JSON 即为代理劫持；脚本默认补 no_proxy=127.0.0.1,localhost,::1（KEEP_PROXY_FOR_LOCALHOST=1 可关掉）"
+    },
+    {
+     "hit": "长 prompt 首 token 从 1.1 s 涨到 8 s（6~7×）",
+     "fix": "根因：GPU_UTIL=0.94 换取约 +9% KV 容量　修法：长上下文场景保持默认 0.92，不要为多拿 KV 调高"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://gitee.com/zuolg/deepseek-v4.1-flash-ascend910B"
+   ],
+   "evidence": "B",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "原文未给（README 内含 2026-09-18 的上游 PR 合入记录；仓库 1088 次提交）",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261118-02",
+   "type": "case",
+   "name": "昇腾 910B + Qwen3.5-9B Docke…",
+   "one_line": "中型模型(8B-32B)",
+   "why": "昇腾 910B + Qwen3.5-9B Docker 推理、性能与精度实验指导书（vLLM-Ascend v0.19.1rc1）",
+   "principle": "起服方式：yaml + 远程探测脚本　推理栈：vLLM-Ascend v0.19.1rc1；镜像 quay.io/ascend/vllm-ascend:v0.19.1rc1（镜像站 m.daocloud.io/quay.io/ascend/vllm-ascend:v0.19.1rc1）",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "serving"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "engine_note": "vLLM-Ascend v0.19.1rc1；镜像 quay.io/ascend/vllm-ascend:v0.19.1rc1（镜像站 m.daocloud.io/quay.io/ascend/vllm-ascend:v0.19.1rc1）",
+   "hardware_scope": [
+    "A2 / 910B / 910B3（Atlas 800 A2 类服务器），单卡"
+   ],
+   "pitfalls": [
+    {
+     "hit": "`model type ... not supported`",
+     "fix": "根因：镜像内 vllm / vllm_ascend / transformers 版本不匹配　修法：升级到含 Qwen3.5 适配的匹配镜像，并记录完整三件套版本号"
+    },
+    {
+     "hit": "权重加载 OOM",
+     "fix": "根因：max_model_len 与 gpu_mem_util 初始值对 64 GB 卡偏大　修法：先降到 max_model_len 4096 / gpu_mem_util 0.85 并清残留进程；仍失败再 TP=2"
+    },
+    {
+     "hit": "容器里看不到 NPU",
+     "fix": "根因：device / driver / dcmi 挂载缺失　修法：检查 driver、dcmi 与 /dev/davinci* 挂载"
+    },
+    {
+     "hit": "服务进程 5 秒后退出",
+     "fix": "根因：首因通常被末尾二次报错掩盖　修法：看 bootstrap log 与最新 vllm_run*.log，找第一条异常，不要只看末尾"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://raw.gitcode.com/brucelwang/Infraops_6889/raw/openlab-ops/docs/guides/2026-07-15-ascend-910b-qwen3.5-9b-docker-lab-guide.md"
+   ],
+   "evidence": "C",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "2026-07-15",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261118-03",
+   "type": "case",
+   "name": "Qwen3-ASR-1.7B 在 910B 与 At…",
+   "one_line": "语音(ASR)",
+   "why": "Qwen3-ASR-1.7B 在 910B 与 Atlas 300I DUO(310P) 双平台起服（vLLM-Ascend v0.23.0 官方文档）",
+   "principle": "起服方式：vllm serve + docker run　推理栈：vLLM-Ascend v0.23.0；A2 镜像 quay.io/ascend/vllm-ascend（v0.23.0 通用镜像），300I DUO 镜像 quay.io/ascend/vllm-ascend:nightly-releases-v0.23.0-310p",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "multimodal",
+    "serving"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "engine_note": "vLLM-Ascend v0.23.0；A2 镜像 quay.io/ascend/vllm-ascend（v0.23.0 通用镜像），300I DUO 镜像 quay.io/ascend/vllm-ascend:nightly-releases-v0.23.0-310p",
+   "hardware_scope": [
+    "A2 / 910B / 910B3（910B 64GB）×1，或 310P / Atlas 300I DUO（48GB）×1"
+   ],
+   "gain": [
+    {
+     "metric": "结论",
+     "value": "文档只给 WER/CER 评测口径与调优起点表",
+     "source": "https://raw.githubusercontent.com/vllm-project/vllm-ascend/v0.23.0/docs/source/tutorials/models/Qwen3-ASR-1.7B.md",
+     "evidence": "A"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "Atlas 300I DUO 启动时 OOM",
+     "fix": "根因：自动探测出的长上下文会建全因果 attention mask，显存随 max_model_len 二次增长　修法：必须显式给 --max-model-len 保守值（如 4096），验证有余量再加大"
+    },
+    {
+     "hit": "300I DUO 源码安装后运行异常",
+     "fix": "根因：源码安装会拉进 triton 与 triton-ascend　修法：运行前 pip uninstall -y triton-ascend triton"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://raw.githubusercontent.com/vllm-project/vllm-ascend/v0.23.0/docs/source/tutorials/models/Qwen3-ASR-1.7B.md"
+   ],
+   "evidence": "A",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "v0.23.0 文档版本（原文未给具体发布日）",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261118-04",
+   "type": "case",
+   "name": "Qwen3-Dense 家族在 A2/A3 与 At…",
+   "one_line": "8B量化)",
+   "why": "Qwen3-Dense 家族在 A2/A3 与 Atlas 300I DUO 上的量化部署（W8A8/W4A8/W4A4/W8A8SC-310，官方 v0.23.0 文档）",
+   "principle": "起服方式：vllm serve + docker run　推理栈：vLLM-Ascend v0.21.0 验证并撰写，v0.21.0 及以后稳定；300I DUO 用 vllm-ascend:nightly-releases-v0.23.0-310p",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "quantization",
+    "serving"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "engine_note": "vLLM-Ascend v0.21.0 验证并撰写，v0.21.0 及以后稳定；300I DUO 用 vllm-ascend:nightly-releases-v0.23.0-310p",
+   "hardware_scope": [
+    "A3 / 910C / 910_93（64GB×16 die）；A2 / 910B / 910B3（64GB×8）；310P / Atlas 300I DUO（"
+   ],
+   "gain": [
+    {
+     "metric": "结论",
+     "value": "可用 AISBench（ais_bench --models vllm_api_stream_chat --datasets gsm8k_gen_0_shot_cot_str_perf --mode perf --num-prompts 360）或 vllm bench serve 自行采集",
+     "source": "https://raw.githubusercontent.com/vllm-project/vllm-ascend/v0.23.0/docs/source/tutorials/models/Qwen3-Dense.md",
+     "evidence": "A"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "300I DUO 上 OOM / attention mask 分配过大",
+     "fix": "根因：310P 部署时若不给显式 --max-model-len，自动推导的大上下文会导致超大 attention mask 分配　修法：必须显式给 --max-model-len（本文示例 16384 / 20480），官方文档在 300I DUO 一节专门加粗提示"
+    },
+    {
+     "hit": "300I DUO 源码安装后拉起失败",
+     "fix": "根因：源码安装会拉进 triton 与 triton-ascend　修法：pip uninstall -y triton-ascend triton"
+    },
+    {
+     "hit": "拿 A2/A3 的 W8A8 权重在 300I DUO 上跑不起来",
+     "fix": "根因：310P 需要 W8A8SC-310 量化权重与 -310p 镜像　修法：用 Eco-Tech/Qwen3-*-w8a8sc-310-vllm 仓，并加 --load-format sharded_state"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://raw.githubusercontent.com/vllm-project/vllm-ascend/v0.23.0/docs/source/tutorials/models/Qwen3-Dense.md"
+   ],
+   "evidence": "A",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "v0.23.0 文档版本（原文未给具体发布日）",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261121-01",
+   "type": "case",
+   "name": "Qwen3-8B BF16 在单张 910B2 裸金…",
+   "one_line": "裸金属单卡部署：vLLM 0.23.0 + vllm_ascend，单并发 TPOT 82.73 ms，附 5 条环境踩坑原文",
+   "why": "Qwen3-8B BF16 在单张 910B2 裸金属上跑通：vLLM 0.23.0 + vllm_ascend，单并发 TPOT 82.73 ms，附 5 条环境踩坑原文",
+   "principle": "起服方式：vLLM OpenAI API server（CLI 参数）　关键参数：--enforce-eager；--max-model-len 2048；--gpu-memory-utilization 0.8　命令/现场：原文未给完整命令行（正文只列出以上三个关键参数原文，模型路径与端口未贴）　说明：单卡、BF16、--enforce-eager 关闭图模式（下篇才做 ACLGraph/npugraph_ex 优化）　推理栈：vLLM 0.23.0 + vllm_ascend（原文只给 vLLM 版本号与 vllm_ascend 名称，未给 vllm_ascend 的 tag）",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "serving"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "engine_note": "vLLM 0.23.0 + vllm_ascend（原文只给 vLLM 版本号与 vllm_ascend 名称，未给 vllm_ascend 的 tag）",
+   "hardware_scope": [
+    "A2 / 910B / 910B2（原文写 Ascend 910B2，未见 910B3/B4 字样）"
+   ],
+   "gain": [
+    {
+     "metric": "起服/加载",
+     "value": "权重加载 6.02 s；引擎初始化 3.72 s",
+     "source": "https://juejin.cn/post/7709320849258332170",
+     "evidence": "B"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "EC0010: Failed to import Python module [AttributeError: `np.float_` was removed in the NumPy 2.0 release. Use `np.float64` instead..] ，随后 GEInitialize failed",
+     "fix": "根因：环境里装了 numpy 2.x，vllm_ascend / CANN Python 侧仍引用已删除的 np.float_　修法：把 numpy 锁到 1.26.4"
+    },
+    {
+     "hit": "OSError: libatb.so: cannot open shared object file → undefined symbol: CheckLogLevel → ImportError: libascend_hal.so（三连）",
+     "fix": "根因：三个独立原因叠加：① LD_LIBRARY_PATH 在 Python 进程内设置无效（动态链接器已在 execve 时读完）；② ATB 的 cxx_abi_0 / cxx_abi_1 两个分支被同时挂上；③ PYTHONPATH 里残留旧路径，且在 source CANN set_env.sh 之后才清理　修法：LD_LIBRARY_PATH 必须在启动进程前（shell 里 export）设好；ATB 的 cxx_abi 分支要与编译 torch 的 GCC ABI 对齐，只挂一个；清 PYTHONPATH 必须在 source CANN set_env.sh 之前做"
+    },
+    {
+     "hit": "fatal error: Python.h: No such file or directory（W8A8 权重量化 JIT 编译时）",
+     "fix": "根因：缺少 Python 开发头文件　修法：补装 python3.10-dev / 对应 include/python3.10 头文件"
+    },
+    {
+     "hit": "ERROR [config.py:29] Failed to import Triton kernels. Error: cannot import name 'constexpr_function' from 'triton.runtime.jit'",
+     "fix": "根因：triton 与 vllm_ascend 版本不匹配　修法：原文判为非致命告警，服务可正常起；未给修复动作"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://juejin.cn/post/7709320849258332170"
+   ],
+   "evidence": "B",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "2026-11-18",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261121-02",
+   "type": "case",
+   "name": "Qwen3-8B-W8A8 单张 910B",
+   "one_line": "推理框架横向对比（MindIE vs vLLM-Ascend）：MindIE 2.1RC1 开 prefix cache 把 ShareGPT 总吞吐从 3143.94 拉到 6256.39 tok/s（+99.0%）",
+   "why": "Qwen3-8B-W8A8 单张 910B：MindIE 2.1RC1 开 prefix cache 把 ShareGPT 总吞吐从 3143.94 拉到 6256.39 tok/s（+99.0%）",
+   "principle": "起服方式：mindie serve（GPUStack 简化写法）　推理栈：对照两条栈：vLLM-Ascend v0.9.1；MindIE 2.1RC1",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "serving"
+   ],
+   "engines": [
+    "vllm-ascend",
+    "mindie"
+   ],
+   "engine_note": "对照两条栈：vLLM-Ascend v0.9.1；MindIE 2.1RC1",
+   "hardware_scope": [
+    "A2 / 910B（GPUStack 文档只写 Ascend 910B，未细到 910B3/910B4）"
+   ],
+   "pitfalls": [
+    {
+     "hit": "原文未报错，但文档内部模型名自相矛盾：标题与命令写 Qwen3-8B，Experimental Setup 一节写 Qwen/Qwen3-30B-A3B",
+     "fix": "根因：文档模板复用未改干净，或 baseline 与目标模型不是同一个　修法：引用这组数字时必须标注「模型名原文不一致」；复现前先确认权重是 8B 还是 30B-A3B，否则吞吐差一个量级"
+    },
+    {
+     "hit": "加 --max-batch-size=400 --max-prefill-batch-size=200 后总吞吐从 6256.39 掉到 6063.89",
+     "fix": "根因：大 prefill batch 在单卡 910B 上把 decode 挤掉，长序列场景收益被抵消（原文只给结果，未给 profiling 归因）　修法：单卡 Qwen3-8B 保持默认 batch，只开 --enable-prefix-caching"
+    },
+    {
+     "hit": "直接照抄最优命令到裸 MindIE 环境起不来",
+     "fix": "根因：`mindie serve vllm-ascend/...` 是 GPUStack 的简化命令，需要 GPUStack 把它映射成 MindIE 的 JSON 配置再交给 mindieservice_daemon　修法：裸 MindIE 需自行写 config.json / mindie-service 配置；或用 GPUStack 部署该模型"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://github.com/gpustack/gpustack/blob/de29394f6d17e31a48e26a0fbe40d0789f66e4b3/docs/performance-lab/qwen3-8b/910b.md"
+   ],
+   "evidence": "A",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "原文未给（固定在 commit de29394f6d17e31a48e26a0fbe40d0789f66e4b3）",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261121-03",
+   "type": "case",
+   "name": "Qwen3.8-27B（GDN 混合架构）在 300…",
+   "one_line": "推理卡适配（310P）：decode 4.5–5 tok/s，MindIE 三条路径全堵",
+   "why": "Qwen3.8-27B（GDN 混合架构）在 300I DUO（310P）上只能走 vLLM-Ascend：decode 4.5–5 tok/s，MindIE 三条路径全堵",
+   "principle": "起服方式：两条路径对比　推理栈：MindIE 2.3.0（含 atb-models 2.3.0.B160）；可跑方案为 vLLM-Ascend（版本原文未给）+ W8A8SC + 官方 3 个 attention 补丁",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "serving"
+   ],
+   "engines": [
+    "vllm-ascend",
+    "mindie"
+   ],
+   "engine_note": "MindIE 2.3.0（含 atb-models 2.3.0.B160）；可跑方案为 vLLM-Ascend（版本原文未给）+ W8A8SC + 官方 3 个 attention 补丁",
+   "hardware_scope": [
+    "310P / Atlas 300I DUO（单卡）"
+   ],
+   "pitfalls": [
+    {
+     "hit": "NotImplementedError: unsupported model type: qwen3_5",
+     "fix": "根因：MindIE 2.3.0 的模型注册表里没有 qwen3.5 系列（官方 FAQ 2026-04 已声明不支持）　修法：原文的绕法是注册 qwen35 别名，但注册后仍卡在下一步（ATB 无算子）"
+    },
+    {
+     "hit": "ATB 图路径加载崩溃（atb-models 2.3.0.B160）",
+     "fix": "根因：ATB 侧没有 Gated DeltaNet 对应的算子实现　修法：无解，只能放弃 ATB 图路径，改 Python 图或 vLLM-Ascend"
+    },
+    {
+     "hit": "IndexError（Python 图路径，QuantTypeV3）",
+     "fix": "根因：QuantTypeV3 只认 W8A8 / W4A8；W8A8SC 是一维 I8，被当成二维 FP16 去切分　修法：改用 W8A8 或 W4A8 权重；但该模型公开权重只有 W8A8SC 与 W4A16，所以此路不通"
+    },
+    {
+     "hit": "想反量化成 FP16 绕过量化格式限制",
+     "fix": "根因：无原始 FP16 权重，只能从 W8A8SC 反量化　修法：代价是 20.5 GB → 54 GB、显存吃满，预估 1.0–1.8 tok/s；原文判定不可行"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://atomgit.com/Ascend/MindIE-LLM/issues/720"
+   ],
+   "evidence": "B",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "2026-09-13",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261121-04",
+   "type": "case",
+   "name": "QwQ-32B W8A8 在 910B3×4（TP4…",
+   "one_line": "量化收益验证（W8A8 vs FP16）：输出 10.49 vs 12.54 tok/s，量化负收益",
+   "why": "QwQ-32B W8A8 在 910B3×4（TP4）上比 FP16 慢 16%：输出 10.49 vs 12.54 tok/s，量化负收益",
+   "principle": "起服方式：vLLM OpenAI API server（命令原文）　说明：命令里用 -tp 4（短参数，v0.8.4 时期写法），照抄时不要改成 --tensor-parallel-size 前先核对版本　推理栈：vLLM-Ascend v0.8.4rc2（VLLM_USE_V1=1）",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "quantization"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "engine_note": "vLLM-Ascend v0.8.4rc2（VLLM_USE_V1=1）",
+   "hardware_scope": [
+    "A2 / 910B / 910B3"
+   ],
+   "pitfalls": [
+    {
+     "hit": "W8A8 权重跑出来比 FP16 还慢（10.49 vs 12.54 tok/s）",
+     "fix": "根因：v0.8.4rc2 时期 W8A8 的 dequant 走的是额外 kernel，低并发下反量化开销没被吞吐摊平；原文只给现象与数字，未给 profiling 归因　修法：原文结论是此场景直接用 FP16；要量化收益需换更新的 vllm-ascend 版本重测"
+    },
+    {
+     "hit": "TP4 下 gpu_memory_utilization 0.8 + max_num_seqs 256 的组合未做敏感性试验",
+     "fix": "根因：issue 只测了这一组配置　修法：照抄时把这两个参数当唯一配置，不要假设 256 是最优"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/issues/1015"
+   ],
+   "evidence": "B",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "2025-05-29（创建）；2025-07-13 closed(completed)",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261121-05",
+   "type": "case",
+   "name": "FLUX.1-dev 12B BF16 在 910B…",
+   "one_line": "扩散模型（文生图）：4 步 1024×1024，显存约 24 GiB（官方 skill 全流程）",
+   "why": "FLUX.1-dev 12B BF16 在 910B4 上跑通：4 步 1024×1024，显存约 24 GiB（官方 skill 全流程）",
+   "principle": "起服方式：python 脚本（FluxPipeline 直接推理）　推理栈：PyTorch + diffusers 的 FluxPipeline（走 torch_npu）",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "multimodal"
+   ],
+   "engine_note": "PyTorch + diffusers 的 FluxPipeline（走 torch_npu）",
+   "hardware_scope": [
+    "Ascend 910B4（属 A2 / 910B 代际）"
+   ],
+   "gain": [
+    {
+     "metric": "结论",
+     "value": "原文明确 scripts/ 下的验证脚本只是模板，需自行补全才能跑",
+     "source": "https://gitcode.com/Ascend/model-agent/blob/104a8f8eff4bb9b4da4ce0f7f150a50a9fe8f3de/skills/deployment/flux-npu/SKILL.md",
+     "evidence": "A"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "CANN 版本低于 8.0.RC1 时 bfloat16 不可用",
+     "fix": "根因：老版本 CANN 未提供 bf16 算子　修法：升级到 CANN ≥ 8.0.RC1；否则只能退 fp16/CPU offload"
+    },
+    {
+     "hit": "显存吃紧（约 24 GiB，其中 T5-XXL 的 11B 约 22 GiB）",
+     "fix": "根因：双文本编码器同时常驻 NPU　修法：enable_model_cpu_offload()，显存降到约 14 GiB"
+    },
+    {
+     "hit": "照 skill 直接跑 scripts/ 报缺文件",
+     "fix": "根因：仓里给的验证脚本是模板　修法：需按 skill 的代码片段自建脚本后再跑"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://gitcode.com/Ascend/model-agent/blob/104a8f8eff4bb9b4da4ce0f7f150a50a9fe8f3de/skills/deployment/flux-npu/SKILL.md"
+   ],
+   "evidence": "A",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "原文未给（固定在 commit 104a8f8eff4bb9b4da4ce0f7f150a50a9fe8f3de）",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261121-06",
+   "type": "case",
+   "name": "whisper-large-v3（1.55B）在 9…",
+   "one_line": "ASR（语音识别与翻译）：CANN 8.5.1 + torch_npu 2.9.0，Logits RMS 误差 0.55%、Encoder 余弦 0.999653",
+   "why": "whisper-large-v3（1.55B）在 910B4 上跑通：CANN 8.5.1 + torch_npu 2.9.0，Logits RMS 误差 0.55%、Encoder 余弦 0.999653",
+   "principle": "起服方式：python CLI（skill 自带 scripts/inference.py）　推理栈：transformers 4.57.6+ + torch_npu；依赖 soundfile、librosa",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "multimodal"
+   ],
+   "engine_note": "transformers 4.57.6+ + torch_npu；依赖 soundfile、librosa",
+   "hardware_scope": [
+    "Ascend 910B4（属 A2 / 910B 代际），至少 1 卡"
+   ],
+   "pitfalls": [
+    {
+     "hit": "F.scaled_dot_product_attention 在 NPU 上结果异常",
+     "fix": "根因：torch_npu 的 SDPA 实现与 HF 默认路径有差异　修法：强制 attn_implementation=\"eager\""
+    },
+    {
+     "hit": "Input type (Half) vs bias type (float)（在 CPU 上跑 fp16 时报）",
+     "fix": "根因：CPU 不支持 half 精度的 bias　修法：CPU 基准用 float32，NPU 用 float16，按设备自动切换"
+    },
+    {
+     "hit": "SafetensorError: header too large",
+     "fix": "根因：GitCode 镜像用 Git LFS，文件没拉全　修法：git lfs pull，或改用 HF 镜像快照下载"
+    },
+    {
+     "hit": "首次推理耗时异常长（分钟级）",
+     "fix": "根因：算子首次编译　修法：正常现象，后续推理自动加速；性能表里单独记录首次耗时"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://gitcode.com/Ascend/model-agent/blob/137c85ae8ab95a3cf4f15961d52a48b38887b6b4/skills/deployment/whisper-large-v3-npu/SKILL.md"
+   ],
+   "evidence": "A",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "原文未给（固定在 commit 137c85ae8ab95a3cf4f15961d52a48b38887b6b4）",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261122-01",
+   "type": "case",
+   "name": "4 机 A5（950）3P1D + mmc 池化跑 …",
+   "one_line": "多机 PD 分离 + 外部 KV 池（A5 首条）：vLLM 0.32.0rc1 + mf 1.3.0 池化初始化必崩，升级 mf 1.3.1 后起服成功",
+   "why": "4 机 A5（950）3P1D + mmc 池化跑 DeepSeek-V4.1-Flash-1017：vLLM 0.32.0rc1 + mf 1.3.0 池化初始化必崩，升级 mf 1.3.1 后起服成功",
+   "principle": "起服方式：vllm-ascend 多机 PD 分离 + mmc 本地池化　关键参数：ock.mmc.local_service.protocol = device_urma → device_uboe；world size(256)　命令/现场：原文未给完整起服命令（只给了 mmc 配置项的改动方向与报错日志）。日志里可见的地址：store `tcp://10.100.3.49:6000`、nic `tcp://127.0.0.1:7000`　说明：4 机 PD 分离时 mmc 必须走 UBoE；单机场景仍可用默认 device_urma　推理栈：vLLM 0.32.0rc1 + vllm-ascend 0.32.0rc1；配套 memfabric hybrid（mf）1.3.0，需升到 1.3.1",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "parallel",
+    "serving"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "engine_note": "vLLM 0.32.0rc1 + vllm-ascend 0.32.0rc1；配套 memfabric hybrid（mf）1.3.0，需升到 1.3.1",
+   "hardware_scope": [
+    "A5 / 950（原文只写「A5四机」，未写 950PR / 950DT 中的哪一型）"
+   ],
+   "gain": [
+    {
+     "metric": "结论",
+     "value": "本条价值在「A5 多机 + 外部池化能否起服」，不在性能",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/22642",
+     "evidence": "C"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "ERROR [HYBM device_urma_transport_manager.cpp:608 BuildLocalEndpointsDescLocked] device_urma unexpected protocol=7 phyDeviceId=1 rankId=1\nERROR [HYBM device_urma_transport_manager.cpp:725 OpenEndpointResourcesLocked] device_urma build local endpoint descs fail",
+     "fix": "根因：mf 1.3.0 的已知缺陷（https://gitcode.com/Ascend/memfabric_hybrid/pull/1477）：FM16 产品当前会无条件进入多 endpoint 构建流程，而该流程仅支持 UBC_CTP；使用 UBoE 时协议不匹配返回 BM_INVALID_PARAM（ret=-2），设备打开失败。UBoE 使用设备 bond IP，每个 rank 只需单 endpoint；只有 FM16 的 UBC_CTP Full-Mesh 场景才需要多 endpoint　修法：vllm-ascend 0.32.0rc1 配套的 mf 1.3.0 未带该 PR，把 mf 升级到 1.3.1 后初始化成功（原文结论：升级后起服正常）"
+    },
+    {
+     "hit": "rankId=1 与 rankId=2 各自报 `phyDeviceId=1` / `phyDeviceId=5`、`ret=-2`，同一错误在多个 rank 上重复出现",
+     "fix": "根因：不是单卡故障：每个 rank 都走同一条多 endpoint 构建路径，所以修一处不如换版本　修法：按上一条整体升级 mf，不要逐 rank 打补丁"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/issues/22642"
+   ],
+   "evidence": "C",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "2026-11-20",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261122-02",
+   "type": "case",
+   "name": "Kimi-K3.1-Pro W4A8 + DSpar…",
+   "one_line": "多机 PD 分离 + 上下文并行（12 节点 910C）：prefill 改 DP1/PP4/PCP4/TP4 后输出 1032→1552 tok/s，TTFT P95 42.8 s→9.5 s",
+   "why": "Kimi-K3.1-Pro W4A8 + DSpark 在 12 节点 ×16 张 910C 上：prefill 改 DP1/PP4/PCP4/TP4 后输出 1032→1552 tok/s，TTFT P95 42.8 s→9.5 s",
+   "principle": "起服方式：vllm serve 多机 PD（prefill 端）　关键参数：--quantization ascend；--data-parallel-size 1；--pipeline-parallel-size 4；--prefill-context-parallel-size 4；--decode-context-parallel-size 1；--tensor-parallel-size 4；--enable-expert-parallel；--nnodes 4 --node-rank <0..3>；--distributed-executor-backend mp；--max-model-len 1048576；--max-num-batched-tokens 8192；--block-size 768；--kv-cache-dtype int8；--enforce-eager；--enable-prefix-caching　命令/现场：vllm serve <Kimi-K3.1-Pro-w4a8> --quantization ascend --data-parallel-size 1 --pipeline-pa",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "parallel"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "engine_note": "镜像 quay.io/ascend/vllm-ascend:kimi-k3.1-pro-a3；作者对照的 main 读于 commit 1e0f0da1（2026-11-20）",
+   "hardware_scope": [
+    "A3 / 910C / 910_93（原文写 Ascend 910C；SOC 代号原文未给）"
+   ],
+   "gain": [
+    {
+     "metric": "吞吐",
+     "value": "prefill 从 DP4/TP16 换成 DP1/PP4/PCP4/TP4 后：输出 1032 → 1552 tok/s（+50.4%）",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/22601",
+     "evidence": "B"
+    },
+    {
+     "metric": "显存/内存",
+     "value": "KDA state 进池后是 TP-only keying 的 4 倍；--max-num-batched-tokens 8192 时约 80 GB / 百万 prompt tokens",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/22601",
+     "evidence": "B"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "ValueError: AscendStore sharded Mamba state transfer currently requires PCP=1 or TP=1",
+     "fix": "根因：AscendStoreConnector.__init__ 里只要存在 sharded Mamba group 且 tensor_parallel_size>1 且 prefill_context_parallel_size>1 就抛错；该检查随 #20835 引入，但 Kimi KDA 实际已经支持 TP×PCP 分片（vllm_ascend/ops/kimi_kda.py 自述 TP x PCP head-sharded state，且 MambaSpec 未标 tp_replicated）　修法：原文给了 4 行改动的 workaround（效果等同 #20835 对 sharded Mamba group 的处理）：key rank 用 `pcp_rank * tp_size + tp_rank`、group rank count 用 `tp_size * pcp_size`、每个 rank 只存自己 shard（shard_rank=0, shard_size=1）；KDA 本体不用改"
+    },
+    {
+     "hit": "池命中后输出「看着正常但已经错了」：576 次 KDA state load 里 432 次（75%）与该 worker 冷跑结果不一致，服务不报错、文本依旧流畅，但 top-1 概率被系统性抬高",
+     "fix": "根因：kimi-k3.1-pro-a3 镜像的 bulk 路径只按 TP rank 给 KDA state 做 key，同 TP rank 下的 4 个 PCP rank 轮流覆盖同一份 state；group-0（稀疏 attention KV + indexer）因为 16 个 worker 上完全一致，960 次 load 全部命中正确　修法：按上一条改成 per-(PCP, TP) keying；原文提醒：该镜像 tag 若还在发放，最好用 #20835 重建或加部署说明，否则任何 PCP>1 + AscendStoreConnector 的用户都会静默拿到错误 recurrent state"
+    },
+    {
+     "hit": "改了 keying 但 1.8K token 那条仍有 0.77 的 logprob 差（同一条 prompt 下一次本地命中回到 0.0000）",
+     "fix": "根因：未定位；作者在同一部署上复现出同一数值　修法：原文未给修复，作者明确写「我们还没找到原因」"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/issues/22601"
+   ],
+   "evidence": "B",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "2026-11-20",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261122-03",
+   "type": "case",
+   "name": "Qwen3-VL-32B-Instruct 在 2 …",
+   "one_line": "32B VLM 双卡部署（中文社区实操）：vLLM 0.11.0 + vllm-ascend 0.11.0 源码装，附 8 条装环境报错与完整起服脚本",
+   "why": "Qwen3-VL-32B-Instruct 在 2 张 910C 上跑通：vLLM 0.11.0 + vllm-ascend 0.11.0 源码装，附 8 条装环境报错与完整起服脚本",
+   "principle": "起服方式：vLLM OpenAI API server（bash 启动脚本）　关键参数：--model /mnt/workspace/models/Qwen3-VL-32B-Instruct；--host 0.0.0.0；--port 8000；--served-model-name qwen3-vl-32b；--tensor-parallel-size 2；--dtype bfloat16；--trust-remote-code；--max-model-len 4096；--max-num-seqs 1；--max-num-batched-tokens 2048；--gpu-memory-utilization 0.90；--no-enable-prefix-caching；--mm-processor-cache-gb 0　命令/现场：## /mnt/workspace/start_qwen3vl.sh\n#!/usr/bin/env bash\nset -e\n\nsource /opt/home/developer/Ascend/nnal/atb/set_env.sh\nsource /opt/home/developer/A",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "multimodal",
+    "serving"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "engine_note": "vLLM 0.11.0（源码 --no-deps 装，VLLM_TARGET_DEVICE=empty）+ vllm-ascend 0.11.0（源码装，COMPILE_CUSTOM_KERNELS=0）",
+   "hardware_scope": [
+    "A3 / 910C / 910_93（原文写 Ascend 910C；SOC 代号未给）"
+   ],
+   "gain": [
+    {
+     "metric": "结论",
+     "value": "作者目标是「先跑通 + 通过 FRP 暴露公网」，未做性能测试",
+     "source": "https://ai6s.net/6a9a2de4790f037e6e389c3f.html",
+     "evidence": "B"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "vllm 0.11.0 depends on torch==2.8.0 / vllm-ascend 0.11.0 depends on torch==2.7.1",
+     "fix": "根因：官方 vLLM 0.11.0 与 vLLM-Ascend 0.11.0 的默认依赖不一致，而环境已固定 torch 2.7.1 + torch_npu 2.7.1.post4　修法：两者都用源码安装并跳过依赖解析（--no-deps），vLLM 另加 VLLM_TARGET_DEVICE=empty 避免编 CUDA"
+    },
+    {
+     "hit": "ModuleNotFoundError: No module named 'setuptools_scm'",
+     "fix": "根因：构建依赖未装（离线容器）　修法：pip install --user setuptools_scm，或外部机器下 wheel 传进去离线装"
+    },
+    {
+     "hit": "static library kineto_LIBRARY-NOTFOUND not found / ninja: build stopped",
+     "fix": "根因：缺 Kineto 相关库，且没装 Ninja　修法：推理部署阶段直接 COMPILE_CUSTOM_KERNELS=0 关掉自定义 kernel 编译"
+    },
+    {
+     "hit": "缺 prometheus_client / uvloop / starlette / yarl / pkg_resources",
+     "fix": "根因：用 --no-deps 装包，vLLM API server 的依赖没被自动拉齐　修法：逐个 pip install --user，或一次性装 modelscope qwen-vl-utils pillow prometheus-client uvloop starlette watchfiles xgrammar aiohttp yarl"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://ai6s.net/6a9a2de4790f037e6e389c3f.html"
+   ],
+   "evidence": "B",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "2026-09-04 10:33:03",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261122-04",
+   "type": "case",
+   "name": "Qwen3-VL-Reranker-2B 在 Atl…",
+   "one_line": "rerank 服务化（官方 recipe，Atlas 800 A3 单机）：BeIR/SciFact 100 查询 ×10 候选 MRR 0.9825 / nDCG@10 0.9869",
+   "why": "Qwen3-VL-Reranker-2B 在 Atlas 800 A3 单机跑通 pooling 服务：BeIR/SciFact 100 查询 ×10 候选 MRR 0.9825 / nDCG@10 0.9869",
+   "principle": "起服方式：vllm serve（pooling / rerank）　关键参数：--runner pooling；--hf_overrides '{\"architectures\": [\"Qwen3VLForSequenceClassification\"],\"classifier_from_token\": [\"no\", \"yes\"],\"is_original_qwen3_reranker\": true}'；--chat-template /vllm-workspace/vllm/examples/pooling/score/template/qwen3_vl_reranker.jinja；--max-model-len 1024；--tensor-parallel-size 1　命令/现场：vllm serve Qwen/Qwen3-VL-Reranker-2B --runner pooling --hf_overrides '{\"architectures\": [\"Qwen3VLForSequenceClassification\"],\"classifier_from_token\": [\"no\", \"yes\"],\"is_orig",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "serving"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "engine_note": "vLLM Ascend 镜像 v0.23.0.post1-a3（vLLM 0.23.0+）",
+   "hardware_scope": [
+    "A3 / 910C / 910_93（原文写 Atlas 800T A3 一个节点）"
+   ],
+   "gain": [
+    {
+     "metric": "结论",
+     "value": "原文明确：完整 MTEB 精度、多模态、长上下文、其它硬件场景均未验证",
+     "source": "https://recipes.vllm.ai/Qwen/Qwen3-VL-Reranker-2B",
+     "evidence": "A"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "模型被标 discontinued：主 tutorial 自 vLLM Ascend v0.30.0 起不再维护该模型",
+     "fix": "根因：官方支持状态变更　修法：recipe 钉在 v0.23.0.post1-a3 镜像；升级到 v0.30.0+ 后这条路不保证可用"
+    },
+    {
+     "hit": "--chat-template 路径找不到模板",
+     "fix": "根因：模板路径依赖官方镜像里的 vLLM 源码目录结构 /vllm-workspace/vllm/examples/...　修法：从 vLLM 源码树拷 examples/pooling/score/template/qwen3_vl_reranker.jinja 到本地并传绝对路径"
+    },
+    {
+     "hit": "上下文长度对不上：checkpoint config 暴露 262144 positions，模型卡写 32K",
+     "fix": "根因：配置与模型卡不一致　修法：实测统一用 --max-model-len 1024，不要按 262144 起服"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://recipes.vllm.ai/Qwen/Qwen3-VL-Reranker-2B"
+   ],
+   "evidence": "A",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "Updated 2026-11-11（页面标注；对应 vllm-ascend recipe commit 85b0fde）",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261122-05",
+   "type": "case",
+   "name": "昇腾 colocated RL 的生命周期踩坑总账",
+   "one_line": "colocated RL 生命周期（训练与 rollout 同卡）：sleep/wake + 权重热更新在 v0.30.0→main 期间的修复清单与已验证配置（Qwen3-30B-A3B TP2、GLM-5.3-Flash A3 TP2、",
+   "why": "昇腾 colocated RL 的生命周期踩坑总账：sleep/wake + 权重热更新在 v0.30.0→main 期间的修复清单与已验证配置（Qwen3-30B-A3B TP2、GLM-5.3-Flash A3 TP2、Qwen3.8-Flash-Next A5 TP2）",
+   "principle": "起服方式：colocated RL（训练框架 + vLLM-Ascend rollout 交替），非单一启动命令　关键参数：pause/drain → sleep/release → training → wake(weights) → update/finish → wake(kv_cache) → resume rollout；level-2 colocated lifecycle（另有 level-1 恢复、full/staged wake）　命令/现场：原文未给（tracking issue 只给生命周期顺序与各修复 PR；具体起服命令取决于所用 RL 框架）　说明：验证覆盖：distinct A→B→C 权重、eager 与 ACLGraph 两种执行、重复多轮 cycle；KV 丢弃是预期行为，需要 KV 分配的操作必须等 KV wake 之后再发　推理栈：vLLM-Ascend：对照区间 v0.30.0 → main（截至 2026-11-22）；修复以 PR 编号列出，已合入 main 的标日期",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "serving"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "engine_note": "vLLM-Ascend：对照区间 v0.30.0 → main（截至 2026-11-22）；修复以 PR 编号列出，已合入 main 的标日期",
+   "hardware_scope": [
+    "A3 / 910C / 910_93 与 A5 / 950（原文按验证配置分别写 A3、A5；SOC 代号未给）"
+   ],
+   "gain": [
+    {
+     "metric": "结论",
+     "value": "本条的价值是「哪些坑已经修了、修在哪个版本、验到什么程度」，不是吞吐",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/22140",
+     "evidence": "A"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "rollout 侧权重更新失败或不完整（客户部署报告）",
+     "fix": "根因：DeepSeek 的 Attention Sink 权重走直接拷贝到 meta tensor，绕过参数加载器，live update 丢失；packed 存储的 offset/对齐与 HCCL 收/载顺序也有问题　修法：DeepSeek：#16958（2026-10-10，sink 权重改走 loader）+ #18491（2026-11-17，V4.1 保留 Engram host backing 与 UVA 指针）；通用：#19164 packed storage 与 ordering（2026-10-22）、#18848 IPC 设备选择与失败回滚（2026-10-22）、#18944 HCCL stagi"
+    },
+    {
+     "hit": "sleep/wake 后状态或输出不正确（level-2 sleep 醒来参数被清空/形状错误）",
+     "fix": "根因：level-2 sleep 会释放参数存储，某些参数与 draft 私有状态没被保留；allocator 的 unmap/remap 反复切换也没做 NPU 同步　修法：#18838 配置参数保留（2026-10-19）、#19131 allocator 状态守卫与同步（2026-10-22）、#20724 pool 生命周期（2026-11-04）；GLM-5.3-Flash 另有 #19828 修 KDA 卷积与 KPool 派生权重原地刷新（2026-11-19）；仍未合入：#18624（target/draft 私有状态）、#22075（ACL Graph"
+    },
+    {
+     "hit": "权重拷贝失败后没有报错，或拿着已经损坏的数据继续跑",
+     "fix": "根因：memcpy 返回值未检查，失败后既不保留有效设备数据也不留 CPU 备份　修法：#20983 检查 memcpy 结果并保留恢复源——但原文明确：该 PR 的故障注入验证是 CPU/mock，NPU 上的失败/恢复验证仍待做，未合入"
+    },
+    {
+     "hit": "A5 上 Qwen3.8-Flash-Next 的 PLE 上下文在 level-2 sleep 后丢失",
+     "fix": "根因：不可变 PLE context offset 未作为 nonpersistent buffer 保留　修法：#21697（未合）：保留为 nonpersistent buffer；验证是 A5 TP2 unpacked IPC、缩比 BF16、两轮 level-2 更新，全尺寸 PLE / 原注意力宽度 / MTP / 图音视频均未覆盖"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/issues/22140"
+   ],
+   "evidence": "A",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "2026-11-17 创建，2026-11-22 更新",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
    "id": "engine/vllm",
    "name": "vLLM",
    "alias": [
@@ -7899,6 +9523,26 @@
    ],
    "evidence": "A",
    "status": "verified",
+   "impls": [
+    "impl/vllm-scheduler",
+    "impl/vllm-chunked-prefill",
+    "impl/vllm-preempt",
+    "impl/vllm-kv-cache-manager",
+    "impl/vllm-block-pool",
+    "impl/vllm-prefix-cache",
+    "impl/vllm-flash-attention",
+    "impl/vllm-flashinfer",
+    "impl/vllm-fp8-quantization",
+    "impl/vllm-tensor-parallel",
+    "impl/vllm-pipeline-parallel",
+    "impl/vllm-eagle",
+    "impl/vllm-xgrammar",
+    "impl/vllm-cuda-graph",
+    "impl/vllm-torch-compile",
+    "impl/vllm-flash-attention-3",
+    "impl/vllm-fp8-kv-cache",
+    "impl/vllm-async-scheduler"
+   ],
    "type": "engine",
    "updated_at": "2026-11-22",
    "updated_by": "正德"
@@ -7926,6 +9570,23 @@
    ],
    "evidence": "A",
    "status": "verified",
+   "impls": [
+    "impl/sglang-scheduler",
+    "impl/sglang-chunked-prefill",
+    "impl/sglang-schedule-policy",
+    "impl/sglang-kv-memory-pool",
+    "impl/sglang-paged-kv-allocator",
+    "impl/sglang-radix-cache",
+    "impl/sglang-flashinfer-attention",
+    "impl/sglang-fp8-quantization",
+    "impl/sglang-tensor-parallel",
+    "impl/sglang-pipeline-parallel",
+    "impl/sglang-eagle3",
+    "impl/sglang-xgrammar",
+    "impl/sglang-decode-cuda-graph",
+    "impl/sglang-prefill-cuda-graph",
+    "impl/sglang-prefill-delayer"
+   ],
    "type": "engine",
    "updated_at": "2026-11-22",
    "updated_by": "正德"
@@ -7955,6 +9616,24 @@
    ],
    "evidence": "A",
    "status": "verified",
+   "impls": [
+    "impl/tensorrt-llm-capacity-scheduler",
+    "impl/tensorrt-llm-inflight-scheduler",
+    "impl/tensorrt-llm-microbatch-chunking",
+    "impl/tensorrt-llm-kv-cache-manager-v2",
+    "impl/tensorrt-llm-kv-capacity",
+    "impl/tensorrt-llm-prefix-reuse",
+    "impl/tensorrt-llm-paged-attention-backend",
+    "impl/tensorrt-llm-fp8-linear",
+    "impl/tensorrt-llm-fp8-kv-cache",
+    "impl/tensorrt-llm-tensor-parallel",
+    "impl/tensorrt-llm-pipeline-parallel",
+    "impl/tensorrt-llm-eagle3",
+    "impl/tensorrt-llm-guided-decoding",
+    "impl/tensorrt-llm-decode-cuda-graph",
+    "impl/tensorrt-llm-breakable-prefill-graph",
+    "impl/tensorrt-llm-torch-compile"
+   ],
    "type": "engine",
    "updated_at": "2026-11-22",
    "updated_by": "正德"
@@ -8139,6 +9818,24 @@
    ],
    "evidence": "A",
    "status": "verified",
+   "impls": [
+    "impl/mindie-continuous-batching",
+    "impl/mindie-splitfuse",
+    "impl/mindie-preemption",
+    "impl/mindie-kv-cache-manager",
+    "impl/mindie-prefix-allocator",
+    "impl/mindie-kv-cache-pool",
+    "impl/mindie-prefix-plugin",
+    "impl/mindie-mtp",
+    "impl/mindie-lookahead",
+    "impl/mindie-structured-output",
+    "impl/mindie-atb-model-runner",
+    "impl/mindie-mindformers-backend",
+    "impl/mindie-paged-attention",
+    "impl/mindie-w8a8-dynamic",
+    "impl/mindie-tensor-parallel",
+    "impl/mindie-aclgraph"
+   ],
    "type": "engine",
    "updated_at": "2026-11-22",
    "updated_by": "正德"
@@ -9425,6 +11122,12 @@
    "note": "Modeling｜AclGraphBackend 图捕获与回放 实现在 MindIE 里"
   },
   {
+   "from": "impl/sglang-decode-retraction-reprefill",
+   "to": "engine/sglang",
+   "type": "runs_on",
+   "note": "SGLang｜Decode 撤回、KV 释放和重新 Prefill 实现在 SGLang 里"
+  },
+  {
    "from": "impl/sglang-scheduler",
    "to": "engine/sglang",
    "type": "runs_on",
@@ -9611,6 +11314,42 @@
    "note": "ModelEngine：PyTorch 模型编译入口 实现在 TensorRT-LLM 里"
   },
   {
+   "from": "impl/vllm-ascend-310p-build-target",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "vLLM Ascend 310P｜构建目标与芯片标识 实现在 vLLM-Ascend 里"
+  },
+  {
+   "from": "impl/vllm-ascend-310p-attention-dispatch",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "vLLM Ascend 310P｜兼容 Attention 后端 实现在 vLLM-Ascend 里"
+  },
+  {
+   "from": "impl/vllm-qwen3-vl-encoder-data-parallel",
+   "to": "engine/vllm",
+   "type": "runs_on",
+   "note": "vLLM Qwen3-VL｜视觉编码器数据并行 实现在 vLLM 里"
+  },
+  {
+   "from": "impl/vllm-generation-latency-prometheus",
+   "to": "engine/vllm",
+   "type": "runs_on",
+   "note": "vLLM｜生成延迟的 Prometheus 采集 实现在 vLLM 里"
+  },
+  {
+   "from": "impl/vllm-bench-serving-stream-latency",
+   "to": "engine/vllm",
+   "type": "runs_on",
+   "note": "vLLM Bench｜流式客户端 TTFT、ITL 和 TPOT 实现在 vLLM 里"
+  },
+  {
+   "from": "impl/vllm-structured-speculative-grammar-rollback",
+   "to": "engine/vllm",
+   "type": "runs_on",
+   "note": "vLLM｜草稿 token 语法状态试探与回退 实现在 vLLM 里"
+  },
+  {
    "from": "impl/vllm-scheduler",
    "to": "engine/vllm",
    "type": "runs_on",
@@ -9717,6 +11456,96 @@
    "to": "engine/vllm",
    "type": "runs_on",
    "note": "AsyncScheduler：异步输出占位与调度进度 实现在 vLLM 里"
+  },
+  {
+   "from": "case/20261118-01",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "DeepSeek-V4.1-Flash W4A8 在… 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261118-02",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "昇腾 910B + Qwen3.5-9B Docke… 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261118-03",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Qwen3-ASR-1.7B 在 910B 与 At… 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261118-04",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Qwen3-Dense 家族在 A2/A3 与 At… 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261121-01",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Qwen3-8B BF16 在单张 910B2 裸金… 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261121-02",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Qwen3-8B-W8A8 单张 910B 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261121-02",
+   "to": "engine/mindie",
+   "type": "runs_on",
+   "note": "Qwen3-8B-W8A8 单张 910B 在 MindIE 上实跑"
+  },
+  {
+   "from": "case/20261121-03",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Qwen3.8-27B（GDN 混合架构）在 300… 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261121-03",
+   "to": "engine/mindie",
+   "type": "runs_on",
+   "note": "Qwen3.8-27B（GDN 混合架构）在 300… 在 MindIE 上实跑"
+  },
+  {
+   "from": "case/20261121-04",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "QwQ-32B W8A8 在 910B3×4（TP4… 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261122-01",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "4 机 A5（950）3P1D + mmc 池化跑 … 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261122-02",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Kimi-K3.1-Pro W4A8 + DSpar… 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261122-03",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Qwen3-VL-32B-Instruct 在 2 … 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261122-04",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Qwen3-VL-Reranker-2B 在 Atl… 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261122-05",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "昇腾 colocated RL 的生命周期踩坑总账 在 vLLM-Ascend 上实跑"
   },
   {
    "from": "engine/vllm",

@@ -14,6 +14,7 @@
     system:    { name: '依赖系统', ico: '▣', color: 'var(--amber)' },
     hardware:  { name: '硬件代际', ico: '▤', color: 'var(--red)' },
     community: { name: '社区组织', ico: '♟', color: '#e07ab5' },
+    case:      { name: '实战案例', ico: '★', color: '#c08a2e' },
     metric:    { name: '关键指标', ico: '◈', color: '#48c9d6' }
   };
   var EDGE_META = {
@@ -134,6 +135,7 @@
   function radius(n) {
     if (n.type === 'engine') return state.w < 640 ? 12 : 15;
     if (n.type === 'tech') return state.w < 640 ? 9 : 11;
+    if (n.type === 'case') return state.w < 640 ? 10 : 12;
     return state.w < 640 ? 8 : 10;
   }
 
@@ -265,7 +267,7 @@
         Object.keys(cells).forEach(function (key) {
           var mi = +key.slice(1);
           var x0 = padL + mi * cw;
-          packBox(cells[key], x0 + 4, x0 + cw - 4, padT, h - padB, out);
+          packStacked(cells[key], x0 + 4, x0 + cw - 4, padT, h - padB, out, 40);
         });
       }
     }
@@ -276,7 +278,7 @@
   function packBox(list, x0, x1, y0, y1, out) {
     if (!list.length) return;
     var bw = Math.max(30, x1 - x0), bh = Math.max(24, y1 - y0);
-    var step = state.w < 640 ? 24 : 30;
+    var step = state.w < 640 ? 28 : 36;
     var cols = Math.max(1, Math.floor(bw / step));
     var rows = Math.ceil(list.length / cols);
     var dx = bw / cols, dy = Math.max(step, bh / Math.max(1, rows));
@@ -289,6 +291,22 @@
     });
   }
   function padTopSafe() { return 12; }
+  /* 高度不够时先沿横向拆子列再纵向排：保证垂直间距 ≥ gap，绝不把节点压进同一格。
+     用在 timeline 的成熟度列与其它「一列塞不下就换列」的场景。 */
+  function packStacked(list, x0, x1, y0, y1, out, gap) {
+    if (!list.length) return;
+    var bw = Math.max(40, x1 - x0), bh = Math.max(40, y1 - y0);
+    var rowsMax = Math.max(1, Math.floor(bh / gap));
+    var subCols = Math.max(1, Math.ceil(list.length / rowsMax));
+    var subW = bw / subCols;
+    for (var s = 0; s < subCols; s++) {
+      var part = list.slice(s * rowsMax, (s + 1) * rowsMax);
+      for (var r = 0; r < part.length; r++) {
+        var nn = part[r];
+        out[nn.id] = { x: x0 + subW * (s + 0.5), y: y0 + Math.min(bh - gap / 2, gap * (r + 0.5)) };
+      }
+    }
+  }
   function hash(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
   /* 确定性去重叠：只推挤相互压住的圆，多轮后夹回画布内。不是物理仿真，无抖动。
      同一泳道内节点常共线（dy≈0），单独靠水平推挤需要很多轮才能沿链传播，
@@ -410,6 +428,7 @@
     applyVP();
     var t3 = performance.now();
     window.__gScene = { nodes: doc.nodes.length, layout: Math.round(t1 - t0), draw: Math.round(t2 - t1), visLabels: Math.round(t3 - t2) };
+    if (!window.__gSceneFirst) window.__gSceneFirst = window.__gScene;
   }
   function applyVP() { $('vp').setAttribute('transform', 'translate(' + state.tx.toFixed(1) + ',' + state.ty.toFixed(1) + ') scale(' + state.k.toFixed(3) + ')'); }
 
@@ -575,6 +594,13 @@
     // 4 引擎实现
     var impls = (n.impls || []).map(function (iid) { return nm[iid]; }).filter(Boolean);
     if (n.module) impls.unshift(n);
+    var engHtml = '';
+    if (n.type === 'case') {
+      engHtml = nodeEngines(n).map(function (eid) {
+        var eo = nm['engine/' + eid];
+        return eo ? '<div class="gp-impl"><div class="gp-impl-name"><span class="gp-rel-link" data-goto="engine/' + esc(eid) + '">' + esc(eo.name) + '</span></div><div class="gp-impl-meta">' + val(eo.one_line) + '</div><div class="gp-impl-meta">实现细节点开该引擎节点的第 4 分区</div></div>' : '';
+      }).join('');
+    }
     var implHtml = impls.length ? impls.map(function (im) {
       var defs = im.defaults && Object.keys(im.defaults).length
         ? Object.keys(im.defaults).map(function (k) { return k + '=' + im.defaults[k]; }).join('、') : '';
@@ -585,7 +611,7 @@
         '<div class="gp-impl-meta">默认值：' + val(defs) + '</div>' +
         '<div class="gp-impl-meta">版本快照：' + val(im.version_seen) + '</div>' +
         (im.notes ? '<div class="gp-impl-meta">' + esc(im.notes) + '</div>' : '') + '</div>';
-    }).join('') : '<p class="gp-none">未查到</p>';
+    }).join('') : (engHtml || (n.engine_note ? '<div class="gp-impl-meta">未走推理引擎：' + esc(n.engine_note) + '</div>' : '<p class="gp-none">未查到</p>'));
     html += sec(4, '在哪些引擎里 · 怎么实现', implHtml);
     // 5 实测收益
     var g = n.gain || [];
