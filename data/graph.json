@@ -1,6 +1,6 @@
 {
  "schema_version": "1.0",
- "generated_at": "2026-11-22T17:39:20+08:00",
+ "generated_at": "2026-11-22T17:41:10+08:00",
  "counts": {
   "nodes": 215,
   "edges": 221
@@ -10473,6 +10473,10 @@
    "evidence": "A",
    "status": "verified",
    "impls": [
+    "impl/vllm-qwen3-vl-encoder-data-parallel",
+    "impl/vllm-generation-latency-prometheus",
+    "impl/vllm-bench-serving-stream-latency",
+    "impl/vllm-structured-speculative-grammar-rollback",
     "impl/vllm-scheduler",
     "impl/vllm-chunked-prefill",
     "impl/vllm-preempt",
@@ -10520,6 +10524,7 @@
    "evidence": "A",
    "status": "verified",
    "impls": [
+    "impl/sglang-decode-retraction-reprefill",
     "impl/sglang-scheduler",
     "impl/sglang-chunked-prefill",
     "impl/sglang-schedule-policy",
@@ -10740,6 +10745,22 @@
    ],
    "evidence": "A",
    "status": "verified",
+   "impls": [
+    "impl/vllm-ascend-310p-build-target",
+    "impl/vllm-ascend-310p-attention-dispatch",
+    "impl/vllm-ascend-dynamic-batch-scheduler",
+    "impl/vllm-ascend-mooncake-layerwise-pd",
+    "impl/vllm-ascend-ascendstore-kv-pool",
+    "impl/vllm-ascend-ascendstore-prefix-lookup",
+    "impl/vllm-ascend-mla-kv-layout",
+    "impl/vllm-ascend-fia-tnd-attention",
+    "impl/vllm-ascend-mla-attention-kernel",
+    "impl/vllm-ascend-modelslim-w8a8-w4a8-execution",
+    "impl/vllm-ascend-fine-grained-tp",
+    "impl/vllm-ascend-moe-ep-dispatch-combine",
+    "impl/vllm-ascend-aclgraph-capture-replay",
+    "impl/vllm-ascend-mtp-eagle3-spec-decode"
+   ],
    "type": "engine",
    "updated_at": "2026-11-22",
    "updated_by": "正德"
