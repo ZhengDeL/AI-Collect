@@ -1,6 +1,6 @@
 {
  "schema_version": "1.0",
- "generated_at": "2026-11-22T17:16:23+08:00",
+ "generated_at": "2026-11-22T17:23:58+08:00",
  "counts": {
   "nodes": 213,
   "edges": 221
@@ -2448,6 +2448,12 @@
      "value": "1/4，仅适用所列模型示例的合并口径",
      "source": "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/model_executor/models/qwen2_5_vl.py#L534",
      "evidence": "A"
+    },
+    {
+     "metric": "视觉预算口径与实际 ViT patch 数",
+     "value": "同为 16384 调度 token 预算，未裁剪臂每次 ViT 最多 46,080 patches（1 视频），0.75 裁剪臂 230,400 patches（5 视频）并在第一步 OOM。版本：vLLM 0.32.0、PyTorch 2.13.0。设备：NVIDIA L40，主机可见 2 卡，复现脚本未改 TP（默认 TP1 参与）。负载：Qwen3-VL-4B-Instruct BF16，批提交 16 条，每条 1 个 32 帧、1280×720 视频，生成上限 8 token。对照：同脚本和调度预算，关闭裁剪。结果描述裁剪后占位数与实际编码开销错配。",
+     "source": "https://github.com/vllm-project/vllm/issues/63187",
+     "evidence": "B"
     }
    ],
    "cost": [
@@ -2458,6 +2464,10 @@
     {
      "hit": "At most {limit} {modality}(s) may be provided in one prompt.",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。这是源码异常模板。减少请求中的图片或视频项。若只是服务配置上限且模型本身支持更多项，再调整 --limit-mm-per-prompt，并复核视觉 token 与上下文预算。"
+    },
+    {
+     "hit": "RuntimeError: The expanded size of the tensor (0) must match the existing size (2044)",
+     "fix": "触发版本：vLLM 0.32.0。#62937 里 Qwen3-VL 的 video pruning rate=0.75 且短文字前缀，重算 M-RoPE 时误认外层 vision_start。用包含 #62959（cedc2aa）的版本修正位置关联，或关闭视频裁剪；回归短文本和长文本前缀。它与 #63187 的批预算超限分属两个故障。"
     }
    ],
    "hardware_scope": [
@@ -2470,7 +2480,7 @@
     "https://docs.vllm.ai/en/stable/features/multimodal_inputs/",
     "https://arxiv.org/abs/2409.12191"
    ],
-   "urls_more": 4,
+   "urls_more": 8,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -2510,9 +2520,10 @@
     "multimodal"
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/multimodal/processing/context.py#L430-L449"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/multimodal/processing/context.py#L430-L449",
+    "https://github.com/vllm-project/vllm/issues/62937"
    ],
-   "gain_note": "未查到。已有 1/4 是 Qwen2.5-VL 空间 merge 的 token 数推导。需在固定主干、精度与 batch 下，单独改变可选择的视觉 token 预算并公开对照。"
+   "gain_note": "测量关注原始视觉计算预算，未将裁剪后的占位数量当作 ViT 负载。基于源码的空间 merge 比例另作机制说明。"
   },
   {
    "id": "tech/multimodal-encoder-disaggregation",
@@ -5275,6 +5286,14 @@
     "vllm"
    ],
    "maturity": "mainstream",
+   "gain": [
+    {
+     "metric": "OpenAI 兼容接入层 Python/Rust 同引擎对照",
+     "value": "默认 Python 162.23 req/s，TTFT p50 6076.09 ms，Rust 原型 837.00 req/s、596.92 ms；Python 增至 32 个 API 进程为 785.98 req/s、657.15 ms。版本：vLLM 0.19.0 加 #40846 的 Rust frontend 原型。设备：4× GB200 GPU，DP4。负载：Qwen3-0.6B，openai-chat，约 10K 输入、16 输出、并发 1024、无节流请求率，prefix cache 已预热。对照：默认 Python 前端 4 进程（另有 32 进程对照），相同推理后端。",
+     "source": "https://github.com/vllm-project/vllm/issues/40846",
+     "evidence": "B"
+    }
+   ],
    "cost": [
     "兼容接口仍有模型和参数支持差异。",
     "需要处理代理缓冲、取消和流式错误。"
@@ -5283,6 +5302,10 @@
     {
      "hit": "Tokenizer not available when `skip_tokenizer_init=True`",
      "fix": "未查到同时披露触发版本与该报错的公开运行记录。已保留源码条件和修法（固定源码版本 88d34c6409e9fb3c7b8ca0c04756f061d2099eb1）。启用 tokenizer 初始化，并用模型自带或明确兼容的 tokenizer 验证聊天模板和输出。"
+    },
+    {
+     "hit": "Request-level structured output backend must match engine-level backend. outlines != xgrammar",
+     "fix": "触发版本：vLLM 0.8.2 的 OpenAI HTTP 请求。源帖请求指定 outlines 而服务端使用 xgrammar，返回 HTTP 400。使用 server 级兼容配置，且让请求参数与之匹配。"
     }
    ],
    "hardware_scope": [
@@ -5292,7 +5315,7 @@
     "https://docs.vllm.ai/en/stable/serving/online_serving/",
     "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/entrypoints/openai/chat_completion/serving.py#L86"
    ],
-   "urls_more": 2,
+   "urls_more": 4,
    "evidence": "A",
    "status": "candidate",
    "implementation_notes": [
@@ -5312,9 +5335,10 @@
     }
    ],
    "pitfall_sources": [
-    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/entrypoints/openai/chat_completion/serving.py#L609"
+    "https://github.com/vllm-project/vllm/blob/88d34c6409e9fb3c7b8ca0c04756f061d2099eb1/vllm/entrypoints/openai/chat_completion/serving.py#L609",
+    "https://github.com/vllm-project/vllm/issues/15762"
    ],
-   "gain_note": "未查到相同推理后端和版本的 HTTP OpenAI 适配层与直接引擎调用对照。#58145 的同机 A/B 同时改变 Mistral parser 配置，归于工具解析节点。",
+   "gain_note": "RFC 对照有意用短输出、高并发和预热缓存放大接入层瓶颈，数字不外推到长推理请求或普通生产流量。",
    "owner_team": "架构",
    "updated_at": "2026-11-22",
    "updated_by": "架构师",
