@@ -931,7 +931,11 @@
     ['调度与缓存', ['scheduling', 'kv-cache', 'prefix-cache']],
     ['图与解码', ['graph-compile', 'spec-decode', 'ascend-native']]
   ];
-  function engineShort(eid) { return String(eid || '').split('/')[1] || ''; }  function nodesOfEngine(short) {
+  function engineShort(eid) { return String(eid || '').split('/')[1] || ''; }
+  function engineNode(short) {
+    return state.doc.nodes.filter(function (n) { return n.type === 'engine' && engineShort(n.id) === short; })[0];
+  }
+  function nodesOfEngine(short) {
     return state.doc.nodes.filter(function (n) {
       if (n.type === 'engine') return engineShort(n.id) === short;
       if ((n.engines || []).indexOf(short) >= 0) return true;
@@ -981,15 +985,19 @@
         '</span><span class="g-stack-sub">' + list.length + ' 个引擎 · 点开看它的实现层</span></div><div class="g-engines">' +
         list.map(function (e) {
           var n = nodesOfEngine(e[0]).length;
+          var en = engineNode(e[0]);
+          var desc = en && en.one_line ? String(en.one_line) : '';
+          if (desc.length > 46) desc = desc.slice(0, 46) + '…';
           return '<button class="g-engine" data-engine="' + esc(e[0]) + '"><span class="g-engine-name">' + esc(e[1]) +
-            '</span><span class="g-engine-meta">' + n + ' 项内容</span></button>';
+            '</span>' + (desc ? '<span class="g-engine-desc">' + esc(desc) + '</span>' : '') +
+            '<span class="g-engine-meta">' + n + ' 项内容</span></button>';
         }).join('') + '</div></div>';
     }).join('');
     dmEl.innerHTML = MAP_DOMAIN_GROUPS.map(function (g) {
       var balls = g[1].filter(function (k) { return DOMAIN_NAME[k]; }).map(function (k) {
         var n = state.doc.nodes.filter(function (x) { return (x.domains || []).indexOf(k) >= 0; }).length;
         return '<button class="g-ball-item" data-ball-item data-domain="' + esc(k) + '"><span class="g-ball-circle"><span class="g-ball-n">' + n +
-          '</span></span><span class="g-ball-name">' + esc(DOMAIN_NAME[k]) + '</span></button>';
+          '</span><span class="g-ball-unit">条</span></span><span class="g-ball-name">' + esc(DOMAIN_NAME[k]) + '</span></button>';
       }).join('');
       return '<div class="g-dgroup"><div class="g-dgroup-head">' + g[0] + '</div><div class="g-balls">' + balls + '</div></div>';
     }).join('');
@@ -1359,6 +1367,14 @@
     });
     var tr = $('gtorelations');
     if (tr) tr.addEventListener('click', function () { setView('engine'); });
+    var dm = $('gdemo');
+    if (dm) dm.addEventListener('click', function () {
+      setView('engine');
+      var demo = state.doc.nodes.filter(function (n) { return n.id === 'engine/vllm'; })[0] ||
+        state.doc.nodes.filter(function (n) { return n.type === 'tech' && n.gain && n.gain.length; })[0] ||
+        state.doc.nodes[0];
+      if (demo) selectNode(demo.id, true);
+    });
     var ms = $('gmapsearch');
     if (ms) {
       ms.addEventListener('input', function () { state.query = ms.value; filterMap(); });
@@ -1392,7 +1408,7 @@
     loadData().then(function (doc) {
       var tData = performance.now();
       state.doc = doc;
-      $('gver').textContent = 'v1 · ' + (doc.schema_version || '');
+      $('gver').textContent = 'v2 · ' + (doc.schema_version || '');
       $('gmeta').textContent = (doc.subtitle || '') + (doc.generated_at ? ' · 数据更新 ' + doc.generated_at : '');
       $('gstatline').innerHTML =
         '<span class="g-stat">节点 <b>' + doc.nodes.length + '</b></span>' +

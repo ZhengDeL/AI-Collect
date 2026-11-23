@@ -37,7 +37,7 @@
 <main class="wrap g-app">
   <section class="g-head">
     <div>
-      <h2>推理技术知识图谱 <span class="g-ver" id="gver">v1 · P0 骨架</span></h2>
+      <h2>推理技术知识图谱 <span class="g-ver" id="gver">v2 · 总览地图</span></h2>
       <p class="g-meta" id="gmeta">加载中…</p>
     </div>
     <div class="g-head-actions">
@@ -85,18 +85,25 @@
       <div class="g-map" id="gmap">
         <div class="g-map-top">
           <div class="g-map-title">
-            <h2 id="gmaptitle">推理技术地图</h2>
-            <p id="gmapmeta">12 个推理引擎 · 12 个技术域 · 圈内数字＝该域节点数，点开看全部内容</p>
+            <p id="gmapmeta">按 <b>NVIDIA / 昇腾两条硬件栈</b> 和 <b>12 个技术域</b> 摆开。每个条目点开都有：原理、引擎里怎么实现（文件+参数）、实测数字、踩过的坑。</p>
           </div>
           <div class="g-map-search">
             <input id="gmapsearch" class="g-search" type="search" placeholder="搜技术 / 引擎 / 参数，回车打开" aria-label="搜索图谱节点">
           </div>
         </div>
+        <ol class="g-map-howto">
+          <li><b>① 点引擎</b><span>看这个引擎里有哪些技术、案例、实现落点</span></li>
+          <li><b>② 点技术域球</b><span>球上的数字＝这一类的条目数，点开看全部</span></li>
+          <li><b>③ 点具体条目</b><span>开九个分区：原理 / 收益 / 代价 / 坑 / 社区 / 出处</span></li>
+        </ol>
         <div class="g-map-stacks" id="gmapstacks"></div>
         <div class="g-map-domains" id="gmapdomains"></div>
         <div class="g-map-foot">
           <span id="gmapfoot"></span>
-          <button class="g-toggle" id="gtorelations">看关系图 →</button>
+          <span class="g-map-foot-actions">
+            <button class="g-toggle" id="gdemo">先看一条示例：vLLM →</button>
+            <button class="g-toggle" id="gtorelations">看关系图 →</button>
+          </span>
         </div>
       </div>
 
