@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-22",
+  "date": "2026-11-23",
   "items": [
     {
       "line": "nvidia",
@@ -308,6 +308,78 @@
       "status": "实验性"
     },
     {
+      "line": "nvidia",
+      "family": "draft",
+      "name": "vLLM · draft_top_k 稀疏概率草稿缓存",
+      "mechanism": "opt-in 的 speculative_config.draft_top_k=K：概率草稿只在 drafter 的 top-K 里采样并验证，把密集 [max_num_reqs, num_speculative_tokens, vocab_size] draft-logits 缓存换成 K 项稀疏缓存，输出分布不变，省下的显存给 KV cache。支持 DFlash/EAGLE/EAGLE-3/MTP/独立草稿模型；DSpark、DFlash2 系、XPress、多模块 MTP 在 config 阶段拒绝。",
+      "engine": "vLLM",
+      "versions": "vLLM main（PR #69276，base ef687f617，2026-11-22，未合并）",
+      "config": "vllm serve google/gemma-4-26B-A4B-it --tensor-parallel-size 2 --max-model-len 4096 --max-num-seqs 128 --gpu-memory-utilization 0.45 --seed 0 --attention-backend FLASH_ATTN --speculative-config '{\"method\":\"dflash\",\"model\":\"z-lab/gemma-4-26B-A4B-it-DFlash\",\"num_speculative_tokens\":15,\"draft_sample_method\":\"probabilistic\",\"draft_top_k\":64}'（draft_top_k=None 走原密集路径）",
+      "gain": "PR 作者 H100 实测（完整 vllm bench serve 命令在 PR）：Gemma-4-26B+DFlash、TP2、36GiB/GPU、c128 显存受限场景，top_k=64 相对密集概率草稿 +22%（4905→5965 tok/s）、相对 greedy +10%；KV cache token 23609→34700（+47%）；接受长度 3.43 不变、chi-squared 验输出分布不变。非显存受限（固定16GiB KV，b1–16，5 组配置）在噪声内 −1.2%~+3.3%。EAGLE-3 gpt-oss-120b：2506 vs 2507 tok/s（等价）。",
+      "cost": "K 太小或草稿分布平坦会降低接受率，K=64 只在被测 3 模型上匹配密集、不足以定默认值；与 watermarking、adaptive verification、非 standard 拒绝采样、prefill context parallelism、batch-sharded sampling 互斥；约 850 行非测试代码。",
+      "pitfalls": {
+        "hit": "显存受限下开概率草稿反而比 greedy 慢：密集缓存按 max_num_seqs 预分配，Gemma-4-26B 262k 词表约 0.94GiB/GPU，挤掉 KV。",
+        "fix": "用 draft_top_k=64 换成 K 项稀疏缓存，把省下的显存给 KV；配合低 gpu_memory_utilization（0.45）复现。注意重叠 PR #56724 改同一 sample_draft，后合的需要小 rebase。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm/pull/69276",
+      "status": "实验性"
+    },
+    {
+      "line": "nvidia",
+      "family": "eagle",
+      "name": "vLLM · EAGLE-3 dummy 启动后小词表草稿头丢失修复",
+      "mechanism": "load_format=dummy 启动时 EAGLE-3 加载器把小词表草稿（draft_vocab_size < 目标词表）的 lm_head 换成目标的整词表 head（除非 has_own_lm_head），LogitsProcessor 又截断到 draft_vocab_size 列，草稿因此用错误的 head 行采样、接受率暴跌，草稿权重更新也修不好。修复：draft_vocab_size ≠ 目标词表时给 share_target_lm_head 传 can_share=false，草稿保留自己的 head。MTP 草稿不设 draft_vocab_size，不受影响。",
+      "engine": "vLLM",
+      "versions": "vLLM main（PR #69287，commit 8b3b64cbd，base ef687f617，2026-11-22，未合并）；对应 NeMo-RL 的 NEMO-1 patch",
+      "config": "触发：LLM(model='meta-llama/Llama-3.2-1B-Instruct', speculative_config={'method':'eagle3','model':'nm-testing/Llama3_2_1B_speculator.eagle3','num_speculative_tokens':3}, load_format='dummy') 后做 draft weight update。规避（main 上）：speculative_config 加 \"draft_load_config\":{\"load_format\":\"auto\"}",
+      "gain": "作者 H20 实测：Llama-3.2-1B+EAGLE3，dummy 启动+草稿更新后接受率 0.030→0.188（=正常启动值）；Qwen3-8B 草稿更新在 main 上 AssertionError、修复后成功，接受率 0.008→0.361。回归测试 4 passed（修复前 2 failed）。",
+      "cost": "dummy 启动后草稿仍共享目标输入 embedding（NEMO-11，本 PR 未修），Qwen3-8B 接受率因此 0.361 略低于正常 0.366；draft_lm_head_quantization 场景修复后改为报 ValueError（而非静默用错 head）。",
+      "pitfalls": {
+        "hit": "dummy 启动 + layerwise 草稿更新报 \"Exception: Call to collective_rpc method failed: Cannot copy out of meta tensor; no data!\"，随后 EngineDeadError；Llama 系（head 与 embed 绑定）则静默跳过 head、接受率从 0.188 掉到 0.030。",
+        "fix": "升级到此 patch；或在 main 上给 draft_load_config.load_format=auto 让草稿启动时自带 head/embedding。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm/pull/69287",
+      "status": "实验性"
+    },
+    {
+      "line": "nvidia",
+      "family": "other",
+      "name": "vLLM · Mamba2 上 Triton ReplaySSM 打开自适应验证",
+      "mechanism": "自适应验证（AV）按置信度在请求间重新分配草稿 token；此前因 ReplaySSM 从 CPU 计数规划 decode 而在 Mamba2 上被禁用，Triton ReplaySSM 改为在 GPU 上填 decode 元数据并读 device cu_seqlens 后放开；FlashInfer ReplaySSM 仍拒绝（它用 host num_decode_tokens 丢弃 cu_seqlens）。",
+      "engine": "vLLM",
+      "versions": "vLLM 0.34.0rc1.dev1129+gc32251b5d（PR #69286，2026-11-22，未合并）；NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16 + NVFP4-DFlash 草稿",
+      "config": "vllm serve <target> --served-model-name target --max-model-len 4096 --max-num-seqs 64 --gpu-memory-utilization 0.92 --no-enable-prefix-caching --attention-backend TRITON_ATTN --use-replayssm --speculative-config '{\"method\":\"dflash\",\"model\":\"<drafter>\",\"num_speculative_tokens\":7,\"enable_adaptive_verification\":true}'（A100 SM80 上 FA2 不接受 AV，必须 TRITON_ATTN）",
+      "gain": "作者 1×A100 80GB 实测（GSM8K，5 seed 配对，KV=7）：AV on vs off，c8 +4.5%（999.0→1044.5 tok/s）、c32 +3.3%（2486.2→2569.4）、c1 −1.8%（319.0→313.1），5/5 同向；trace-replay 逐 token 一致、VLLM_GPU_SYNC_CHECK=error 下无 host sync；TPOT c8 7.18→6.95ms、c32 10.94→10.77ms。",
+      "cost": "AV 是 opt-in，只有 batch 变大才有收益，c1 变慢；只验证一个混合模型、TP=1、关 prefix caching、greedy；CI 无足够大 GPU，GPU 验证在 CI 外做；FlashInfer 拒绝仅单测覆盖。",
+      "pitfalls": {
+        "hit": "A100 上启动报 \"ValueError: Adaptive verification trims verification requests on device, which the Mamba2AttentionBackend attention backend does not support. Pass enable_adaptive_verification=false in the speculative config, or use a backend that does.\"",
+        "fix": "用 --attention-backend TRITON_ATTN（不要 FlashAttention2），且走 Triton ReplaySSM（--use-replayssm，不要 FlashInfer 变体）。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm/pull/69286",
+      "status": "实验性"
+    },
+    {
+      "line": "nvidia",
+      "family": "other",
+      "name": "SGLang · 统一内存 PD 分离 + DFLASH 投机（Mooncake，CUDA 限定）",
+      "mechanism": "解除 unified memory + PD + 投机在 Mooncake 下的硬拒绝（原 kv_cache_hook.py 直接拒绝）；unified arena 改从 Mooncake 自定义内存池分配才能被多机 NVLink 注册（否则每次 KV 传输 KVTransferError）；全 sliding-window 的 DFLASH 草稿放到 window band 而非全长 band；Mooncake send 的连续段从 per-run Python list 改 numpy 边界数组，减少高并发明明 GC。仅 CUDA + DFLASH 放开，其它算法/平台仍拒绝。",
+      "engine": "SGLang",
+      "versions": "SGLang main（PR #50742，2026-11-16 创建 / 11-22 更新，未合并）",
+      "config": "python3 -m sglang.launch_server --model-path <Muse-Spark-Open-816B-A42B-NVFP4> --enable-unified-memory --speculative-algorithm DFLASH --speculative-draft-model-path RadixArk/Muse-Spark-Open-DFlash2 --speculative-num-draft-tokens 8 --speculative-draft-attention-backend trtllm_mha --disaggregation-transfer-backend mooncake --disaggregation-mode prefill|decode；环境变量 SGLANG_MOONCAKE_CUSTOM_MEM_POOL=NVLINK（prefill/decode 各起一节点，sglang_router --pd-disaggregation 汇总）",
+      "gain": "作者 GB300（4 GPU/节点）实测：Muse-Spark-Open-816B-NVFP4 + DFlash2，1P1D unified memory，main 直接拒绝启动、本 PR 能起，GSM8K 97.73%。Mooncake 通用路径（B200，关 unified memory）Qwen3-8B 入口吞吐 57599→58455 tok/s（+1.49%）、GPT-OSS-20B 113364→112624（−0.65%）；GSM8K 与 greedy 输出 token-identical、KV checksum 0 mismatch。",
+      "cost": "仅 CUDA+DFLASH 放开，DSPARK/EAGLE/EAGLE3 和非 CUDA 平台仍拒绝；Mooncake run-builder 改动对所有 Mooncake PD 生效（输出 byte-identical）；强依赖 SGLANG_MOONCAKE_CUSTOM_MEM_POOL=NVLINK 与 NVLink 池，通用路径加速基本在噪声内。",
+      "pitfalls": {
+        "hit": "启动报 \"--enable-unified-memory with PD disaggregation does not support speculative decoding with the Mooncake transfer backend\"，多节点 NVLink 传输时 arena 未注册报 KVTransferError。",
+        "fix": "应用本 PR 且草稿必须是 DFLASH + CUDA；配 SGLANG_MOONCAKE_CUSTOM_MEM_POOL=NVLINK 让 arena 从 Mooncake 池分配，否则 NVLink 无法注册。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/sgl-project/sglang/pull/50742",
+      "status": "实验性"
+    },
+    {
       "line": "ascend",
       "family": "other",
       "name": "vllm-ascend · 通用配置与 16 token 硬上限",
@@ -522,8 +594,62 @@
       "evidence": "A",
       "url": "https://mindie-llm-doc.readthedocs.io/zh-cn/latest/user_guide/feature/speculative_decoding/",
       "status": "实验性"
+    },
+    {
+      "line": "ascend",
+      "family": "other",
+      "name": "vllm-ascend · DFlash2 + PCP（A3 P/D 分离，草稿接受率 95%）",
+      "mechanism": "GLM-5.3-Flash 用 packed MLA + recurrent-state cache page，DFlash2 额外加 dense draft slot；通用 hybrid page 对齐会把 target pool pad 到 draft page size、破坏 packed cache view。本 PR 用 GLM-Next cache planner 分别对齐 target MLA/recurrent 页和独立 draft slot，DCP=1 时把 draft KV 标为未分片以匹配 PCP 下复制式 DFlash 执行。",
+      "engine": "vllm-ascend",
+      "versions": "vLLM v0.33.0 + Ascend A3（每节点 16 NPU，两节点）；PR #22089，base c12397a，未合并，需叠 #22172",
+      "config": "prefill DP=2/PCP=8/TP=1、decode DP=8/TP=2，MooncakeConnectorV2 走 BLHNC 布局；投机用 GLM-5.3-Flash DFlash2 草稿、num_speculative_tokens=7（完整启动命令见 PR 正文）",
+      "gain": "作者 A3 P/D 实测（80 并发流，131072 输入/1024 输出，warm prefix cache）：DFlash2 vs DeepSeek MTP(5 token) —— 解码侧草稿接受率 95.1% vs 41.4%；聚合输出吞吐 3572.9 vs 2143.9 tok/s（+66.6%）；mean TPOT 10.2 vs 19.9 ms、P99 TPOT 10.9 vs 27.1 ms；P50 TTFT 7.57 vs 7.79 s、P50 e2e 18.34 vs 28.47 s。首次 DFlash2 有 3/80 因 decode preemption 重算提前结束（warm 后 80/80）。",
+      "cost": "必须叠 #22172（draft attention 后端 + P/D 图执行）；只验证 W8A8 + packed KV；冷启动存在 preemption 导致输出截断风险，warm 后才稳定。",
+      "pitfalls": {
+        "hit": "给 packed MLA target 直接套通用 hybrid page 对齐，target pool 被 pad 到 draft page size，packed cache view 失效。",
+        "fix": "用 GLM-Next cache planner 分别对齐 target MLA/recurrent 页与独立 draft slot；DCP=1 时把 draft KV 记为 unsharded。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22089",
+      "status": "实验性"
+    },
+    {
+      "line": "ascend",
+      "family": "other",
+      "name": "vllm-ascend · DFlash2 + PP（A3，TP8/PP2，对比 MTP）",
+      "mechanism": "在 Model Runner V2 下让 GLM-5.3-Flash DFlash2 支持流水线并行：按全局层索引捕获辅助 hidden state 并经 Eagle3 PP 传输按序 relay，stage 边界补全 deferred mHC 状态；用 upstream spec_decode_needs_target_embed() 在最后 PP stage 提供 target embedding，让 target checkpoint loader 在 embedding 共享前填好分片。GLM-5.3-Flash PP + sequence-parallel MoE 仍不支持。",
+      "engine": "vllm-ascend",
+      "versions": "vLLM v0.33.0 + Ascend A3（16 NPU）；PR #21831，未合并",
+      "config": "vllm serve \"$TARGET\" --served-model-name glm --trust-remote-code --quantization ascend --pipeline-parallel-size 2 --tensor-parallel-size 8 --prefill-context-parallel-size 1 --enable-expert-parallel --enforce-eager --max-model-len 4096 --max-num-batched-tokens 8192 --max-num-seqs 32 --enable-prefix-caching --additional-config '{\"enable_flashcomm1\":false,\"weight_nz_mode\":1}' --speculative-config '{\"method\":\"dflash\",\"model\":\"$DRAFT\",\"num_speculative_tokens\":7,\"enforce_eager\":true,\"kv_cache_dtype\":\"auto\"}'",
+      "gain": "作者 A3 实测（1 prompt/1024 输出）：DFlash2(7 token) C1 119.06 tok/s / mean TPOT 8.1ms / ITL:TPOT 5.54×，C8 534.99 tok/s / TPOT 12.5ms；对比 MTP(5) C1 109.98、MTP(7) C1 97.72 tok/s。AIME 2026 zero-shot：DFlash2 7 token 93.33%（28/30）。聚焦单测 351 passed/1 skipped。",
+      "cost": "GLM-5.3-Flash PP + sequence-parallel MoE 不支持；PP 需辅助状态按 stage 顺序 relay（额外通信）；走 eager 执行而非 cudagraph；每行数字是单跑、无 seed 区间。",
+      "pitfalls": {
+        "hit": "PP>1 下草稿需要的 target embedding 在最后 stage 是 PPMissingLayer，草稿机制拿不到目标 embedding。",
+        "fix": "用 upstream spec_decode_needs_target_embed() 谓词在最后 stage 构造真实 VocabParallelEmbedding 并由 target checkpoint loader 填充，再由共享检查 alias 给草稿。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/21831",
+      "status": "实验性"
+    },
+    {
+      "line": "ascend",
+      "family": "other",
+      "name": "vllm-ascend · HiSparse + MTP5（A3，MemFabric Host KV）— 负向实测",
+      "mechanism": "GLM-5.3-Flash 在 A3 上开 HiSparse：BF16 KPool 紧凑 key page + 逻辑 Top-K resolver（16-bit Hot slot + LRU + miss bit），冷行走 MemFabric Host KV 并 H2D refill；投机侧仍用 MTP5，一步验证覆盖 6 个 query、每个 2176 Top-K slot。",
+      "engine": "vllm-ascend",
+      "versions": "Ascend A3（16 NPU，TP16+EP），HDK 25.5.1.1 + CANN 9.2.1，vLLM main pin c410543d；PR #22806（draft=true，未合并，叠 #22772 / #22600）",
+      "config": "在 GLM5.3-Flash A3 单点 recipe 上追加 --attention-config '{\"hisparse_config\":{\"eager_host_mirror\":false}}' --kv-transfer-config '{\"kv_connector\":\"HiSparseConnector\",\"kv_role\":\"kv_both\",\"kv_connector_extra_config\":{\"transfer_backend\":\"memfabric\",\"host_pool_gib\":8}}'",
+      "gain": "作者 A3 实测（32768 输入/1024 输出，配对 greedy，ON vs OFF）：吞吐 C1 −4.82%（95.85→91.23 tok/s）、C8 −6.06%（194.05→182.30）；MTP 接受长度 C1 +7.20%（4.572→4.901）、C8 −2.87%（4.899→4.758）；TTFT C1 +5.78% / C8 −5.35%。GSM8K 严格匹配 93.56→93.63%（+0.076pp）、数值提取持平。结论：HiSparse 省显存但本负载没换来吞吐，接受长度提升不稳定。",
+      "cost": "全部延迟/吞吐比较都在 15% 劣化上限内但方向为负；32K/1K ON 观测到 1,101,796 次 cache miss + 581,748,288 B H2D refill；需 MemFabric Host pool 8GiB；PR 仍是 draft。",
+      "pitfalls": {
+        "hit": "共享 MemFabric allocator 的 SDK teardown 异常会消费 cleanup callback 导致重试失败（继承自 #22600）；冷页过多时 H2D refill 拖慢 TPOT。",
+        "fix": "正常 teardown 在 A3 服务中未复现，关注 #22600 的修复；host_pool_gib 给足（示例 8），否则 cold-row 频繁 H2D 直接吃掉吞吐收益。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22806",
+      "status": "仅压测"
     }
   ],
   "version": "v1",
-  "generated_at": "2026-11-22T09:11:36+08:00"
+  "generated_at": "2026-11-23T09:34:35+08:00"
 }
