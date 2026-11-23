@@ -1,6 +1,6 @@
 {
   "version": "v1",
-  "generated_at": "2026-11-22T09:23:10+08:00",
+  "generated_at": "2026-11-23T09:28:26+08:00",
   "items": [
     {
       "id": "N1",
@@ -2110,6 +2110,133 @@
         "active": "2026-11-21"
       },
       "url": "https://github.com/vllm-project/vllm-ascend/pull/22742",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "N46",
+      "line": "nvidia",
+      "name": "LMCache 存储批量 reserve_read 抑制 pinned-memory 爆发导致 OOM",
+      "scenario": [
+        "S1",
+        "S3"
+      ],
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "engine": "LMCache dev (PR#6837, open 2026-11-22)",
+      "gain": "生产复现两次容器 OOM(Exit 137, OOMKilled=true, 50GiB SHM L1 in 52GiB memcg, NVMe L2)，6×~200K-token 冷 prefill 突发约 4 分钟触发；修复后 13 次 eviction loop、47GB 写 NVMe L2、冷 prefill 交错 soak 零 OOM、RAM 稳定、save 成功率 99.97%；reserve 按 8 key 切片，批量上限 _L2_STORE_BATCH_BYTES=2GiB",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "同一 model_name+kv_rank 的单一 shape 组会整体被 pin 直到一个大 write 排空；无 eviction 配置(noop)时读 pin 完全无上限",
+        "consist": "每批注册正常 InFlightStoreTask 走 #5863 预算，stop/timeout 时未提交 reservation 用 submitted/released 排除集精确释放一次；L1_READ_FAILED during=l2_store 异常照旧上报",
+        "block": "inline drain 按设计阻塞 store-loop 线程作为背压，每 50ms poll 检查 stop flag；期间其他 adapter completion 与 listener 删除延后到下一轮，600s deadline 兜底",
+        "engine_change": "只改 StoreController(+259/-72)，2GiB 为模块常量无新配置；ruff/codespell/py_compile 过，pytest 需 torch 环境未本地跑，PR open 未合并",
+        "active": "2026-11-22"
+      },
+      "url": "https://github.com/LMCache/LMCache/pull/6837",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N47",
+      "line": "nvidia",
+      "name": "SGLang hicache 发布 KVCR DRAM residency 给 Dynamo KV router",
+      "scenario": [
+        "S2",
+        "S3"
+      ],
+      "layers": [
+        "L2",
+        "L5"
+      ],
+      "engine": "SGLang main (PR#52402, open 2026-11-22)",
+      "gain": "B200 / Dynamo 1.8.0 / KVCR 0.2.0 端到端：Qwen3-32B TP1 两 worker 10 例全部从 A 的 KVCR DRAM 全命中 115968 tokens restore，输出一致、零请求失败、inventory 无 sequence gap；DeepSeek-V2-Lite MLA TP2 32K prompt、share_replicated_kv 下每 worker rank1 KVCR DRAM 0 bytes vs 32GiB、发布 inventory 4064 pages 无 gap；开启 publish_inventory 每 sync step 只加 1 整数、最多每 100ms gather 一次、单 shard 无 collective；restore TTFT 3.2–3.4s",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "inventory 进程本地且启动为空，worker attach 前存入的 page 对 router 不可见；ZMQ sequence gap 会停 inventory 直到重启；仅经 decode 侧 offload 到达 KVCR 的 page 不广告",
+        "consist": "page 由 KVCR 原生 residency 回调在 DRAM 真持有才发布(非 write ack)；ownership=kvcr 与 GPU/host page 分开、recorder 不合并不同 owner；任一 TP/CP shard 丢弃即移除",
+        "block": "每步 sync row 加一列，有 residency 事件时最多每 100ms 一次 gather_object(先 CP 后 TP)、MIN-reduce 投票；无发布后端路径不变，单 shard 无 collective",
+        "engine_change": "HiCacheStorage 加 publishes_kv_events 等钩子 + BlockStored/Removed 加 ownership 字段 + Rust tree 绑定；PP=1/无 DCP/每 worker 单节点，PP>1、DCP、loopback host、非 dynamo format 启动直接拒绝；PR open，CI warning",
+        "active": "2026-11-23"
+      },
+      "url": "https://github.com/sgl-project/sglang/pull/52402",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N48",
+      "line": "nvidia",
+      "name": "TensorRT-LLM PD 稀疏 offload 统一 NVFP4 DSA KV layout 修复",
+      "scenario": [
+        "S2",
+        "S4"
+      ],
+      "layers": [
+        "L1"
+      ],
+      "engine": "TensorRT-LLM main (PR#22759, open 2026-11-23)",
+      "gain": "GB300 上 TestGLM52NVFP4::test_kv_cache_offload[kv_dtype=nvfp4] 自 2026-11-19 起因 resident context worker 自动选 fp8rope、generation offload worker 保留 residual 而 KV transfer 失败(HTTP 400, key_block_scale has no peer view with the same roles)；设 TRTLLM_NVFP4_MLA_KV_CACHE_LAYOUT=residual 两端同 layout 后 L0_PostMerge #3086 通过(17min)，去掉则复现失败(#22647 的 waiver 移除)",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "只影响用 NVFP4 DSA cache 的 PD 稀疏 offload；不用 NVFP4 DSA 的测试忽略该环境变量",
+        "consist": "resident 与 generation 两端必须同 NVFP4 MLA KV layout，否则 key_block_scale 无 peer view 导致 generation KV transfer 400",
+        "block": "无运行时开销，纯测试环境设置 + 去 waiver；不改引擎代码路径",
+        "engine_change": "只改 accuracy/test_disaggregated_serving.py(+4)与 waives.txt(-1)，非引擎代码；PR open 未合并",
+        "active": "2026-11-23"
+      },
+      "url": "https://github.com/NVIDIA/TensorRT-LLM/pull/22759",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A41",
+      "line": "ascend",
+      "name": "vLLM-Ascend HiSparse GLM-5.3-Flash 在 A3 的 MemFabric Host KV 卸载",
+      "scenario": [
+        "S4",
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "vLLM-Ascend A3 (PR#22806, draft 2026-11-22)",
+      "gain": "A3 单机 16 die、TP16+EP、Model Runner V2、HDK 25.5.1.1、CANN 9.2.1、MTP5：32K 输入/128 输出单次请求观测 1,101,796 cache misses、581,748,288 bytes H2D refill、zero preemption；并发 C8 TTFT 20208.02→19126.99ms(-5.35%)，C1 TTFT 4041.85→4275.58ms(+5.78%)、Mean TPOT 6.499→6.793ms(+4.52%)；8 项延迟/吞吐比较均在 15% 劣化限内，32K/1K 32/32 完成；GSM8K strict 93.56%→93.63%(+0.076pp)",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "只冷行走 MemFabric LOCAL Host KV + H2D refill，热行/驻留行走 INT8 NoPE SFA；C1 的 TTFT/TPOT/吞吐反而变差，C8 才改善",
+        "consist": "INT8 NoPE KV + BF16 KPool + 16-bit Hot slot + LRU + Host row key 里的 miss bit；A3 commit 从 A5 栈隔离，依赖 #22772/#22600/#22062 需合入后 rebase main",
+        "block": "H2D refill 约 581MB/请求靠 backpressure 控 preemption；共享 MemFabric allocator 有 SDK teardown 异常吞 cleanup callback 的已知风险(继承 #22600)",
+        "engine_change": "需 attention-config hisparse_config.eager_host_mirror + kv-transfer-config HiSparseConnector/memfabric/host_pool_gib=8，依赖 HDK 25.5.1 MemFabric；draft 未合并，151 python+3 resolver+13 KPool 测试过",
+        "active": "2026-11-23"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22806",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "A42",
+      "line": "ascend",
+      "name": "vLLM-Ascend GLM-MoE-DSA HND KV layout 支持 DFlash PD 分离",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L1"
+      ],
+      "engine": "vLLM-Ascend (PR#22808, open 2026-11-22)",
+      "gain": "四 Ascend 节点(prefill PP2/TP8/PCP1、decode TP8/DP2/DCP8)验证 KV transfer 到两个 decode worker 并经 proxy 长提示召回；GSM8K 1319 题×3 次同权重/提示/温度0/seed0：HND 1272/1278/1268(均值 96.49%)、BLHNC 1268/1276/1273(96.46%)；prefill PP2/TP4/PCP2 下 HND 三轮 96.44%",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "只针对 GLM-MoE-DSA 用 DFlash draft cache + KVPP，把 sliding-window draft layer 提升为 full-attention 分配的场景",
+        "consist": "FP8 indexer writer 在 key page 间计 scale 字节，KVPP producer/consumer 用同一 packed key+scale；HND 与 BLHNC 输出一致",
+        "block": "PR 未做性能 benchmark(checklist 未勾)，只有精度数字，无 TTFT/吞吐收益；四节点测试在 rebase 到 c12397a 前采集，新 base 未重跑",
+        "engine_change": "改 HND KV cache layout planner + FP8 indexer + 测试(+393/-3, 13 文件)；open 未合并",
+        "active": "2026-11-23"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22808",
       "status": "在读",
       "flag": "新增"
     }
