@@ -380,6 +380,60 @@
       "status": "实验性"
     },
     {
+      "line": "nvidia",
+      "family": "ngram",
+      "name": "TensorRT-LLM · N-Gram 检索式草稿（含 AUTO 自动启用）",
+      "mechanism": "把历史文本切成 (key,value) n-gram 池，用最近 k 个 token 查池取出最长 v 个后续当草稿，主模型把验证 batch 放大到 BS×(v+1) 一次前向并行验证，接受 w 个即输出 w+1 token。is_public_pool=True 时跨请求共享池。",
+      "engine": "TensorRT-LLM（PyTorch backend）",
+      "versions": "官方文档页由 commit ab2dfeb 生成（页脚标注 2026-11-16 更新）；实验硬件 8×B200，模型 Llama-4-Scout-17B-16E FP8，TP8",
+      "config": "spec_config = NGramDecodingConfig(max_draft_len=5, max_matching_ngram_size=3, is_keep_all=True, is_use_oldest=True, is_public_pool=True)；一键自动启用设 spec_decode_algo=AUTO。注意 NGramDecodingConfig 已 deprecated（官方标注 2027-01 移除），新部署改用 SADecodingConfig。",
+      "gain": "官方自报（NVIDIA TRT-LLM 技术博客，8×B200/Llama-4-Scout-17B-16E FP8/TP8）：Magpie 对话集首轮平均接受长度 AL=1.37（k=3,v=5），e2e 加速 10–60%；第二轮基于已建缓存 AL=1.66、单 batch 加速 96.13%、bs4 +63.99%、bs32(k=5,v=3) +33.06%；翻译集 AL 随 v 增大到 4.73（k=5,v=23），延迟最多降 70%；spec_decode_algo=AUTO 启发式迭代开销 <15%、e2e 约 +15%。",
+      "cost": "CPU 侧 n-gram 池内存随 max_matching_ngram_size×输入序列长度增长，字典超出 CPU 高速缓存后查表延迟上升；验证 batch 被放大到 BS×(v+1)，高并发下 TPOT 反而变差——bs=32 时最优配置必须从 k=3,v=5 退到 k=5,v=3。",
+      "pitfalls": {
+        "hit": "NGramDecodingConfig 已被官方标记 deprecated，计划 2027-01 移除；用旧配置在后续版本会失效",
+        "fix": "迁到 SADecodingConfig（后缀自动机）；低并发要提速可直接设 spec_decode_algo=AUTO，由 batch-aware 启发式自动开关 N-Gram"
+      },
+      "evidence": "A",
+      "url": "https://nvidia.github.io/TensorRT-LLM/latest/blogs/tech_blog/blog07_NGram_performance_Analysis_And_Auto_Enablement.html",
+      "status": "已验证"
+    },
+    {
+      "line": "nvidia",
+      "family": "other",
+      "name": "TensorRT-LLM · DeepSeek-R1 MTP + 宽松接受（Relaxed Acceptance）",
+      "mechanism": "复用 DeepSeek-V3/R1 自带的 MTP 模块（官方 checkpoint 只有一个 MTP 模块，走 MTP Eagle 路径）反复前向串行出 K 个链式草稿，主模型一次前向验证并在 rewind 阶段剔除被拒 token 的 KV；宽松接受在 thinking 阶段从 logits 取 top-N 并用概率阈值 delta 过滤后再比对草稿，扩大接受集合（非严格无损）。",
+      "engine": "TensorRT-LLM（PyTorch backend）",
+      "versions": "官方文档页由 commit ab2dfeb 生成（2026-11-16 更新）；实验 8×B200，DeepSeek-R1-FP4 671B，MLA TP8 + MoE EP2，ISL/OSL=1K/2K，bs=1 min-latency",
+      "config": "speculative_config: {decoding_type: MTP, num_nextn_predict_layers: 3}；宽松接受追加 use_relaxed_acceptance_for_thinking: true, relaxed_topk: 10, relaxed_delta: 0.6；launch 加 export TRTLLM_ENABLE_PDL=1，trtllm-bench --model nvidia/DeepSeek-R1-FP4 throughput --backend pytorch --tp 8 --ep 2 --concurrency 1 --max_batch_size 1 --config ./config.yml",
+      "gain": "官方自报（NVIDIA TRT-LLM 技术博客，8×B200 min-latency）：MTP nextn=3 相对 nextn=0 加速 2.16×；叠加宽松接受达 2.33×；同一实测中 CUDA graph 平均 7.22×、overlap scheduler 1.03×；宽松接受在多个数据集上仅带来很小的精度下降（论文式消融，无具体点数数字）。",
+      "cost": "MTP 模块与草稿 KV 占显存（MTP 模块的 embedding 与输出头与主模型共享以省显存）；宽松接受只在 thinking 阶段生效且只支持 DeepSeek-R1，输出分布不再严格无损；验证需 rewind KV cache。",
+      "pitfalls": {
+        "hit": "num_nextn_predict_layers 必须与 max_draft_len 相等，否则 MTPDecodingConfig 校验失败；宽松接受对非 thinking 阶段和 DeepSeek-R1 以外模型无效",
+        "fix": "配置里让 num_nextn_predict_layers == max_draft_len；宽松接受仅用于 DeepSeek-R1 且接受 quality tradeoff，其余场景用严格接受"
+      },
+      "evidence": "A",
+      "url": "https://nvidia.github.io/TensorRT-LLM/latest/blogs/tech_blog/blog02_DeepSeek_R1_MTP_Implementation_and_Optimization.html",
+      "status": "已验证"
+    },
+    {
+      "line": "nvidia",
+      "family": "eagle",
+      "name": "TensorRT-LLM · Eagle3 跑 GPT-OSS-120B（GB200/B200 生产配置）",
+      "mechanism": "Eagle3 草稿头在目标模型 hidden state 上预测 max_draft_len 个候选，GPT-OSS MoE 主干用 spec mask 一次前向验证；PDL（programmatic dependent launch）叠加降低 launch 间隙。",
+      "engine": "TensorRT-LLM（trtllm-serve，PyTorch backend）",
+      "versions": "官方文档页由 commit ab2dfeb 生成（2026-11-16 更新）；仅 GB200/B200，示例 tp_size=8 / ep_size=4 / max_batch_size=10",
+      "config": "eagle.yaml: speculative_config: {decoding_type: Eagle3, max_draft_len: 3, speculative_model_dir: /config/models/eagle/}, kv_cache_config: {enable_block_reuse: false, free_gpu_memory_fraction: 0.8}, cuda_graph_config: {max_batch_size: 10}, moe_config: {backend: TRTLLM}；启动 TRTLLM_ENABLE_PDL=1 trtllm-serve /config/models/gpt-oss-120b --host 0.0.0.0 --port 8000 --tp_size 8 --ep_size 4 --trust_remote_code --config /config/models/eagle/eagle.yaml --max_num_tokens 131072 --max_seq_len 131072",
+      "gain": "未查到（该官方博客只给可照抄的生产配置与健康检查/curl 调用，未公布接受率、吞吐或 TTFT/TPOT 数字）",
+      "cost": "Eagle3 草稿头权重与 draft KV 占显存；max_draft_len 越大验证 batch 越大；基线模型 + Eagle3 权重都需落到高速 SSD；关闭 block reuse（enable_block_reuse=false）牺牲前缀复用。",
+      "pitfalls": {
+        "hit": "该 Eagle3 + GPT-OSS 组合当前只支持 greedy 采样，temperature / top_p / top_k / seed 被静默忽略（no-op），传了也不会报错",
+        "fix": "需要采样输出时不要用这条 Eagle3 路径，改用支持采样的 EAGLE 实现；不要相信客户端传入的 sampling 参数生效"
+      },
+      "evidence": "A",
+      "url": "https://nvidia.github.io/TensorRT-LLM/latest/blogs/tech_blog/blog11_GPT_OSS_Eagle3.html",
+      "status": "已验证"
+    },
+    {
       "line": "ascend",
       "family": "other",
       "name": "vllm-ascend · 通用配置与 16 token 硬上限",
@@ -651,5 +705,5 @@
     }
   ],
   "version": "v1",
-  "generated_at": "2026-11-23T09:34:35+08:00"
+  "generated_at": "2026-11-23T09:35:42+08:00"
 }
