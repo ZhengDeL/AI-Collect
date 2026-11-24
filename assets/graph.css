@@ -363,3 +363,101 @@
   .g-map-howto b { font-size: 11.5px; }
   .g-map { min-height: 0; }
 }
+
+/* ================= v3 目录：栈 → 技术域 → 本栈技术 / 案例 ================= */
+.g-browse { display: flex; flex-direction: column; gap: 14px; padding: 4px 0 8px; }
+.g-browse[hidden] { display: none; }
+.g-crumb { font-size: 13px; color: var(--ink-2); min-height: 20px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.g-crumb i { color: var(--ink-3); font-style: normal; }
+.g-crumb b { color: var(--ink); }
+.g-v3-crumb-a { color: var(--accent); text-decoration: none; }
+.g-v3-crumb-a:hover { text-decoration: underline; }
+
+.g-v3-lede h3 { margin: 0 0 6px; font-size: 20px; }
+.g-v3-lede p { margin: 0; font-size: 13.5px; color: var(--ink-2); line-height: 1.6; max-width: 760px; }
+
+/* 一级：两张栈卡 */
+.g-v3-stacks { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.g-v3-stack {
+  position: relative; display: flex; flex-direction: column; gap: 6px; text-align: left;
+  padding: 20px 22px 18px 24px; border-radius: 14px; border: 1px solid var(--line);
+  background: var(--card); cursor: pointer; color: inherit; font: inherit;
+  border-left-width: 4px; transition: border-color .15s, transform .15s; min-height: 226px;
+}
+.g-v3-stack:hover { border-color: var(--accent); transform: translateY(-1px); }
+.g-v3-stack.nvidia { border-left-color: #4f9e6a; }
+.g-v3-stack.ascend { border-left-color: #3f7fd0; }
+.g-v3-stack-head { display: flex; align-items: baseline; gap: 8px; }
+.g-v3-stack-head b { font-size: 22px; }
+.g-v3-stack-head i { font-style: normal; font-size: 12px; color: var(--ink-3); }
+.g-v3-stack-num { font-size: 34px; font-weight: 800; line-height: 1.1; letter-spacing: -.5px; }
+.g-v3-stack-num em { font-size: 13px; font-weight: 500; color: var(--ink-2); margin-left: 6px; font-style: normal; }
+.g-v3-stack-meta { font-size: 12.5px; color: var(--ink-2); }
+.g-v3-stack-eng { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
+.g-v3-stack-eng i { font-style: normal; font-size: 11px; color: var(--ink-3); border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; }
+.g-v3-stack-go { margin-top: 6px; font-size: 12.5px; color: var(--accent); }
+
+/* 二级：12 个技术域 */
+.g-v3-dgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.g-v3-dcard {
+  display: flex; flex-direction: column; gap: 4px; text-align: left; min-height: 92px;
+  padding: 12px 13px; border-radius: 12px; border: 1px solid var(--line); background: var(--card);
+  cursor: pointer; color: inherit; font: inherit; transition: border-color .15s, transform .15s;
+}
+.g-v3-dcard:hover { border-color: var(--accent); transform: translateY(-1px); }
+.g-v3-dcard-name { font-size: 14px; font-weight: 700; }
+.g-v3-dcard-num { font-size: 24px; font-weight: 800; line-height: 1.1; }
+.g-v3-dcard-num em { font-size: 11.5px; font-weight: 500; color: var(--ink-2); margin-left: 4px; font-style: normal; }
+.g-v3-dcard-meta { font-size: 11px; color: var(--ink-3); }
+.g-v3-dcard-warn { font-size: 11px; color: var(--amber, #b8860b); margin-top: auto; }
+
+/* 三级：技术列表 */
+.g-v3-list, .g-v3-cases ul, .g-v3-miss ul { list-style: none; margin: 0; padding: 0; }
+.g-v3-list { display: flex; flex-direction: column; gap: 6px; }
+.g-v3-rowbtn {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center;
+  width: 100%; text-align: left; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--card); cursor: pointer; color: inherit; font: inherit;
+}
+.g-v3-rowbtn:hover { border-color: var(--accent); }
+.g-v3-rowname { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.g-v3-roweng { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+.g-v3-roweng i { font-style: normal; font-size: 10.5px; color: var(--ink-2); border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
+.g-v3-rownum { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; }
+.g-v3-cases, .g-v3-miss { margin-top: 14px; }
+.g-v3-cases h4 { margin: 0 0 6px; font-size: 13px; color: var(--ink-2); }
+.g-v3-cases ul { display: flex; flex-direction: column; gap: 6px; }
+.g-v3-miss { border: 1px dashed var(--line); border-radius: 10px; padding: 10px 14px; }
+.g-v3-miss b { font-size: 12.5px; color: var(--ink-2); }
+.g-v3-miss ul { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; }
+.g-v3-link { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; font-size: 12.5px; cursor: pointer; }
+.g-v3-link:hover { text-decoration: underline; }
+.g-v3-empty { font-size: 13px; color: var(--ink-3); }
+.g-v3-back { margin-top: 16px; font-size: 13px; }
+.g-v3-foot { font-size: 11.5px; color: var(--ink-3); }
+@media (max-width: 1100px) { .g-v3-dgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 767px) {
+  .g-v3-stacks { grid-template-columns: 1fr; }
+  .g-v3-dgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g-v3-dcard { min-height: 84px; padding: 10px 11px; }
+  .g-v3-dcard-name { font-size: 13px; }
+  .g-v3-stack { padding: 14px 14px 12px 16px; }
+  .g-v3-stack-num { font-size: 28px; }
+  .g-v3-rowbtn { grid-template-columns: minmax(0, 1fr); gap: 5px; padding: 10px 12px; }
+  .g-v3-roweng { justify-content: flex-start; }
+  .g-v3-lede h3 { font-size: 18px; }
+}
+
+.g-v3-alt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 16px; font-size: 13px; color: var(--ink-3); }
+.g-v3-alt a { color: var(--ink-2); text-decoration: none; border-bottom: 1px dashed transparent; }
+.g-v3-alt a:hover { color: var(--ink); border-bottom-color: var(--line); }
+.g-v3-alt i { font-style: normal; color: var(--line); }
+
+.g-main { min-height: calc(100vh - 236px); }
+.g-browse { flex: 1 1 auto; }
+.g-browse-body { display: flex; flex-direction: column; flex: 1 1 auto; }
+
+@media (max-width: 767px) {
+  .g-head .brand .tagline { display: none; }
+  .g-head .brand h1 { font-size: 17px; }
+}

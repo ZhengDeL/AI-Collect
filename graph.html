@@ -6,7 +6,7 @@
 <title>推理技术知识图谱 · AI 情报站</title>
 <meta name="description" content="大模型推理技术全景图谱：按引擎分区、NVIDIA 与昇腾双栈对照，点开每个节点都有原理、实现、实测与维护信息。">
 <link rel="stylesheet" href="assets/style.css">
-<link rel="stylesheet" href="assets/graph.css">
+<link rel="stylesheet" href="assets/graph.css?v=3">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕸️</text></svg>">
 </head>
 <body>
@@ -17,7 +17,7 @@
         <span class="logo">🕸️</span>
         <div>
           <h1>推理技术知识图谱</h1>
-          <p class="tagline">按引擎分区 · NVIDIA / 昇腾双栈对照 · 点开有真材实料</p>
+          <p class="tagline">按硬件栈和技术域分区 · NVIDIA / 昇腾双栈对照 · 点开有真材实料</p>
         </div>
       </a>
       <div class="header-actions">
@@ -36,15 +36,14 @@
 
 <main class="wrap g-app">
   <section class="g-head">
-    <div>
-      <h2>推理技术知识图谱 <span class="g-ver" id="gver">v2 · 总览地图</span></h2>
+    <div class="g-head-info">
       <p class="g-meta" id="gmeta">加载中…</p>
+      <div class="g-statline" id="gstatline"></div>
     </div>
     <div class="g-head-actions">
       <button class="g-toggle" id="gside-toggle" aria-expanded="false" aria-controls="gside">☰ 筛选 / 视图</button>
       <button class="g-toggle" id="gfs" title="全屏看图（Esc 退出）">⛶ 全屏</button>
     </div>
-    <div class="g-statline" id="gstatline"></div>
   </section>
 
   <div class="g-grid" id="ggrid">
@@ -82,7 +81,13 @@
 
     <!-- 中央：总览地图（HTML，点击目标大）+ 关系图（SVG，按需进入） -->
     <section class="g-main" aria-label="图谱画布">
-      <div class="g-map" id="gmap">
+      <!-- v3 主浏览路径：两条硬件栈 → 12 个技术域 → 本栈技术 / 案例。引擎只在域里以“实现者”出现。 -->
+      <div class="g-browse" id="gbrowse">
+        <div class="g-crumb" id="gbcrumb"></div>
+        <div class="g-browse-body" id="gbrowsebody"></div>
+      </div>
+
+      <div class="g-map" id="gmap" hidden>
         <div class="g-map-top">
           <div class="g-map-title">
             <p id="gmapmeta">按 <b>NVIDIA / 昇腾两条硬件栈</b> 和 <b>12 个技术域</b> 摆开。每个条目点开都有：原理、引擎里怎么实现（文件+参数）、实测数字、踩过的坑。</p>
@@ -136,7 +141,7 @@
   </div>
 </main>
 
-<script src="assets/graph.js"></script>
+<script src="assets/graph.js?v=3"></script>
 <script src="assets/ui.js"></script>
 </body>
 </html>

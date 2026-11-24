@@ -47,7 +47,7 @@
   DOMAINS.forEach(function (d) { DOMAIN_NAME[d[0]] = d[1]; });
   // 视图 key 与 data/graph.json 的 views 一致：engine / domain / stack / timeline
   var VIEWS = [
-    ['map', '总览地图'], ['engine', '引擎视图'], ['domain', '技术域视图'], ['stack', '双栈对照'], ['timeline', '演进']
+    ['browse', '目录'], ['map', '总览地图'], ['engine', '引擎视图'], ['domain', '技术域视图'], ['stack', '双栈对照'], ['timeline', '演进']
   ];
   var VIEW_NAME = {};
   VIEWS.forEach(function (v) { VIEW_NAME[v[0]] = v[1]; });
@@ -97,7 +97,8 @@
 
   /* ---------- 状态 ---------- */
   var state = {
-    doc: null, view: 'engine', query: '',
+    doc: null, view: 'browse', query: '',
+    browseStack: null, browseDomain: null, b3idx: null,
     filters: { stack: '全部', engine: '全部', domain: '全部', maturity: '全部', evidence: '全部' },
     focusSet: null, selected: null, positions: {}, visible: {}, cardOpen: {},
     w: 1000, h: 620, tx: 0, ty: 0, k: 1, matrixCell: null, suppressHash: false
@@ -1007,6 +1008,217 @@
     }
     filterMap();
   }
+  /* ---------- v3 主浏览路径：两条栈 → 12 个技术域 → 本栈技术 / 案例 ----------
+     设计稿：graph/DESIGN-v3.md（2026-11-24）。四条硬规则：
+     ① 每个 ID 只有一个主归档位置（技术按主域、实现按引擎、案例按运行栈）；
+     ② 栈归属由「它运行在哪个引擎上」决定，不信节点自报的 stack；
+     ③ 引擎只作为「实现者」出现在域里，不与域并列；
+     ④ 一个技术两条栈都有实现时，两栈各见一次同一 ID，详情按当前栈收敛。 */
+  var V3_STACKS = [['nvidia', 'NVIDIA', 'GPU 栈'], ['ascend', '昇腾', 'NPU 栈']];
+  var V3_ENGINE_STACK = {
+    'vllm': 'nvidia', 'sglang': 'nvidia', 'tensorrt-llm': 'nvidia', 'lmdeploy': 'nvidia',
+    'llama.cpp': 'nvidia', 'tgi': 'nvidia', 'dynamo': 'nvidia', 'triton': 'nvidia', 'ollama': 'nvidia',
+    'vllm-ascend': 'ascend', 'mindie': 'ascend', 'mindspore-lite': 'ascend',
+    'atb': 'ascend', 'cann': 'ascend', 'msmodelslim': 'ascend', 'torchair': 'ascend'
+  };
+  var V3_DOMAIN_ORDER = ['serving', 'scheduling', 'kv-cache', 'prefix-cache', 'attention-kernel',
+    'quantization', 'parallel', 'graph-compile', 'spec-decode', 'structured-output', 'multimodal', 'ascend-native'];
+  // 多域条目的主域（设计稿 4.3 的显式表；主域必须在该节点声明的 domains 内，否则回落到 domains[0]）
+  var V3_PRIMARY_OVERRIDE = {
+    'tech/ascend-hccl-collectives': 'parallel',
+    'tech/ascend-aoe-autotuning': 'ascend-native',
+    'tech/ascend-profiling-timeline': 'ascend-native',
+    'tech/ascend-fia-tnd-query-limit': 'attention-kernel',
+    'tech/ascend-msmodelslim-calibration': 'quantization',
+    'tech/ascend-aclgraph-replay': 'graph-compile',
+    'tech/paged-attention': 'kv-cache',
+    'tech/fp8-kv-cache': 'kv-cache',
+    'tech/kv-aware-request-routing': 'prefix-cache',
+    'tech/prefill-decode-disaggregation': 'serving',
+    'tech/model-backend': 'serving',
+    'case/20261118-01': 'serving', 'case/20261122-01': 'serving',
+    'case/20261118-03': 'multimodal', 'case/20261122-03': 'multimodal',
+    'case/20261118-04': 'quantization'
+  };
+  var V3_TOOLCHAIN = { atb: 1, cann: 1, msmodelslim: 1, torchair: 1 };
+  var V3_STACK_NAME = { nvidia: 'NVIDIA', ascend: '昇腾' };
+  function v3EngineStack(e) { return V3_ENGINE_STACK[String(e || '').split('/').pop()] || null; }
+  function v3PrimaryDomain(n) {
+    var ds = n.domains || [];
+    var ov = V3_PRIMARY_OVERRIDE[n.id];
+    if (ov && ds.indexOf(ov) >= 0) return ov;
+    return ds[0] || null;
+  }
+  // 一次性建索引：每个节点只归一个栈 / 一个主域，之后渲染全部读缓存，不再算。
+  function v3Index() {
+    if (state.b3idx) return state.b3idx;
+    var m = nodeMap();
+    var idx = { stackOf: {}, techStack: {}, implOfTech: {}, allByDomain: {}, domainOf: {} };
+    state.doc.nodes.forEach(function (n) {
+      if (n.type === 'engine') { var se = v3EngineStack(engineShort(n.id)); if (se) idx.stackOf[n.id] = se; }
+      if (n.type === 'impl') { var s = v3EngineStack(n.engine); if (s) idx.stackOf[n.id] = s; }
+    });
+    state.doc.edges.forEach(function (e) {
+      if (e.type !== 'runs_on') return;
+      var src = m[e.from]; if (!src) return;
+      var s = v3EngineStack(engineShort(e.to) || e.to); if (!s) return;
+      if (src.type === 'impl' && !idx.stackOf[e.from]) idx.stackOf[e.from] = s;
+      if (src.type === 'case') idx.stackOf[e.from] = s;
+    });
+    state.doc.edges.forEach(function (e) {
+      if (e.type !== 'implements') return;
+      var s = idx.stackOf[e.from]; if (!s) return;
+      (idx.techStack[e.to] = idx.techStack[e.to] || {})[s] = 1;
+      (idx.implOfTech[e.to] = idx.implOfTech[e.to] || []).push(e.from);
+    });
+    state.doc.nodes.forEach(function (n) {
+      var d = v3PrimaryDomain(n);
+      if (!d) return;
+      idx.domainOf[n.id] = d;
+      (idx.allByDomain[d] = idx.allByDomain[d] || []).push(n.id);
+    });
+    state.b3idx = idx;
+    return idx;
+  }
+  function v3TechStack(id) { return Object.keys(v3Index().techStack[id] || {}); }
+  function v3StackOf(id) { return v3Index().stackOf[id] || null; }
+  function v3DomainName(k) { return DOMAIN_NAME[k] || k; }
+  function v3TechsIn(stack, domain) {
+    var idx = v3Index(), m = nodeMap(), out = [];
+    (idx.allByDomain[domain] || []).forEach(function (id) {
+      var n = m[id]; if (!n || n.type !== 'tech') return;
+      if ((idx.techStack[id] || {})[stack]) out.push(n);
+    });
+    return out.sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'zh'); });
+  }
+  function v3AllTechsIn(domain) {
+    var idx = v3Index(), m = nodeMap();
+    return (idx.allByDomain[domain] || []).map(function (id) { return m[id]; })
+      .filter(function (n) { return n && n.type === 'tech'; })
+      .sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'zh'); });
+  }
+  function v3CasesIn(stack, domain) {
+    var idx = v3Index(), m = nodeMap(), out = [];
+    (idx.allByDomain[domain] || []).forEach(function (id) {
+      var n = m[id]; if (!n || n.type !== 'case') return;
+      if (idx.stackOf[id] === stack) out.push(n);
+    });
+    return out;
+  }
+  function v3ImplsOf(stack, techId) {
+    var idx = v3Index(), m = nodeMap();
+    return (idx.implOfTech[techId] || []).map(function (id) { return m[id]; })
+      .filter(function (n) { return n && idx.stackOf[n.id] === stack; });
+  }
+  function v3EngineNames(stack, techId) {
+    var idx = v3Index(), m = nodeMap();
+    var seen = {}, out = [];
+    (idx.implOfTech[techId] || []).forEach(function (id) {
+      var n = m[id]; if (!n || idx.stackOf[id] !== stack) return;
+      var e = n.engine || ''; if (!e || seen[e]) return;
+      seen[e] = 1; out.push(e);
+    });
+    return out;
+  }
+  function v3CountFor(stack) {
+    var idx = v3Index(), n = 0;
+    Object.keys(idx.techStack).forEach(function (id) { if (idx.techStack[id][stack]) n++; });
+    return n;
+  }
+  function v3StackCardHTML(s) {
+    var stack = s[0], techN = v3CountFor(stack);
+    var all = Object.keys(V3_ENGINE_STACK).filter(function (e) { return V3_ENGINE_STACK[e] === stack; });
+    var engs = all.filter(function (e) { return !V3_TOOLCHAIN[e]; });
+    var tools = all.filter(function (e) { return V3_TOOLCHAIN[e]; });
+    var domains = V3_DOMAIN_ORDER.filter(function (d) { return v3TechsIn(stack, d).length || v3AllTechsIn(d).length; });
+    var caseN = 0;
+    state.doc.nodes.forEach(function (n) { if (n.type === 'case' && v3StackOf(n.id) === stack) caseN++; });
+    return '<button class="g-v3-stack ' + stack + '" data-browse-stack="' + stack + '">' +
+      '<span class="g-v3-stack-head"><b>' + esc(s[1]) + '</b><i>' + esc(s[2]) + '</i></span>' +
+      '<span class="g-v3-stack-num">' + techN + '<em>项技术</em></span>' +
+      '<span class="g-v3-stack-meta">' + domains.length + ' 个技术域 · ' + engs.length + ' 个推理引擎' +
+      (tools.length ? ' · ' + tools.length + ' 个工具链' : '') + (caseN ? ' · ' + caseN + ' 个实战案例' : '') + '</span>' +
+      '<span class="g-v3-stack-eng">' + engs.map(function (e) { return '<i>' + esc(e) + '</i>'; }).join('') + '</span>' +
+      '<span class="g-v3-stack-go">进去看 →</span></button>';
+  }
+  function v3StacksHTML() {
+    return '<div class="g-v3-lede"><h3>先选一条硬件栈</h3>' +
+      '<p>同一个技术概念，NVIDIA 和昇腾各有各的实现。选一条栈进去，看到的是这条栈上真实存在的做法、数字和坑。' +
+      '想看两边差别，在任意条目的详情里点「双栈对照」。</p></div>' +
+      '<div class="g-v3-stacks">' + V3_STACKS.map(v3StackCardHTML).join('') + '</div>' +
+      '<div class="g-v3-alt">也可以从别的角度看：' +
+      '<a href="#view/map">总览地图</a><i>·</i><a href="#view/engine">引擎视图</a><i>·</i>' +
+      '<a href="#view/timeline">演进时间线</a><i>·</i><a href="#view/stack">双栈对照索引</a></div>' +
+      '<div class="g-v3-foot">共 ' + state.doc.nodes.length + ' 个条目 · ' + state.doc.edges.length + ' 条关系 · 12 个技术域 · 2 条硬件栈</div>';
+  }
+  function v3CrumbHTML(stack, domain) {
+    var a = '<a class="g-v3-crumb-a" href="#browse">全部栈</a>';
+    if (!stack) return '';
+    var b = '<a class="g-v3-crumb-a" href="#browse/' + stack + '">' + esc(V3_STACK_NAME[stack] || stack) + '</a>';
+    if (!domain) return a + ' <i>/</i> ' + b;
+    return a + ' <i>/</i> ' + b + ' <i>/</i> <b>' + esc(v3DomainName(domain)) + '</b>';
+  }
+  function v3DomainsHTML(stack) {
+    var cards = V3_DOMAIN_ORDER.map(function (d) {
+      var mine = v3TechsIn(stack, d), all = v3AllTechsIn(d), cs = v3CasesIn(stack, d);
+      var extra = '';
+      if (!mine.length && all.length) extra = '<span class="g-v3-dcard-warn">这条栈还没有实现记录</span>';
+      if (d === 'ascend-native' && stack === 'nvidia') extra = '<span class="g-v3-dcard-warn">此域只适用于昇腾</span>';
+      return '<button class="g-v3-dcard" data-browse-domain="' + d + '">' +
+        '<span class="g-v3-dcard-name">' + esc(v3DomainName(d)) + '</span>' +
+        '<span class="g-v3-dcard-num">' + mine.length + '<em>项技术</em></span>' +
+        '<span class="g-v3-dcard-meta">' + (cs.length ? cs.length + ' 个案例 · ' : '') + '全域 ' + all.length + ' 项</span>' +
+        extra + '</button>';
+    }).join('');
+    return '<div class="g-v3-lede"><h3>这条栈有 ' + V3_DOMAIN_ORDER.length + ' 个技术方向</h3>' +
+      '<p>每个技术只归一个主域。数字是这条栈上有真实实现记录的技术条数，点开看是哪几个引擎做的、怎么做的。</p></div>' +
+      '<div class="g-v3-dgrid">' + cards + '</div>';
+  }
+  function v3TechListHTML(stack, domain) {
+    var mine = v3TechsIn(stack, domain), all = v3AllTechsIn(domain), cs = v3CasesIn(stack, domain);
+    var rows = mine.map(function (n) {
+      var engs = v3EngineNames(stack, n.id);
+      var implN = v3ImplsOf(stack, n.id).length;
+      return '<li class="g-v3-row"><button class="g-v3-rowbtn" data-goto="' + esc(n.id) + '">' +
+        '<span class="g-v3-rowname">' + esc(n.name) + '</span>' +
+        '<span class="g-v3-roweng">' + (engs.length ? engs.map(function (e) { return '<i>' + esc(e) + '</i>'; }).join('') : '<i>未记录引擎</i>') + '</span>' +
+        '<span class="g-v3-rownum">' + implN + ' 条实现</span></button></li>';
+    }).join('');
+    var miss = all.filter(function (n) { return mine.indexOf(n) < 0; });
+    var missHTML = miss.length ? '<div class="g-v3-miss"><b>这条栈还没有实现记录的 ' + miss.length + ' 项</b>' +
+      '<ul>' + miss.map(function (n) { return '<li><button class="g-v3-link" data-goto="' + esc(n.id) + '">' + esc(n.name) + '</button></li>'; }).join('') + '</ul></div>' : '';
+    var caseHTML = cs.length ? '<div class="g-v3-cases"><h4>本栈实战案例（' + cs.length + '）</h4><ul>' + cs.map(function (n) {
+      return '<li><button class="g-v3-rowbtn" data-goto="' + esc(n.id) + '"><span class="g-v3-rowname">' + esc(n.name) + '</span>' +
+        '<span class="g-v3-rownum">案例</span></button></li>';
+    }).join('') + '</ul></div>' : '';
+    return '<div class="g-v3-lede"><h3>' + esc(v3DomainName(domain)) + ' · ' + esc(V3_STACK_NAME[stack]) + '</h3>' +
+      '<p>这条栈上有 ' + mine.length + ' 项技术有实现记录。点任意一行看九个分区：原理、引擎里怎么实现（文件+参数）、实测数字、踩过的坑。</p></div>' +
+      (rows ? '<ul class="g-v3-list">' + rows + '</ul>' : '<p class="g-v3-empty">这条栈在这个域还没有实现记录。</p>') +
+      caseHTML + missHTML +
+      '<div class="g-v3-back"><a class="g-v3-crumb-a" href="#browse/' + stack + '">← 回 ' + esc(V3_STACK_NAME[stack]) + ' 的技术方向</a></div>';
+  }
+  function renderBrowse() {
+    var body = $('gbrowsebody'), crumb = $('gbcrumb');
+    if (!body) return;
+    var st = state.browseStack, dm = state.browseDomain;
+    if (!st) { crumb.innerHTML = ''; body.innerHTML = v3StacksHTML(); return; }
+    if (!dm) { crumb.innerHTML = v3CrumbHTML(st); body.innerHTML = v3DomainsHTML(st); return; }
+    crumb.innerHTML = v3CrumbHTML(st, dm); body.innerHTML = v3TechListHTML(st, dm);
+  }
+  function goBrowse(stack, domain, pushHash) {
+    state.browseStack = stack || null;
+    state.browseDomain = domain || null;
+    closePanelSilent();
+    if (state.view !== 'browse') setView('browse', false);
+    renderBrowse();
+    if (pushHash !== false) {
+      var h = '#' + (stack ? ('browse/' + stack + (domain ? '/' + domain : '')) : 'browse');
+      state.suppressHash = true;
+      history.replaceState(null, '', h);
+      setTimeout(function () { state.suppressHash = false; }, 0);
+    }
+  }
+
   function copyText(t) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(t).catch(function () { fallbackCopy(t); });
@@ -1199,24 +1411,28 @@
 
   /* ---------- 深链 ---------- */
   function setView(mode, pushHash) {
-    if (!VIEW_NAME[mode]) mode = 'map';
+    if (!VIEW_NAME[mode]) mode = 'browse';
     state.view = mode;
-    var mapEl = $('gmap'), stEl = $('gstage');
+    var mapEl = $('gmap'), stEl = $('gstage'), brEl = $('gbrowse');
+    if (brEl) brEl.hidden = mode !== 'browse';
     if (mapEl) mapEl.hidden = mode !== 'map';
-    if (stEl) stEl.hidden = mode === 'map';
+    if (stEl) stEl.hidden = (mode === 'map' || mode === 'browse');
     if (pushHash !== false) {
       state.suppressHash = true;
       history.replaceState(null, '', '#view/' + mode);
       setTimeout(function () { state.suppressHash = false; }, 0);
     }
     renderViews();
+    if (mode === 'browse') { renderBrowse(); return; }
     if (mode === 'map') return;
     fit(); buildScene();
   }
   function applyHash() {
     if (!state.doc) return;
     var h = location.hash;
-    var m = h.match(/^#node\/(.+)$/);
+    var m = h.match(/^#browse(?:\/([a-z]+))?(?:\/([a-z0-9-]+))?$/);
+    if (m && (!m[1] || V3_STACK_NAME[m[1]])) { goBrowse(m[1] || null, m[2] || null, false); return; }
+    m = h.match(/^#node\/(.+)$/);
     if (m) {
       if (state.view === 'map') setView('engine', false);
       selectNode(decodeURIComponent(m[1]), false); return;
@@ -1365,6 +1581,17 @@
       var db = t.closest && t.closest('[data-ball-item]');
       if (db) { showDomainPanel(db.getAttribute('data-domain')); return; }
     });
+    // v3 目录：点栈卡 → 该栈 12 个技术域；点域卡 → 本栈技术列表；点技术行 → 九分区详情
+    var br = $('gbrowse');
+    if (br) br.addEventListener('click', function (e) {
+      var t = e.target;
+      var sb = t.closest && t.closest('[data-browse-stack]');
+      if (sb) { goBrowse(sb.getAttribute('data-browse-stack'), null, true); return; }
+      var db2 = t.closest && t.closest('[data-browse-domain]');
+      if (db2) { goBrowse(state.browseStack, db2.getAttribute('data-browse-domain'), true); return; }
+      var gb = t.closest && t.closest('[data-goto]');
+      if (gb) { e.preventDefault(); selectNode(gb.getAttribute('data-goto'), true); return; }
+    });
     var tr = $('gtorelations');
     if (tr) tr.addEventListener('click', function () { setView('engine'); });
     var dm = $('gdemo');
@@ -1408,8 +1635,8 @@
     loadData().then(function (doc) {
       var tData = performance.now();
       state.doc = doc;
-      $('gver').textContent = 'v2 · ' + (doc.schema_version || '');
-      $('gmeta').textContent = (doc.subtitle || '') + (doc.generated_at ? ' · 数据更新 ' + doc.generated_at : '');
+      var verEl = $('gver'); if (verEl) verEl.textContent = 'v3 · ' + (doc.schema_version || '');
+      $('gmeta').textContent = 'v3 · 目录 · ' + (doc.generated_at ? '数据更新 ' + doc.generated_at.replace('T', ' ').slice(0, 16) : '') + ' · 每个条目点开有九个分区';
       $('gstatline').innerHTML =
         '<span class="g-stat">节点 <b>' + doc.nodes.length + '</b></span>' +
         '<span class="g-stat">关系 <b>' + doc.edges.length + '</b></span>' +
@@ -1418,12 +1645,15 @@
       $('gloading').hidden = true;
       renderViews(); renderFilters(); renderMatrix(); renderLegends(); buildMap();
       var h = location.hash.match(/^#view\/([a-z]+)$/);
-      state.view = h && VIEW_NAME[h[1]] ? h[1] : 'map';
+      state.view = h && VIEW_NAME[h[1]] ? h[1] : 'browse';
+      var isBrowse = state.view === 'browse';
       var isMap = state.view === 'map';
+      if ($('gbrowse')) $('gbrowse').hidden = !isBrowse;
       $('gmap').hidden = !isMap;
-      $('gstage').hidden = isMap;
+      $('gstage').hidden = (isMap || isBrowse);
       var tDraw = performance.now();
-      if (!isMap) { fit(); buildScene(); }
+      if (isBrowse) { renderBrowse(); }
+      else if (!isMap) { fit(); buildScene(); }
       applyHash();
       var renderMs = Math.round(performance.now() - tDraw);
       var totalMs = Math.round(performance.now() - tBoot);
