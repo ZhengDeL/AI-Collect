@@ -1,15 +1,15 @@
 {
  "schema_version": "1.0",
- "generated_at": "2026-11-24T11:56:02+08:00",
+ "generated_at": "2026-11-24T18:07:50+08:00",
  "counts": {
-  "nodes": 214,
-  "edges": 225
+  "nodes": 229,
+  "edges": 249
  },
  "views": [
   {
    "key": "engine",
    "name": "引擎视图",
-   "desc": "按 12 个推理引擎分泳道，看每个引擎里有什么"
+   "desc": "按引擎分卡片，看每个引擎实现了哪些技术、有哪些实测"
   },
   {
    "key": "domain",
@@ -11325,13 +11325,14 @@
   },
   {
    "id": "engine/mindie",
-   "name": "MindIE",
+   "name": "MindIE-LLM",
    "alias": [
-    "mindie-llm"
+    "MindIE",
+    "MindIE LLM"
    ],
-   "one_line": "华为昇腾官方推理框架，三层架构覆盖模型、生成与调度。",
-   "why": "昇腾上拿到官方最优性能与算子支持，生产部署的默认选择。",
-   "principle": "三层：Modeling（ATB/MindFormers 承载模型结构，支持在线权重切分）→ Text Generator（自回归生成 + 并行解码插件）→ LLM Manager（Continuous Batching、统一内存池管 KV、状态监控）。",
+   "one_line": "MindIE 套件里的大模型推理引擎：KV 块管理、连续合批、HTTP/gRPC 服务。",
+   "why": "存量生产部署的主力；3.1.0 起转入维护态、2027-03 有一批日落，新项目改走 vLLM-Ascend + MindIE-Motor。",
+   "principle": "三层：Modeling（ATB/MindFormers 承载模型结构，支持在线权重切分）→ Text Generator（自回归生成 + 并行解码插件）→ LLM Manager（Continuous Batching、统一内存池管 KV、状态监控）。模型表覆盖 A2/A3/300I Duo；同套件下还有 SD（多模态生成）、Motor（集群控制面）、Turbo（外部引擎插件）三块，见各自条目。",
    "stack": [
     "ascend"
    ],
@@ -11414,6 +11415,375 @@
     "https://github.com/ollama/ollama"
    ],
    "evidence": "A",
+   "status": "verified",
+   "type": "engine",
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "engine/mindie-sd",
+   "name": "MindIE-SD",
+   "alias": [
+    "MindIE SD",
+    "mindie-sd"
+   ],
+   "one_line": "昇腾上的多模态生成套件：SD / DiT 类模型的推理加速与量化集成。",
+   "why": "扩散类模型在昇腾上没有通用最优实现，官方把算子替换、量化和采样加速集中在这里，免得自己改 Diffusers 内核。",
+   "principle": "以 Diffusers、Cache-DiT、lightx2v、vLLM-Omni 为执行底座，做昇腾算子替换、量化与并行切分，把注意力、卷积等热点落到 NPU 算子库；仓内给出 SD/DiT 的模型适配与采样加速配置，覆盖 A2/A3/A5。",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "multimodal",
+    "attention-kernel"
+   ],
+   "maturity": "emerging",
+   "urls": [
+    "https://gitcode.com/Ascend/MindIE-SD"
+   ],
+   "evidence": "B",
+   "status": "verified",
+   "type": "engine",
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "engine/mindie-motor",
+   "name": "MindIE-Motor",
+   "alias": [
+    "MindIE Motor",
+    "Motor"
+   ],
+   "one_line": "MindIE 的集群控制面：路由调度、PD/EPD 分离、KV 池化与弹性扩缩。",
+   "why": "单机引擎撑不住生产流量时需要一层与引擎解耦的服务化控制面，它同时接 vLLM 和 SGLang 两路引擎。",
+   "principle": "独立控制面负责请求路由、Prefill/Decode（含 EPD）实例编排、KV 池化与共享、弹性扩缩和故障摘除；引擎侧按 P/D 角色注册，Motor 按负载与 KV 命中把请求派到对应实例，与引擎底座互补。",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "serving",
+    "scheduling",
+    "kv-cache"
+   ],
+   "maturity": "emerging",
+   "urls": [
+    "https://gitcode.com/Ascend/MindIE-Motor"
+   ],
+   "evidence": "B",
+   "status": "verified",
+   "type": "engine",
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "engine/mindie-turbo",
+   "name": "MindIE-Turbo",
+   "alias": [
+    "MindIE Turbo",
+    "vllm_turbo"
+   ],
+   "one_line": "给外部推理引擎做模块化插件与 patch 的框架（vllm_turbo 适配器）。",
+   "why": "不想 fork vLLM 又要在昇腾上改行为时用插件层挂优化；但官方 README 的硬件范围只写到 A800I A2。",
+   "principle": "以 patch/插件方式在运行时改写指定模块（如 attention 后端、调度钩子），vllm_turbo 适配器把 vLLM 的对应实现替换成昇腾版本；不改上游源码，按版本匹配补丁，升级 vLLM 需要重新对齐。",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "serving",
+    "attention-kernel"
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://gitcode.com/Ascend/MindIE-Turbo"
+   ],
+   "evidence": "B",
+   "status": "verified",
+   "type": "engine",
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "engine/mindie-motor-cpp",
+   "name": "MindIE-Motor-CPP",
+   "alias": [
+    "Motor C++",
+    "mindie-motor-cpp"
+   ],
+   "one_line": "MindIE 集群管理的 C++ 实现路径，与 Python 版 Motor 分仓，属存量。",
+   "why": "老部署的 C++ 服务化路径还在用，版本表停在 3.0.0 / CANN 8.5.1，新项目不必再选。",
+   "principle": "C++ 实现的服务化与集群管理：进程模型、请求队列、健康检查与实例编排走 native 代码，减少 Python GIL 与序列化开销；与 Python Motor 的接口和部署形态不同，迁移要重配。",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "serving"
+   ],
+   "maturity": "legacy",
+   "urls": [
+    "https://gitcode.com/Ascend/MindIE-Motor-CPP"
+   ],
+   "evidence": "B",
+   "status": "verified",
+   "type": "engine",
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "engine/sglang-ascend",
+   "name": "SGLang 昇腾后端",
+   "alias": [
+    "SGLang NPU",
+    "sglang-npu"
+   ],
+   "one_line": "SGLang 主仓里的昇腾后端：RadixAttention 前缀缓存与调度直接跑在 NPU 上。",
+   "why": "检索增强、多模态和小模型长尾场景 SGLang 调度更合适，昇腾后端已经进主仓，不必等第三方分支。",
+   "principle": "sgl-project/sglang 的 python/sglang/srt/hardware_backend/npu/ 提供 allocator_npu、attention、cmo、eplb、graph_runner、dsv4 等适配，算子走 sgl-kernel-npu；RadixAttention 的前缀树与调度逻辑不变，只替换设备内存与 kernel，PD transfer 需显式指定 ascend。",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "serving",
+    "prefix-cache",
+    "scheduling"
+   ],
+   "maturity": "emerging",
+   "urls": [
+    "https://github.com/sgl-project/sglang",
+    "https://github.com/sgl-project/sgl-kernel-npu"
+   ],
+   "evidence": "B",
+   "status": "verified",
+   "type": "engine",
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "engine/xllm",
+   "name": "xLLM",
+   "alias": [
+    "xllm",
+    "xLLM-AI"
+   ],
+   "one_line": "多硬件统一推理引擎，一套接口跑多厂商卡，另带 DiT 生成能力。",
+   "why": "同一份服务要在 NVIDIA 与昇腾之间切换时，它是少数把多后端做进同一引擎的项目；生态和文档仍早期。",
+   "principle": "统一调度与 KV 管理在上层，执行层按硬件后端下沉（含昇腾），kernel 与算子由 xllm-ops 提供；DiT 走单独的扩散执行路径，2026-11 仍在活跃开发。",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "serving",
+    "multimodal"
+   ],
+   "maturity": "emerging",
+   "urls": [
+    "https://github.com/xLLM-AI/xllm"
+   ],
+   "evidence": "B",
+   "status": "verified",
+   "type": "engine",
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "engine/mindformers",
+   "name": "MindFormers",
+   "alias": [
+    "mindformers",
+    "MindSpore Transformers"
+   ],
+   "one_line": "MindSpore 侧的大模型训练 / 微调 / 推理一体套件。",
+   "why": "整套栈走 MindSpore 时，模型结构、并行切分和推理入口都由它统一，版本与 CANN 的对齐关系也写得最清楚。",
+   "principle": "以 MindSpore 为执行框架，提供模型库、分布式并行（TP/PP/EP）、微调配方与推理脚本；1.8.0 对应 MindSpore 2.7.2、CANN 8.5.0、驱动 25.5.0，MindIE-LLM 的 Modeling 层可由它承载。",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "serving",
+    "parallel"
+   ],
+   "maturity": "mainstream",
+   "urls": [
+    "https://atomgit.com/mindspore/mindformers"
+   ],
+   "evidence": "B",
+   "status": "verified",
+   "type": "engine",
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "engine/atb",
+   "name": "ATB",
+   "alias": [
+    "Ascend Transformer Boost",
+    "ascend-transformer-boost"
+   ],
+   "one_line": "昇腾 Transformer 加速库：ATB Graph 组图 + 算子下发（ACLNN / MKI 两条路径）。",
+   "why": "MindIE 等引擎的模型算子在它上面跑，看懂它才能看懂昇腾侧注意力、MoE 的实际下发路径。",
+   "principle": "Host 侧用 Operation/Graph 描述算子与依赖，运行时做算子校验、SoC 路由、工作区准备，再按算子类型走 ACLNN 或 MKI 两条 kernel 下发路径；图上 3 条实现记录分别对应这三段。",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "attention-kernel",
+    "graph-compile",
+    "ascend-native"
+   ],
+   "maturity": "mainstream",
+   "urls": [
+    "https://gitcode.com/cann/ascend-transformer-boost"
+   ],
+   "evidence": "B",
+   "status": "verified",
+   "impls": [
+    "impl/atb-split-operation-dispatch",
+    "impl/atb-split-aclnn-launch",
+    "impl/atb-split-mki-launch"
+   ],
+   "type": "engine",
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "engine/cann",
+   "name": "CANN",
+   "alias": [
+    "Compute Architecture for Neural Networks",
+    "cann"
+   ],
+   "one_line": "昇腾的运行时与图引擎底座：图编译（GE）、算子库（ACLNN）与调度下发。",
+   "why": "所有昇腾引擎最终都落到它上面；图编译、算子调优、运行时错误的根因基本都在这一层。",
+   "principle": "上层框架把图交给 GE 做融合与内存规划，算子经 ACLNN 接口按 SoC 版本选择 kernel，运行时负责 stream、事件与内存；编译期可选 AOE 调优，性能数据走 msprof 采集。",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "graph-compile",
+    "ascend-native"
+   ],
+   "maturity": "mainstream",
+   "urls": [
+    "https://www.hiascend.com/developer/cann"
+   ],
+   "evidence": "B",
+   "status": "verified",
+   "impls": [
+    "impl/cann-ge-op-tune-compile",
+    "impl/cann-aoe-engine-internals-gap"
+   ],
+   "type": "engine",
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "engine/torchair",
+   "name": "TorchAir",
+   "alias": [
+    "torch_npu graph mode",
+    "torchair"
+   ],
+   "one_line": "torch_npu 的图模式后端：把 PyTorch 图落到 GE 上执行。",
+   "why": "PyTorch 生态的模型上昇腾要拿图模式收益，入口就是它；AOE 会话参数也在这里下发。",
+   "principle": "作为 torch_npu 的后端接管 FX→GE 转换：捕获图、做算子映射，交给 GE 编译执行；AOE 相关配置通过会话参数传入，可在编译期开启自动调优。与 ACLGraph 的区别是后者只做图捕获重放、不经过 GE 编译。",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "graph-compile",
+    "ascend-native"
+   ],
+   "maturity": "emerging",
+   "urls": [
+    "https://gitcode.com/Ascend/torchair"
+   ],
+   "evidence": "B",
+   "status": "verified",
+   "impls": [
+    "impl/torchair-aoe-config-entry",
+    "impl/torchair-aoe-session-dispatch"
+   ],
+   "type": "engine",
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "engine/msmodelslim",
+   "name": "msModelSlim",
+   "alias": [
+    "MindStudio ModelSlim",
+    "modelslim"
+   ],
+   "one_line": "昇腾离线量化工具链：W8A8 / W4A8 量化与 YAML 校准流水线。",
+   "why": "量化是昇腾上换吞吐最直接的手段，它的校准方式与敏感层回退策略决定精度守不守得住。",
+   "principle": "按 YAML 选量化方式（linear_quant、minmax 等）与校准集，逐层统计后写量化权重与 scale；v1 路径分校准流水线与 checkpoint saver 两段，落盘成引擎可直接加载的格式，快速入门限定 A2/A3。",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "quantization"
+   ],
+   "maturity": "mainstream",
+   "urls": [
+    "https://gitcode.com/Ascend/msmodelslim"
+   ],
+   "evidence": "B",
+   "status": "verified",
+   "impls": [
+    "impl/msmodelslim-v1-calibration-pipeline",
+    "impl/msmodelslim-ascendv1-checkpoint-saver"
+   ],
+   "type": "engine",
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "engine/aoe",
+   "name": "AOE",
+   "alias": [
+    "Ascend Optimize Engine",
+    "aoe"
+   ],
+   "one_line": "CANN 的自动调优引擎：在图编译期搜索更优的算子与调度配置。",
+   "why": "同一张图换不同 tiling 差异很大，AOE 是官方给的免改代码调优入口；但公开实测数据极少，本图相关条目已标注缺口。",
+   "principle": "读取 GE 编译出的图与算子配置，按调优模式（算子/子图/整网）生成候选配置并实测，选出最优写回；CANN 侧在 ge-op-tune-compile 阶段进入，TorchAir 则通过会话参数触发 AOE 会话。",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "graph-compile",
+    "ascend-native"
+   ],
+   "maturity": "mainstream",
+   "urls": [
+    "https://www.hiascend.com/developer/cann"
+   ],
+   "evidence": "B",
+   "status": "verified",
+   "type": "engine",
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "engine/triton-ascend",
+   "name": "triton-ascend",
+   "alias": [
+    "Triton Ascend",
+    "triton-ascend"
+   ],
+   "one_line": "Triton 的昇腾后端：用 Python 写 kernel 并自动调优，跑在 A2/A3/950 上。",
+   "why": "不想写 Ascend C 又想拿到接近手写的算子性能时，这是门槛最低的一条路。",
+   "principle": "把 Triton IR 降到昇腾可执行的 kernel（经编译器后端与运行时），autotune 在昇腾上搜索 tile 与线程配置；仓内给出 A2/A3/950PR/950DT 支持矩阵，推荐 CANN 9.2.0，release 3.6.0.post2。",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "attention-kernel"
+   ],
+   "maturity": "emerging",
+   "urls": [
+    "https://github.com/triton-lang/triton-ascend"
+   ],
+   "evidence": "B",
    "status": "verified",
    "type": "engine",
    "updated_at": "2026-11-22",
@@ -11552,6 +11922,48 @@
    "evidence": "A",
    "status": "verified",
    "type": "hardware",
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "community/xllm",
+   "name": "xLLM 社区",
+   "org": "xLLM-AI",
+   "repos": [
+    "xllm"
+   ],
+   "urls": [
+    "https://github.com/xLLM-AI/xllm"
+   ],
+   "evidence": "B",
+   "status": "verified",
+   "repo": "xLLM-AI/xllm",
+   "stars": 1622,
+   "type": "community",
+   "stack": [
+    "nvidia"
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "正德"
+  },
+  {
+   "id": "community/triton-lang",
+   "name": "Triton 社区",
+   "org": "triton-lang",
+   "repos": [
+    "triton-ascend"
+   ],
+   "urls": [
+    "https://github.com/triton-lang/triton-ascend"
+   ],
+   "evidence": "B",
+   "status": "verified",
+   "repo": "triton-lang/triton-ascend",
+   "stars": 215,
+   "type": "community",
+   "stack": [
+    "nvidia"
+   ],
    "updated_at": "2026-11-22",
    "updated_by": "正德"
   },
@@ -13117,100 +13529,142 @@
    "source": "https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/800alpha003/devaids/atlasatb/atlasatb_0001.html"
   },
   {
+   "from": "impl/atb-split-operation-dispatch",
+   "to": "engine/atb",
+   "type": "runs_on",
+   "note": "ATB Split｜算子创建、SoC 分流和工作区 实现在 ATB 里"
+  },
+  {
+   "from": "impl/atb-split-aclnn-launch",
+   "to": "engine/atb",
+   "type": "runs_on",
+   "note": "ATB Split｜ACLNN 两段式下发 实现在 ATB 里"
+  },
+  {
+   "from": "impl/atb-split-mki-launch",
+   "to": "engine/atb",
+   "type": "runs_on",
+   "note": "ATB Split｜原生 KernelGraph 与 MKI 下发 实现在 ATB 里"
+  },
+  {
+   "from": "impl/cann-ge-op-tune-compile",
+   "to": "engine/cann",
+   "type": "runs_on",
+   "note": "CANN GE｜算子调优图侧编译 实现在 CANN 里"
+  },
+  {
+   "from": "impl/cann-aoe-engine-internals-gap",
+   "to": "engine/cann",
+   "type": "runs_on",
+   "note": "AOE｜JSON 解析、搜索和产物写回源码缺口 实现在 CANN 里"
+  },
+  {
    "from": "impl/mindie-continuous-batching",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "LLM Manager｜Scheduler 连续组批 实现在 MindIE 里"
+   "note": "LLM Manager｜Scheduler 连续组批 实现在 MindIE-LLM 里"
   },
   {
    "from": "impl/mindie-splitfuse",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "LLM Manager｜SplitFuse 混合组批 实现在 MindIE 里"
+   "note": "LLM Manager｜SplitFuse 混合组批 实现在 MindIE-LLM 里"
   },
   {
    "from": "impl/mindie-preemption",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "LLM Manager｜FCFS 抢占与重算/换出 实现在 MindIE 里"
+   "note": "LLM Manager｜FCFS 抢占与重算/换出 实现在 MindIE-LLM 里"
   },
   {
    "from": "impl/mindie-kv-cache-manager",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "LLM Manager｜统一 KV 块管理 实现在 MindIE 里"
+   "note": "LLM Manager｜统一 KV 块管理 实现在 MindIE-LLM 里"
   },
   {
    "from": "impl/mindie-prefix-allocator",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "LLM Manager｜前缀缓存块复用 实现在 MindIE 里"
+   "note": "LLM Manager｜前缀缓存块复用 实现在 MindIE-LLM 里"
   },
   {
    "from": "impl/mindie-kv-cache-pool",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "Text Generator｜设备与主机 KV 池 实现在 MindIE 里"
+   "note": "Text Generator｜设备与主机 KV 池 实现在 MindIE-LLM 里"
   },
   {
    "from": "impl/mindie-prefix-plugin",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "Text Generator｜前缀命中接入模型输入 实现在 MindIE 里"
+   "note": "Text Generator｜前缀命中接入模型输入 实现在 MindIE-LLM 里"
   },
   {
    "from": "impl/mindie-mtp",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "Text Generator｜MTP 并行解码 实现在 MindIE 里"
+   "note": "Text Generator｜MTP 并行解码 实现在 MindIE-LLM 里"
   },
   {
    "from": "impl/mindie-lookahead",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "Text Generator｜Lookahead 并行解码 实现在 MindIE 里"
+   "note": "Text Generator｜Lookahead 并行解码 实现在 MindIE-LLM 里"
   },
   {
    "from": "impl/mindie-structured-output",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "Text Generator｜结构化输出约束 实现在 MindIE 里"
+   "note": "Text Generator｜结构化输出约束 实现在 MindIE-LLM 里"
   },
   {
    "from": "impl/mindie-atb-model-runner",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "Modeling｜ATB Models 模型加载与前向 实现在 MindIE 里"
+   "note": "Modeling｜ATB Models 模型加载与前向 实现在 MindIE-LLM 里"
   },
   {
    "from": "impl/mindie-mindformers-backend",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "Modeling｜MindFormers 模型后端（2.3.0 文档） 实现在 MindIE 里"
+   "note": "Modeling｜MindFormers 模型后端（2.3.0 文档） 实现在 MindIE-LLM 里"
   },
   {
    "from": "impl/mindie-paged-attention",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "Modeling｜ATB 分页注意力算子包装 实现在 MindIE 里"
+   "note": "Modeling｜ATB 分页注意力算子包装 实现在 MindIE-LLM 里"
   },
   {
    "from": "impl/mindie-w8a8-dynamic",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "Modeling｜动态 W8A8 线性权重适配 实现在 MindIE 里"
+   "note": "Modeling｜动态 W8A8 线性权重适配 实现在 MindIE-LLM 里"
   },
   {
    "from": "impl/mindie-tensor-parallel",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "Modeling｜HCCL 并行组与张量并行 实现在 MindIE 里"
+   "note": "Modeling｜HCCL 并行组与张量并行 实现在 MindIE-LLM 里"
   },
   {
    "from": "impl/mindie-aclgraph",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "Modeling｜AclGraphBackend 图捕获与回放 实现在 MindIE 里"
+   "note": "Modeling｜AclGraphBackend 图捕获与回放 实现在 MindIE-LLM 里"
+  },
+  {
+   "from": "impl/msmodelslim-v1-calibration-pipeline",
+   "to": "engine/msmodelslim",
+   "type": "runs_on",
+   "note": "msModelSlim｜YAML 校准与量化流水线 实现在 msModelSlim 里"
+  },
+  {
+   "from": "impl/msmodelslim-ascendv1-checkpoint-saver",
+   "to": "engine/msmodelslim",
+   "type": "runs_on",
+   "note": "msModelSlim｜AscendV1 量化检查点导出 实现在 msModelSlim 里"
   },
   {
    "from": "impl/sglang-decode-retraction-reprefill",
@@ -13403,6 +13857,18 @@
    "to": "engine/tensorrt-llm",
    "type": "runs_on",
    "note": "ModelEngine：PyTorch 模型编译入口 实现在 TensorRT-LLM 里"
+  },
+  {
+   "from": "impl/torchair-aoe-config-entry",
+   "to": "engine/torchair",
+   "type": "runs_on",
+   "note": "TorchAir AOE｜配置校验和 GE 图触发 实现在 TorchAir 里"
+  },
+  {
+   "from": "impl/torchair-aoe-session-dispatch",
+   "to": "engine/torchair",
+   "type": "runs_on",
+   "note": "TorchAir AOE｜调优会话提交 实现在 TorchAir 里"
   },
   {
    "from": "impl/vllm-ascend-310p-build-target",
@@ -13660,7 +14126,7 @@
    "from": "case/20261121-02",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "Qwen3-8B-W8A8 单张 910B 在 MindIE 上实跑"
+   "note": "Qwen3-8B-W8A8 单张 910B 在 MindIE-LLM 上实跑"
   },
   {
    "from": "case/20261121-03",
@@ -13672,7 +14138,7 @@
    "from": "case/20261121-03",
    "to": "engine/mindie",
    "type": "runs_on",
-   "note": "Qwen3.8-27B（GDN 混合架构）在 300… 在 MindIE 上实跑"
+   "note": "Qwen3.8-27B（GDN 混合架构）在 300… 在 MindIE-LLM 上实跑"
   },
   {
    "from": "case/20261121-04",
@@ -13750,7 +14216,7 @@
    "from": "engine/mindie",
    "to": "community/ascend",
    "type": "maintained_by",
-   "note": "MindIE 由 昇腾社区 维护"
+   "note": "MindIE-LLM 由 昇腾社区 维护"
   },
   {
    "from": "engine/mindspore-lite",
@@ -13783,6 +14249,84 @@
    "note": "Text Generation Inference 由 Hugging Face（TGI） 维护"
   },
   {
+   "from": "engine/mindie-sd",
+   "to": "community/ascend",
+   "type": "maintained_by",
+   "note": "MindIE-SD 由 昇腾社区 维护"
+  },
+  {
+   "from": "engine/mindie-motor",
+   "to": "community/ascend",
+   "type": "maintained_by",
+   "note": "MindIE-Motor 由 昇腾社区 维护"
+  },
+  {
+   "from": "engine/mindie-turbo",
+   "to": "community/ascend",
+   "type": "maintained_by",
+   "note": "MindIE-Turbo 由 昇腾社区 维护"
+  },
+  {
+   "from": "engine/mindie-motor-cpp",
+   "to": "community/ascend",
+   "type": "maintained_by",
+   "note": "MindIE-Motor-CPP 由 昇腾社区 维护"
+  },
+  {
+   "from": "engine/mindformers",
+   "to": "community/ascend",
+   "type": "maintained_by",
+   "note": "MindFormers 由 昇腾社区 维护"
+  },
+  {
+   "from": "engine/atb",
+   "to": "community/ascend",
+   "type": "maintained_by",
+   "note": "ATB 由 昇腾社区 维护"
+  },
+  {
+   "from": "engine/cann",
+   "to": "community/ascend",
+   "type": "maintained_by",
+   "note": "CANN 由 昇腾社区 维护"
+  },
+  {
+   "from": "engine/torchair",
+   "to": "community/ascend",
+   "type": "maintained_by",
+   "note": "TorchAir 由 昇腾社区 维护"
+  },
+  {
+   "from": "engine/msmodelslim",
+   "to": "community/ascend",
+   "type": "maintained_by",
+   "note": "msModelSlim 由 昇腾社区 维护"
+  },
+  {
+   "from": "engine/aoe",
+   "to": "community/ascend",
+   "type": "maintained_by",
+   "note": "AOE 由 昇腾社区 维护"
+  },
+  {
+   "from": "engine/sglang-ascend",
+   "to": "community/sgl-project",
+   "type": "maintained_by",
+   "note": "SGLang 昇腾后端 由 SGLang 社区 维护"
+  },
+  {
+   "from": "engine/xllm",
+   "to": "community/xllm",
+   "type": "maintained_by",
+   "note": "xLLM 由 xLLM 社区 维护"
+  },
+  {
+   "from": "engine/triton-ascend",
+   "to": "community/triton-lang",
+   "type": "maintained_by",
+   "note": "triton-ascend 由 Triton 社区 维护"
+  },
+  {
    "from": "engine/vllm-ascend",
    "to": "engine/vllm",
    "type": "asc_equivalent",
@@ -13793,6 +14337,18 @@
    "to": "engine/tensorrt-llm",
    "type": "asc_equivalent",
    "note": "两条栈各自的官方推理框架"
+  },
+  {
+   "from": "engine/sglang-ascend",
+   "to": "engine/sglang",
+   "type": "asc_equivalent",
+   "note": "SGLang 的昇腾后端，调度与前缀缓存同一套实现"
+  },
+  {
+   "from": "engine/mindie-motor",
+   "to": "engine/dynamo",
+   "type": "asc_equivalent",
+   "note": "两条栈各自的推理集群控制面"
   }
  ]
 }

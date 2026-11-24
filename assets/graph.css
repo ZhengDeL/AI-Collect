@@ -268,7 +268,7 @@
 .g-map-title h2 { margin: 0; font-size: 26px; letter-spacing: .3px; }
 .g-map-title p { margin: 5px 0 0; color: var(--ink-3); font-size: 12.5px; }
 .g-map-search { flex: 0 1 340px; min-width: 220px; }
-.g-map-stacks { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.g-map-stacks { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
 .g-stack { border: 1px solid var(--line); border-radius: 16px; background: var(--card); padding: 14px 16px; }
 .g-stack.nvidia { border-left: 3px solid var(--green, #2e9e6b); }
 .g-stack.ascend { border-left: 3px solid var(--accent); }
@@ -281,6 +281,9 @@
 .g-engine:hover { border-color: var(--accent); background: var(--bg-soft); }
 .g-engine-name { font-size: 13px; font-weight: 600; color: var(--ink); }
 .g-engine-meta { font-size: 11px; color: var(--ink-3); }
+.g-subgroup { margin: 10px 0 7px; font-size: 11px; letter-spacing: .6px; color: var(--ink-3); }
+.g-engine.is-empty { border-style: dashed; opacity: .84; }
+.g-engine.is-empty .g-engine-name { color: var(--ink-2); }
 .g-map-domains { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .g-dgroup { border: 1px solid var(--line); border-radius: 16px; padding: 12px 12px 14px; background: var(--card); }
 .g-dgroup-head { font-size: 11.5px; color: var(--ink-3); letter-spacing: .5px; margin-bottom: 10px; }

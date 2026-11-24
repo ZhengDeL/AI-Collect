@@ -986,23 +986,31 @@
       groups[k].push(e);
     });
     var stackDefs = [['nvidia', 'NVIDIA · GPU 栈'], ['ascend', '昇腾 · NPU 栈'], ['other', '跨栈 · 其它引擎']];
+    function mapEngineCard(e) {
+      var n = nodesOfEngine(e[0]).length;
+      var en = engineNode(e[0]);
+      var desc = en && en.one_line ? String(en.one_line) : '';
+      if (desc.length > 46) desc = desc.slice(0, 46) + '…';
+      var empty = n <= 1;
+      return '<button class="g-engine' + (empty ? ' is-empty' : '') + '" data-engine="' + esc(e[0]) +
+        '"><span class="g-engine-name">' + esc(e[1]) + '</span>' +
+        (desc ? '<span class="g-engine-desc">' + esc(desc) + '</span>' : '') +
+        '<span class="g-engine-meta">' + (empty ? '暂无实现记录 · 点开看引擎说明' : n + ' 项内容') + '</span></button>';
+    }
     stEl.innerHTML = stackDefs.filter(function (s) { return groups[s[0]].length; }).map(function (s) {
       var list = groups[s[0]];
+      var engs = list.filter(function (e) { return !V3_TOOLCHAIN[e[0]]; });
+      var tools = list.filter(function (e) { return V3_TOOLCHAIN[e[0]]; });
+      var sub = engs.length + ' 个推理引擎' + (tools.length ? ' · ' + tools.length + ' 个运行时 / 工具链' : '');
       return '<div class="g-stack ' + s[0] + '"><div class="g-stack-head"><span class="g-stack-name">' + s[1] +
-        '</span><span class="g-stack-sub">' + list.length + ' 个引擎 · 点开看它的实现层</span></div><div class="g-engines">' +
-        list.map(function (e) {
-          var n = nodesOfEngine(e[0]).length;
-          var en = engineNode(e[0]);
-          var desc = en && en.one_line ? String(en.one_line) : '';
-          if (desc.length > 46) desc = desc.slice(0, 46) + '…';
-          return '<button class="g-engine" data-engine="' + esc(e[0]) + '"><span class="g-engine-name">' + esc(e[1]) +
-            '</span>' + (desc ? '<span class="g-engine-desc">' + esc(desc) + '</span>' : '') +
-            '<span class="g-engine-meta">' + n + ' 项内容</span></button>';
-        }).join('') + '</div></div>';
+        '</span><span class="g-stack-sub">' + sub + ' · 点开看它的实现层</span></div>' +
+        (engs.length ? '<div class="g-subgroup">推理引擎</div><div class="g-engines">' + engs.map(mapEngineCard).join('') + '</div>' : '') +
+        (tools.length ? '<div class="g-subgroup">运行时 / 工具链</div><div class="g-engines">' + tools.map(mapEngineCard).join('') + '</div>' : '') +
+        '</div>';
     }).join('');
     dmEl.innerHTML = MAP_DOMAIN_GROUPS.map(function (g) {
       var balls = g[1].filter(function (k) { return DOMAIN_NAME[k]; }).map(function (k) {
-        var n = state.doc.nodes.filter(function (x) { return (x.domains || []).indexOf(k) >= 0; }).length;
+        var n = state.doc.nodes.filter(function (x) { return x.type !== 'engine' && (x.domains || []).indexOf(k) >= 0; }).length;
         return '<button class="g-ball-item" data-ball-item data-domain="' + esc(k) + '"><span class="g-ball-circle"><span class="g-ball-n">' + n +
           '</span><span class="g-ball-unit">条</span></span><span class="g-ball-name">' + esc(DOMAIN_NAME[k]) + '</span></button>';
       }).join('');
@@ -1025,7 +1033,10 @@
     'vllm': 'nvidia', 'sglang': 'nvidia', 'tensorrt-llm': 'nvidia', 'lmdeploy': 'nvidia',
     'llama.cpp': 'nvidia', 'tgi': 'nvidia', 'dynamo': 'nvidia', 'triton': 'nvidia', 'ollama': 'nvidia',
     'vllm-ascend': 'ascend', 'mindie': 'ascend', 'mindspore-lite': 'ascend',
-    'atb': 'ascend', 'cann': 'ascend', 'msmodelslim': 'ascend', 'torchair': 'ascend'
+    'mindie-sd': 'ascend', 'mindie-motor': 'ascend', 'mindie-turbo': 'ascend', 'mindie-motor-cpp': 'ascend',
+    'sglang-ascend': 'ascend', 'xllm': 'ascend', 'mindformers': 'ascend',
+    'atb': 'ascend', 'cann': 'ascend', 'msmodelslim': 'ascend', 'torchair': 'ascend',
+    'aoe': 'ascend', 'triton-ascend': 'ascend'
   };
   var V3_DOMAIN_ORDER = ['serving', 'scheduling', 'kv-cache', 'prefix-cache', 'attention-kernel',
     'quantization', 'parallel', 'graph-compile', 'spec-decode', 'structured-output', 'multimodal', 'ascend-native'];
@@ -1046,7 +1057,7 @@
     'case/20261118-03': 'multimodal', 'case/20261122-03': 'multimodal',
     'case/20261118-04': 'quantization'
   };
-  var V3_TOOLCHAIN = { atb: 1, cann: 1, msmodelslim: 1, torchair: 1 };
+  var V3_TOOLCHAIN = { atb: 1, cann: 1, msmodelslim: 1, torchair: 1, aoe: 1, 'triton-ascend': 1 };
   var V3_STACK_NAME = { nvidia: 'NVIDIA', ascend: '昇腾' };
   function v3EngineStack(e) { return V3_ENGINE_STACK[String(e || '').split('/').pop()] || null; }
   function v3PrimaryDomain(n) {
@@ -1144,7 +1155,9 @@
       '<span class="g-v3-stack-num">' + techN + '<em>项技术</em></span>' +
       '<span class="g-v3-stack-meta">' + domains.length + ' 个技术域 · ' + engs.length + ' 个推理引擎' +
       (tools.length ? ' · ' + tools.length + ' 个工具链' : '') + (caseN ? ' · ' + caseN + ' 个实战案例' : '') + '</span>' +
-      '<span class="g-v3-stack-eng">' + engs.map(function (e) { return '<i>' + esc(e) + '</i>'; }).join('') + '</span>' +
+      '<span class="g-v3-stack-eng">' + engs.slice(0, 8).map(function (e) {
+        var en3 = engineNode(e); return '<i>' + esc(en3 ? en3.name : e) + '</i>';
+      }).join('') + (engs.length > 8 ? '<i>+' + (engs.length - 8) + '</i>' : '') + '</span>' +
       '<span class="g-v3-stack-go">进去看 →</span></button>';
   }
   function v3StacksHTML() {
@@ -1782,7 +1795,12 @@
     if (map) map.addEventListener('click', function (e) {
       var t = e.target;
       var eb = t.closest && t.closest('[data-engine]');
-      if (eb) { openEnginePanel(eb.getAttribute('data-engine')); return; }
+      if (eb) {
+        var ek = eb.getAttribute('data-engine'), en2 = engineNode(ek);
+        if (nodesOfEngine(ek).length > 1) openEnginePanel(ek);
+        else if (en2) location.hash = '#node/' + encodeURIComponent(en2.id);
+        return;
+      }
       var db = t.closest && t.closest('[data-ball-item]');
       if (db) { showDomainPanel(db.getAttribute('data-domain')); return; }
     });
