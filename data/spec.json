@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-23",
+  "date": "2026-11-24",
   "items": [
     {
       "line": "nvidia",
@@ -434,6 +434,60 @@
       "status": "已验证"
     },
     {
+      "line": "nvidia",
+      "family": "draft",
+      "name": "vLLM · DSpark fill-in checkpoint 默认 K=block_size−1",
+      "mechanism": "fill-in（sample_from_anchor=false）DSpark checkpoint 的 block 第一槽是已知 anchor，block_size=8 实际只有 7 个草稿；旧默认按 block_size 取 K=8，运行期构造 K+(0 if sample_from_anchor else 1)=9 行 query（anchor+8 mask），比训练的 8 行多一行未训练 mask。修复把 fill-in 默认改成 block_size−1，anchor-first checkpoint 与显式指定值不变。",
+      "engine": "vLLM",
+      "versions": "vLLM main（PR #69423，base ee1d07c7，2026-11-23，draft=true 未合并）；实测 1×B200，vllm b26e084013，AIPerf 0.13.0",
+      "config": "vllm serve Qwen/Qwen3-8B --max-model-len 8192 --max-num-seqs 64 --no-enable-prefix-caching --gpu-memory-utilization 0.9 --speculative-config '{\"method\":\"dspark\",\"model\":\"mgoin/Qwen3-8B-speculator.dspark\",\"num_speculative_tokens\":7}'；修复后不传 num_speculative_tokens 时 fill-in 自动取 block_size−1=7",
+      "gain": "作者 B200/GSM8K 前 200 题实测（c16，K=7 vs K=8）：双向 drafter Qwen3-8B 的 K=8 掉 2.3% AL、8.9% 吞吐（5462→4978 tok/s）、TPOT 2.69→2.95ms；causal drafter Nemotron/Mistral-Small-4 的 K=8 涨约 4-5% AL、约 1% 吞吐（Nemotron 5901→5970 tok/s）。默认改回训练宽度对双向 drafter 安全，对 causal 放弃约 1% c16 吞吐。",
+      "cost": "causal drafter 放弃约 1% c16 吞吐（作者认为匹配 checkpoint 训练宽度更正确）；K>8 受 GDN/KDA spec-decode kernel 只支持 T≤8 限制（#69375）；Inkling-2 原靠 config 存 block_size−1 绕过，现已改正。",
+      "pitfalls": {
+        "hit": "同一个 fill-in checkpoint 用 --model 传 speculator 时解析出 K=7、用 --speculative-config.model 传时旧默认 K=8，行为不一致；双向 drafter 多出的 mask row 会拉低所有训练位置的接受率。",
+        "fix": "升级后不显式传 num_speculative_tokens，让默认按 sample_from_anchor 取 block_size 或 block_size−1；causal drafter 若想吃约 1% 吞吐再显式设 K=8。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm/pull/69423",
+      "status": "实验性"
+    },
+    {
+      "line": "nvidia",
+      "family": "other",
+      "name": "vLLM · MRv2 语法感知草稿（结构化输出下保住接受率）",
+      "mechanism": "结构化输出（JSON tool-call schema）时 grammar bitmask 只在 target 验证端生效、草稿端无约束，草稿频繁吐非法格式 token 导致接受率崩溃；worker 侧建影子 xgrammar matcher（DraftGrammarManager），在 propose 前复用 async_output.copy_event 用已验证 token 同步（零额外 D2H），在 sample_draft 的 gumbel_sample/DraftLogitsCache 写入前 apply_draft_bitmask 保证无损拒绝采样；EAGLE-3 cropped-vocab（d2t）与允许 token 交集为空时用两遍 Triton kernel 保留不 mask 的行，避免全 -inf 出 NaN。",
+      "engine": "vLLM",
+      "versions": "vLLM main（PR #69360，base ad227db3，2026-11-23，未合并 blocked）；实测 NVIDIA RTX 5090 CUDA；范围 xgrammar backend + MRv2 自回归 speculator（EAGLE/EAGLE-3/MTP/Gemma4/StandaloneAR）+ PP=1/DP=1/非 PCP",
+      "config": "无需新增启动参数，命中配置自动生效；核心代码 vllm/v1/worker/gpu/spec_decode/draft_grammar.py 与 speculator.py 的 apply_draft_bitmask；结构化输出请求按 xgrammar 正常传 schema（如 guided_json / tool schema）",
+      "gain": "作者 RTX 5090 实测：dual-mask 后接受率从 <0.25（仅 target mask）升到 >0.90，边缘分布匹配 p_M；Triton bitmask kernel 微基准 bf16/vocab 151936/200 iters，B=1 36.0µs、B=8 34.7µs、B=32 35.2µs/step；78 tests passed / 1 xfailed。E2E Qwen3-8B+EAGLE3 吞吐未跑（测试容器仅约 3.2GiB 空闲显存）。",
+      "cost": "仅覆盖 xgrammar + MRv2 自回归 speculator；DFlash/MultiModuleMTP 等非自回归并行草稿、guidance/outlines backend 未覆盖；新增约 1449 行；非结构化 batch 走 fast-path（has_active_requests 才开 need_eager）零开销，但结构化 batch 仍增加 matcher 同步逻辑。",
+      "pitfalls": {
+        "hit": "从 scheduler 侧推草稿 bitmask 会错位一步（sample_tokens(step N) 在 scheduler.update_from_output(step N) 推进 grammar 状态之前就调用 speculator.propose()）；EAGLE-3 d2t cropped-vocab 与 grammar 允许 token 交集为空时全 -inf 产生 NaN。",
+        "fix": "用 worker 侧影子 matcher 按已验证 token 同步、preemption 时 replay committed tokens 回到精确 grammar 状态；空交集行不 mask，交给 target verification 无损拒绝并从 target-masked 分布重采样。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm/pull/69360",
+      "status": "实验性"
+    },
+    {
+      "line": "nvidia",
+      "family": "other",
+      "name": "SGLang · DSpark compact verify 三段优化（直填/免 scatter/尾折入图）",
+      "mechanism": "SGLANG_RAGGED_VERIFY_MODE=compact 下原来每步先构造中间 packed RaggedVerifyWindow 再拷进 decode CUDA graph buffer，并把 compact 验证 logits/hidden scatter 回 dense 缓冲再采样接受，engram 历史更新与 FutureMap relay 也在图外 host 每步跑；三段 PR：①固定容量 Triton kernel 把 verify 输入直接打包进图 buffer（跨 bs 只编 1 variant per search_steps×WRITE_WINDOW_INDEX）；②采样/接受/draft KV commit 全程留在 ragged 坐标，免 dense scatter；③engram 历史提交与 future relay 折入 verify CUDA graph。",
+      "engine": "SGLang",
+      "versions": "SGLang main（PR #52576 → #52577 → #52578，2026-11-23，未合并，CI skipped 需手动 run-ci）；实测 8×H200，DeepSeek-V4.1-Flash TP8/EP8，MT-Bench，temperature=0，max_new_tokens=512，DSPARK block size 5",
+      "config": "三个默认关的 opt-in 开关：SGLANG_DSPARK_COMPACT_DIRECT_INPUTS=1、SGLANG_DSPARK_COMPACT_NATIVE_ACCEPT=1、SGLANG_DSPARK_COMPACT_POST_FOLD=1（配合 SGLANG_RAGGED_VERIFY_MODE=compact 与 DSPARK 投机）；默认 0 时走原 strided 路径",
+      "gain": "作者 8×H200 实测（PR #52578 表，1/2/3 全开 vs static verify）：C=8 812.23→796.74 tok/s（−1.91%）、C=32 1620.42→1753.12（+8.19%）、C=64 2311.65→2483.09（+7.42%）、C=96 2643.22→2772.29（+4.88%）、C=128 4029.89→4418.23（+9.64%）；TPOT p50 相对 static 最多降 10.1%（C=128 17.09→15.35ms）；DSpark 六文件测试 33 passed / 0 failed。",
+      "cost": "三开关默认关；C=8 低并发反而掉 1.91%，收益随并发上升；依赖固定容量 Triton 内核（bs 1..256 只编 4 variant）；数字来自 H200 CUDA，PR 虽带 npu 标签但实测未见昇腾硬件；CI 未跑。",
+      "pitfalls": {
+        "hit": "return_logprob、watermark candidates、STS/debug collector 等需要 dense 定长 logits 的消费者，在 native_compact 下会把接受结果写错；unsupported draft KV pool 时内核回退与图捕获状态不一致。",
+        "fix": "这些消费者自动 disarm fold_eligible 回退到 strided scatter；native_compact 回退时自动关闭 POST_FOLD；CI skipped 时先 /rerun-test 再信数字。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/sgl-project/sglang/pull/52578",
+      "status": "实验性"
+    },
+    {
       "line": "ascend",
       "family": "other",
       "name": "vllm-ascend · 通用配置与 16 token 硬上限",
@@ -702,8 +756,44 @@
       "evidence": "B",
       "url": "https://github.com/vllm-project/vllm-ascend/pull/22806",
       "status": "仅压测"
+    },
+    {
+      "line": "ascend",
+      "family": "other",
+      "name": "vllm-ascend · V1 DFlash graph replay 采样概率陈旧修复（910B3）",
+      "mechanism": "FULL_DECODE_ONLY 模式下 V1 DFlash proposer 用 dummy metadata 捕获 greedy 采样路径；replay 返回草稿 ID，但拒绝采样器拿到的是早先 prefill 保存的概率（trace 显示 17 个 sampled decode 轮全部复用第一个概率 tensor 的值）。修复把草稿模型与 LM head 留在 ACL 图内，每次 replay 后按 live rows 切 logits、用当前请求 metadata 采样并发布概率；greedy 与空草稿清空保存的概率。",
+      "engine": "vllm-ascend",
+      "versions": "vLLM + vLLM Ascend v0.30.0，Ascend 910B3，CANN 9.2.1（PR #22835，base releases/v0.30.0，2026-11-23，未合并 unstable）；对应 vLLM main ced6857a",
+      "config": "V1 引擎 + async scheduling + full decode graphs + 7 speculative tokens + --speculative-config '{\"method\":\"dflash\",\"model\":\"Qwen3-4B-DFlash-b16\",\"num_speculative_tokens\":7,\"draft_sample_method\":\"probabilistic\"}'；回归 pytest -q tests/ut/spec_decode/test_dflash_proposer.py",
+      "gain": "作者 910B3 实测：38 次 sampled graph replay（单/mixed batch）399 个草稿 ID 全部匹配、每个概率与独立计算一致；MT-Bench 单次（58 prompt/7500 output/temp 0.95/top-k 250）163.6 tok/s、平均接受长度 3.55（修复前 warm run 241.1 tok/s / AL 5.15，但 proposal 行为不同、不能直接当性能回退）；proposer 单测 119 passed / 13 skipped / 2 failed（这 2 个 Eagle 输入扩展用例在 base 上也因自定义算子无 CPU 实现而失败）。",
+      "cost": "这是采样正确性修复不是纯性能优化——修复后生成序列、接受长度、吞吐都会变，不能直接对比加速；只验证 Qwen3-4B + Qwen3-4B-DFlash-b16、单卡；v0.30.0 release 分支两个改动文件与 base 内容一致。",
+      "pitfalls": {
+        "hit": "v0.30.0 上 probabilistic DFlash 在 decode graph replay 时所有采样轮复用第一次 prefill 的概率 tensor（trace 17/17 轮），输出分布错误且接受长度虚高。",
+        "fix": "升级到此 patch；用 draft_sample_method=probabilistic 时确认每次 replay 后概率按 live rows 用当前 metadata 重算，greedy/空草稿要清空旧概率。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22835",
+      "status": "实验性"
+    },
+    {
+      "line": "ascend",
+      "family": "other",
+      "name": "vllm-ascend · Kimi RecoverSSM 状态提交与 DSpark 重叠（950DT，6→2 launch）",
+      "mechanism": "Kimi RecoverSSM 每步分别提交各 KDA cache group（aligned decode 3 组 → 6 个 recurrent-state kernel）；草稿用采样 token、target hidden 与 MLA cache，可在 accepted KDA state 写回前启动。PR 把跨层 regular-page 合成一个 launch、boundary-page 合成第二个（6→2），并在 Ascend 950 decode worker 上把 target-state 后处理放到独立 NPU stream，DSpark proposal 在 runner 发布草稿 token / 完成 KV transfer 前 join 该 stream（异常路径采样也 join）。",
+      "engine": "vllm-ascend",
+      "versions": "vLLM main pin c410543d，Ascend 950DT（A5），CANN 9.3.0 / r139 A5 镜像（PR #22853，base 985d07c84，2026-11-23，未合并，带 merge-conflicts）；HDK 版本未查到",
+      "config": "自动生效于 Kimi RecoverSSM + DSpark + 950 decode + aligned prefix caching + 直连 MooncakeConnectorV2(kv_consumer) + PP1/PCP1（dispatch 也允许 DCP8），无新增启动参数；测试 pytest -q tests/ut/models/test_kimi_dspark_recovery.py 等",
+      "gain": "作者 950DT 实测（单卡 isolated operator trace，12 warm eager steps/4 请求/16384 context/12 heads）：recurrent-state launches per step 6→2、kernel time 46.149µs→28.051µs，FlashMLA 35.926→36.086µs，两者区间交集 0µs（即真重叠）；CPU Triton interpreter 四组状态维度（2 heads 8×8 / 12 heads 128×128 分槽与共享槽 / 32 heads）页面 exact match；4 个单卡测试 + 20 unit + 10 shared backend passed。端到端 TPOT 未跑。",
+      "cost": "只有算子级微基准，不是端到端加速——作者明说完整 decode step 的 TPOT 与 device overlap 需单独 serving run；计划中的 8 节点全模型对比（16384 in/1024 out/C144/synthetic AL 2.7）尚无结果；带 merge-conflicts 标签、mergeable=dirty；只对特定 layout/拓扑生效，不兼容 layout 走原 per-group 路径。",
+      "pitfalls": {
+        "hit": "三组 KDA cache 每步 6 个串行 recurrent-state kernel 成为 host 提交瓶颈；直接 fuse 会破坏 verify scratch 按 speculative row 索引、以及每组独立 page table / sampler-row map / conv compaction 的假设。",
+        "fix": "跨层 regular 与 boundary page 各合成一个 launch，verify scratch 继续按 speculative row 索引、每组保留自己的映射与卷积压缩；incompatible layout 自动回退 per-group 路径；跳一步草稿时仍可在当前 stream 上 fuse。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22853",
+      "status": "仅压测"
     }
   ],
   "version": "v1",
-  "generated_at": "2026-11-23T09:35:42+08:00"
+  "generated_at": "2026-11-24T09:08:26+08:00"
 }
