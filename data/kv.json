@@ -1,6 +1,6 @@
 {
   "version": "v1",
-  "generated_at": "2026-11-23T09:28:26+08:00",
+  "generated_at": "2026-11-24T09:26:16+08:00",
   "items": [
     {
       "id": "N1",
@@ -2237,6 +2237,134 @@
         "active": "2026-11-23"
       },
       "url": "https://github.com/vllm-project/vllm-ascend/pull/22808",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "N49",
+      "line": "nvidia",
+      "name": "vLLM KV Offload 调度器重接纳已提升请求并接通 P2P 异步加载",
+      "scenario": [
+        "S1",
+        "S3"
+      ],
+      "layers": [
+        "L2",
+        "L4"
+      ],
+      "engine": "vLLM main (PR#69505, open 2026-11-24)",
+      "gain": "P2P->CPU 分层卸载中，后台 secondary->primary promotion 完成后把 WAITING 请求插到冷请求前重接纳，并把 may_load_async 从 P2PSecondaryTierManager 经 TieringOffloadingManager 贯通到 OffloadingConnector，使 token_budget==0 时也能发起探测/加载；CPU 单测 7 passed（393 deselected, 6.57s）、回归 1123 passed 3 skipped；不新增 CLI flag",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "仅对报告 promoted req id 或 may_load_async=True 的 connector 自动生效；重接纳只越过同级/低优先级非抢占 WAITING，仍严格排在 PREEMPTED 和更高优先级请求之后",
+        "consist": "promoted id 在 load 启动、running admission、evicted miss、finish_requests、reset_connector_cache 时清理；loads_only 下 evicted miss 回落 self.waiting 以免卡住后续 promoted load",
+        "block": "复用 self.async_kv_waiting 不加第四条队列；未跑 GPU、物理 P2P RDMA/NIXL 传输与端到端 serving 基准，作者明确不声称吞吐/延迟数字",
+        "engine_change": "改 12 文件(+609/-8)：Scheduler/TieringOffloadingManager/OffloadingConnector/KVConnectorBase_V1；labels kv-connector,scheduler,nixl；与 RFC #66782/#67069/#69157/#66558 划清边界，PR open 未合并",
+        "active": "2026-11-24"
+      },
+      "url": "https://github.com/vllm-project/vllm/pull/69505",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "N50",
+      "line": "nvidia",
+      "name": "vLLM KV Connector 统一 NIXL/Mooncake 的 PP 阶段配对与层覆盖校验",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L1",
+        "L4"
+      ],
+      "engine": "vLLM main (PR#69481, draft 2026-11-23)",
+      "gain": "B300 上 Qwen3-0.6B 端到端：NIXL PP1/PP2 与 Mooncake PP1/PP2 四种组合均 KV-transferred 82652 tokens、failed 0、36/36 输出 token id 与 logprob 与主分支一致；单测 transfer_topology 11、nixl_desc_geometry 362、nixl_push 94、nixl 220(+1 xfail)、nixl_hma 103、mooncake 160、mooncake_hma 22、hybrid_mamba 43、kv_cache_planning 75、scheduler 90 全过",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "校验的是 P/D 是否含同一组可传输层且每层只属一个 pipeline stage；NIXL 首个 stage 握手即检出层覆盖不一致，Mooncake 拒收层集不匹配的传输以免 D 侧残留陈旧 KV",
+        "consist": "engine core 复制每 stage 的 KV cache groups 到 KVCacheConfig.pipeline_stages 以隔离 model-runner 改动；NIXL connector version 17→18 要求两端同时升级，Mooncake 对未提供新字段的 peer 保持旧行为",
+        "block": "无吞吐收益数字，端到端只证输出一致与 0 失败；prefix caching 关闭、eager 执行，PP1 与 PP2 结果一致仅验证配对正确性",
+        "engine_change": "改 15 文件(+273/-101)，labels kv-connector,kv-cache-manager,mooncake,nixl；实现 RFC #57373 的 PP layer-pairing 部分，transport/descriptor/notification 仍留在各 connector；draft 未合并",
+        "active": "2026-11-23"
+      },
+      "url": "https://github.com/vllm-project/vllm/pull/69481",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "N51",
+      "line": "nvidia",
+      "name": "NVIDIA Selene KV checkpoint 在 VRAM->DRAM 卸载处做 GPU/CPU 双模无损压缩",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2",
+        "L3",
+        "L4"
+      ],
+      "engine": "NVIDIA hyperflare-inference (PR#492, draft 2026-11-23)",
+      "gain": "RTX PRO 6000 Blackwell(SM120)：GLM-row 39.84MiB GPU enc 8.10 GB/s / dec 7.09 GB/s vs 16 线程 EPYC 7352 CPU+PCIe 1.89/2.70 GB/s，压缩后保留 65.9% vs 63.2%；GB10(SM121)：GLM-row enc 4.01/dec 5.44 vs CPU+DMA 2.99/3.77；footprint 在 DRAM/PCIe/网络/NVMe 全程降约 18–34%，flush 到 NVMe 不重编码",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "把无损压缩从 DRAM->NVMe write-back 提前到 VRAM->DRAM capture(capture 侧即刻压缩)；gpu 模式用 nvCOMP 6.0 batched rANS GKV1，cpu 模式用 ZKV1 predictor+Zstd",
+        "consist": "mixed-cache 双解码器：cpu/gpu 模式同时声明 [ZKV1,GKV1] 接收 profile，按每 unit 32 字节 profile 分派恢复，切模式不丢弃已缓存前缀；root_header 过滤改为 first_page==0 让 ZKV1 父链与 GKV1 子链共存",
+        "block": "gpu 模式每 rank 预留 workspace（GLM-row ~198MiB、page/DS-row ~25–31MiB），cpu 只读 GPU 透传解码 ~165MiB；依赖 libnvcomp.so.6 + selene-kv-codec.fatbin，GKV1 不能在纯 CPU 主机解；小单元 128KiB DS-pg GPU 0.44–0.82 GB/s 反慢于 CPU；活跃推理下的 TPS 干扰未测",
+        "engine_change": "改 137 文件(+15344/-897)，新增 gpu.cu/fatbin 离线构建(dual-arch sm_120a/sm_121a，无 nvcc 构建依赖)，走最低优先级 CUDA stream 无静态 Green Context 预留；481+10+3+207 单测与真机 round-trip 过；draft 未合并",
+        "active": "2026-11-23"
+      },
+      "url": "https://github.com/NVIDIA/hyperflare-inference/pull/492",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "A43",
+      "line": "ascend",
+      "name": "vLLM-Ascend AscendStore KV Pool 修复同步 preempt+readmit 导致的引擎终止",
+      "scenario": [
+        "S3",
+        "S1"
+      ],
+      "layers": [
+        "L4",
+        "L2"
+      ],
+      "engine": "vLLM-Ascend (PR#22979, open 2026-11-23)",
+      "gain": "Ascend 910C 硬件复现并修复引擎崩溃：reset_prefix_cache(reset_running_requests=True) 抢占后立即同步重接纳，从 ValueError: Request R is not in _unfinished_requests 终止恢复为两轮 recovery 均成功、transfer generation 1/2/3 单调、无 crash signature；单测 RED 3/5 fail→GREEN 5/5 pass，AscendStore suite 1124 passed、distributed 3355 passed",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "只在『抢占 id 尚未清除时同一请求被从等待队列重新选中并同步重接纳』触发；普通抢占无重接纳保持原行为",
+        "consist": "重接纳请求保留新建的 _unfinished_requests 注册，仅真正放弃的走抢占清理；重接纳请求从 connector metadata 的 preempted_req_ids 排除以保留新传输证据",
+        "block": "无吞吐/TTFT 收益数字，是稳定性修复；源于 Holemiss V1 硬件验证但独立于 recovery 机制，属 standalone AscendStore bug",
+        "engine_change": "改 2 文件(+354/-3)，新增 test_pool_scheduler_same_step_readmit.py；不改 Core 调度/worker repair/物理 KV 授权/TP consensus/外部存储协议；open 未合并",
+        "active": "2026-11-23"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22979",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "A44",
+      "line": "ascend",
+      "name": "vLLM-Ascend PCP 削减短 prefill 复制与 MegaMoE buffer 预留",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L1"
+      ],
+      "engine": "vLLM-Ascend (PR#22983, open 2026-11-23)",
+      "gain": "eager、PCP8/DCP8、TP1、64 序列、16384 batched tokens、3 个 DSpark 投机 token：target+prefill MC2 预算 14776→3464 rows；单 225-token prefill 最大 PCP rank 225→29 rows、64 个 225-token prefill 14400→1856 rows；CPU 单测 424 passed（部署版本 417 passed 7 skipped），A3 四卡 9/9 精度过；无新配置",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "只优化有 PCP/DCP 且定宽切片会留空尾块的短 prefill；仍复制的最大 prefill 长度为 3P-1；KV write 去重与 hidden-state 恢复沿用现有 PCP manager 接口",
+        "consist": "每 rank 保留全宽 head chunk，空尾时把剩余 token 摊到各尾块；sparse Indexer 每 rank 得到相同 planning charge（225-token 例最长 chunk 15、charge 30）",
+        "block": "gain 是 CPU layout/budget 数字，非 NPU 性能；Kimi K3.1 DSpark 的 peak HBM 与 TTFT 仍需 A5 serving run（固定输入+预热+并发）才能测，作者标 NPU performance evidence 未勾",
+        "engine_change": "改 7 文件(+140/-19)，Ascend MRV2 PCP manager，沿用 typed additional config 的 opt-in；对比基线 main a3020ab6149f，全 CPU suite 22344 passed；open 未合并",
+        "active": "2026-11-23"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22983",
       "status": "在读",
       "flag": "新增"
     }
