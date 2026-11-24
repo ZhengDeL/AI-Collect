@@ -27,7 +27,7 @@
     tradeoff:       { name: '权衡 / 代价' },
     alternative:    { name: '同位置替代' },
     prerequisite:   { name: '前置条件' },
-    asc_equivalent: { name: '昇腾对应实现' },
+    asc_equivalent: { name: '双栈对照（同一问题，另一种做法；不是依赖）' },
     measured_on:    { name: '实测于' },
     maintained_by:  { name: '维护方' },
     supersedes:     { name: '演进替代' }

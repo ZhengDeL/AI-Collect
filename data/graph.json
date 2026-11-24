@@ -1,6 +1,6 @@
 {
  "schema_version": "1.0",
- "generated_at": "2026-11-22T18:23:37+08:00",
+ "generated_at": "2026-11-24T11:56:02+08:00",
  "counts": {
   "nodes": 214,
   "edges": 225
@@ -2118,7 +2118,8 @@
    "principle": "缓存页加入请求的块表时增加引用计数，已共享的内容需要符合模型状态等价和写入隔离条件。请求结束或释放跳过的历史时移除表项，并对实际释放的页减计数。计数归零后，页面可以挂回空闲或可驱逐列表；若仍留着有效哈希索引且未被覆盖，别的请求可再次命中并触碰该块，将其从可驱逐队列取出。再次用作新块时，需要先撤旧索引并恢复为可写状态，避免旧的逻辑键指到新内容。空页、填充页和传输在途页往往有单独生命周期。关键是让引用、索引与队列同步修改，并测试乱序取消、共享页回收及跨阶段完成时序。",
    "formula": "获取时 ref_cnt++；释放时 ref_cnt--；仅在无活跃引用且写入安全时复用物理页。",
    "stack": [
-    "nvidia"
+    "nvidia",
+    "ascend"
    ],
    "domains": [
     "kv-cache"
@@ -2221,7 +2222,8 @@
    "principle": "对页内三维数据，可以使每个位置的多个头在内存中相邻，也可以让同一个头随 token 连续排列。具体引擎还可能使用 K 和 V 的外侧轴、层轴或不同物理切分。应查看后端返回的张量形状与 stride，将页表映射、cache 写入算子和 attention 输入统一到这个约定；逻辑 view 相同并不代表连续性相同。接收跨实例的 KV 时，还要检查传输两边的 dtype、分片、页大小和形状，必要时显式转换。测量时选择真实头数和常用序列分布，区分转置成本与内核本身吞吐。确定某一布局适合单个后端之后，还要核对该选择是否传播到分块写入和缓存复制路径。",
    "formula": "NHD=(token, kv_head, head_dim)；HND=(kv_head, token, head_dim)，物理 strides 由后端给出。",
    "stack": [
-    "nvidia"
+    "nvidia",
+    "ascend"
    ],
    "domains": [
     "kv-cache"
@@ -5188,7 +5190,8 @@
    "principle": "分配器接到本轮 token 计划后尝试申请页面；空间不足时，调度器从运行队列选择牺牲请求，把它从本轮工作清单撤下。引擎保留提示和已经生成的 token，释放牺牲者的 KV 及关联执行资源，并重置需要重建的计算进度，之后重新排队。恢复阶段将现有序列按预填充方式重走前向，命中有效的前缀块时可缩短重算区间。因生成历史已确定，重放阶段只构建状态，服务端应继续维护已有的流式输出位置。共享页在引用未归零时无法立即成为可重新分配的空间，因此评估抢占成效要看实际释放页数量。判定频繁抢占应结合等待、运行和 KV 占用时间序列。",
    "formula": "损失的重算 token ≈ 已计算 token − 恢复时可复用的前缀 token。",
    "stack": [
-    "nvidia"
+    "nvidia",
+    "ascend"
    ],
    "domains": [
     "scheduling"
@@ -6745,7 +6748,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -6783,7 +6786,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -6824,7 +6827,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -6857,7 +6860,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -6888,7 +6891,7 @@
    "evidence": "D",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -6926,7 +6929,7 @@
    ],
    "urls_more": 3,
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -6960,7 +6963,7 @@
    ],
    "urls_more": 2,
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -6993,7 +6996,7 @@
    ],
    "urls_more": 1,
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -7030,7 +7033,7 @@
    ],
    "urls_more": 3,
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -7059,7 +7062,7 @@
    ],
    "urls_more": 2,
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -7095,7 +7098,7 @@
    ],
    "urls_more": 2,
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -7124,7 +7127,7 @@
    ],
    "urls_more": 1,
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -7156,7 +7159,7 @@
    ],
    "urls_more": 2,
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -7194,7 +7197,7 @@
    ],
    "urls_more": 3,
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -7226,7 +7229,7 @@
    ],
    "urls_more": 2,
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -7260,7 +7263,7 @@
    ],
    "urls_more": 3,
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -7284,7 +7287,7 @@
     "https://www.hiascend.com/doc_center/source/zh/mindie/10RC3/mindiellm/llmdev/mindie_llm0001.html"
    ],
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -7309,7 +7312,7 @@
     "https://github.com/Ascend/MindIE-LLM/blob/master/examples/atb_models/atb_llm/nn/functional/attention/paged_attention.py"
    ],
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -7337,7 +7340,7 @@
    ],
    "urls_more": 1,
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -7377,7 +7380,7 @@
    ],
    "urls_more": 3,
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -7403,7 +7406,7 @@
    ],
    "urls_more": 2,
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -7451,7 +7454,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -7483,7 +7486,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -8641,7 +8644,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -8676,7 +8679,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -8708,7 +8711,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -8738,7 +8741,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -8771,7 +8774,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -8810,7 +8813,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -8854,7 +8857,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -8895,7 +8898,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -8932,7 +8935,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -8966,7 +8969,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -9000,7 +9003,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -9038,7 +9041,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -9082,7 +9085,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -9113,7 +9116,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -9148,7 +9151,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -9182,7 +9185,7 @@
    "evidence": "A",
    "updated_at": "2026-11-22",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "status": "candidate",
    "updated_by": "正德"
@@ -11781,7 +11784,7 @@
    "principle": "昇腾栈分三层：底层 CANN 提供算子库与运行时，中间 MindIE 或 vLLM-Ascend 提供推理服务，上层 ATB、msModelSlim 分别负责加速库与量化。很多特性支持是「型号 + CANN 版本 + 框架版本」三元绑定，文档里常只写特性级支持而不给分型号矩阵，因此结论必须标清版本与硬件，缺一项就只能写未查到。",
    "type": "community",
    "stack": [
-    "nvidia"
+    "ascend"
    ],
    "updated_at": "2026-11-22",
    "updated_by": "正德"
