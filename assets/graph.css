@@ -461,3 +461,71 @@
   .g-head .brand .tagline { display: none; }
   .g-head .brand h1 { font-size: 17px; }
 }
+
+/* ---------- v3：局部关系页 ---------- */
+.g-rel-types { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+.g-rel-chip { font-style: normal; font-size: 12px; padding: 3px 9px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--ink-2); border-left: 3px solid var(--c, var(--line)); }
+.g-rel-svg { width: 100%; height: auto; max-height: 460px; display: block; margin: 4px 0 6px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+.g-rel-n, .g-rel-root { cursor: pointer; }
+.g-rel-nn { fill: var(--ink); font-size: 14px; font-weight: 700; pointer-events: none; }
+.g-rel-nn-label { fill: var(--ink-2); font-size: 11.5px; pointer-events: none; }
+.g-rel-nn-label.root { fill: var(--ink); font-size: 13px; font-weight: 600; }
+.g-rel-multi { fill: var(--ink-3); font-size: 11px; }
+.g-rel-more { font-size: 13px; color: var(--ink-3); margin: 2px 0 10px; }
+.g-rel-listwrap { margin-top: 8px; }
+.g-rel-listwrap h4 { font-size: 14px; margin: 0 0 8px; }
+.g-rel-ul { list-style: none; margin: 0; padding: 0; }
+.g-rel-row { display: grid; grid-template-columns: 18px minmax(120px, 220px) auto auto minmax(0, 1fr);
+  align-items: baseline; gap: 8px; padding: 8px 10px; border: 1px solid var(--line);
+  border-radius: 10px; margin-bottom: 6px; background: var(--card); }
+.g-rel-dir { color: var(--ink-3); font-size: 13px; }
+.g-rel-t { font-size: 12px; color: var(--ink-2); border-left: 3px solid var(--c, var(--line));
+  padding-left: 7px; white-space: nowrap; }
+.g-rel-x { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; }
+.g-rel-note { font-size: 12.5px; color: var(--ink-2); line-height: 1.5; }
+.g-rel-row .g-v3-link { text-align: left; font-size: 13.5px; color: var(--accent); background: none;
+  border: 0; padding: 0; cursor: pointer; }
+
+/* ---------- v3：双栈对照页 ---------- */
+.g-cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px; }
+.g-cmp-col { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; background: var(--card); }
+.g-cmp-col.nvidia { border-left: 4px solid #4d9a5f; }
+.g-cmp-col.ascend { border-left: 4px solid #3b73c9; }
+.g-cmp-col h4 { margin: 0 0 10px; font-size: 14px; }
+.g-cmp-col h4 b { font-size: 18px; }
+.g-cmp-col ul { list-style: none; margin: 0; padding: 0; }
+.g-cmp-row { padding: 8px 0; border-top: 1px dashed var(--line); }
+.g-cmp-row:first-child { border-top: 0; }
+.g-cmp-row .g-v3-link { font-size: 13.5px; color: var(--accent); background: none; border: 0;
+  padding: 0; cursor: pointer; text-align: left; }
+.g-cmp-eng { display: inline-block; margin-left: 8px; font-size: 11.5px; color: var(--ink-3); }
+.g-cmp-note { display: block; font-size: 12.5px; color: var(--ink-2); line-height: 1.5; margin-top: 3px; }
+.g-cmp-eq { margin-top: 14px; border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; background: var(--card); }
+.g-cmp-eq h4 { margin: 0 0 8px; font-size: 14px; }
+.g-cmp-eq ul { list-style: none; margin: 0; padding: 0; }
+.g-cmp-eq li { padding: 6px 0; border-top: 1px dashed var(--line); }
+.g-cmp-eq li:first-child { border-top: 0; }
+.g-cmp-eq .g-v3-link { font-size: 13px; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
+
+/* 面板里的两个入口 */
+.gp-rel-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.gp-rel-btn { font-size: 12.5px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line);
+  color: var(--ink-2); text-decoration: none; }
+.gp-rel-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+@media (max-width: 767px) {
+  .g-rel-row { grid-template-columns: 16px minmax(0, 1fr); gap: 4px 8px; }
+  .g-rel-t, .g-rel-x { grid-column: 2; }
+  .g-rel-note { grid-column: 2; }
+  .g-cmp-grid { grid-template-columns: 1fr; }
+}
+
+.g-rel-rest { margin-top: 8px; }
+.g-rel-rest summary { cursor: pointer; font-size: 13px; color: var(--accent); padding: 6px 2px; }
+.g-rel-rest .g-rel-ul { margin-top: 8px; }
+
+@media (max-width: 767px) {
+  .g-rel-svg.mobile { max-height: none; }
+}

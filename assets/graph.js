@@ -98,7 +98,7 @@
   /* ---------- 状态 ---------- */
   var state = {
     doc: null, view: 'browse', query: '',
-    browseStack: null, browseDomain: null, b3idx: null,
+    browseStack: null, browseDomain: null, b3idx: null, browseMode: 'browse', browseId: null,
     filters: { stack: '全部', engine: '全部', domain: '全部', maturity: '全部', evidence: '全部' },
     focusSet: null, selected: null, positions: {}, visible: {}, cardOpen: {},
     w: 1000, h: 620, tx: 0, ty: 0, k: 1, matrixCell: null, suppressHash: false
@@ -829,7 +829,10 @@
       }).join('');
       return '<div class="gp-rel-group"><div class="gp-rel-gtitle">' + esc((EDGE_META[t] || {}).name || t) + '（' + groups[t].length + '）</div>' + rows + '</div>';
     }).join('') || '<p class="gp-none">未查到</p>';
-    html += sec(7, '关系（按类型分组）', relHtml);
+    var relEntry = '<div class="gp-rel-actions">' +
+      '<a class="gp-rel-btn" href="#relations/' + encodeURIComponent(n.id) + '">看关系图 →</a>' +
+      '<a class="gp-rel-btn" href="#compare/' + encodeURIComponent(n.id) + '">双栈对照 →</a></div>';
+    html += sec(7, '关系（按类型分组）', relEntry + relHtml);
     // 8 社区与维护者
     // 优先用节点自身的社区字段；engine 节点经 maintained_by 边找维护社区
     var cm = (n.type === 'community') ? n : n.community;
@@ -932,7 +935,10 @@
     ['调度与缓存', ['scheduling', 'kv-cache', 'prefix-cache']],
     ['图与解码', ['graph-compile', 'spec-decode', 'ascend-native']]
   ];
-  function engineShort(eid) { return String(eid || '').split('/')[1] || ''; }
+  function engineShort(eid) {
+    var s = String(eid || ''), parts = s.split('/');
+    return (parts.length > 1 ? parts[parts.length - 1] : s) || '';
+  }
   function engineNode(short) {
     return state.doc.nodes.filter(function (n) { return n.type === 'engine' && engineShort(n.id) === short; })[0];
   }
@@ -1197,17 +1203,188 @@
       caseHTML + missHTML +
       '<div class="g-v3-back"><a class="g-v3-crumb-a" href="#browse/' + stack + '">← 回 ' + esc(V3_STACK_NAME[stack]) + ' 的技术方向</a></div>';
   }
+  /* ---------- v3：局部关系页与双栈对照页 ---------- */
+  var REL_COLORS = {
+    implements: '#3b82f6', runs_on: '#22a06b', maintained_by: '#a855f7',
+    depends_on: '#f59e0b', tradeoff: '#ef4444', alternative: '#14b8a6',
+    measured_on: '#64748b'
+  };
+  var REL_MAX_NODES = 8;
+  function decodeId(s) { try { return decodeURIComponent(s); } catch (e) { return s; } }
+  var REL_ORDER = { asc_equivalent: 0, tradeoff: 1, alternative: 2, depends_on: 3, maintained_by: 4, runs_on: 5, implements: 6 };
+  // 同端点同类型合并成一条图线（图上少线），列表仍保留每一条原始边
+  function relPairs(rootId) {
+    var pairs = [], seen = {}, nm = nodeMap();
+    state.doc.edges.forEach(function (e) {
+      if (e.type === 'asc_equivalent') return;
+      if (e.from !== rootId && e.to !== rootId) return;
+      var out = e.from === rootId, other = out ? e.to : e.from;
+      if (!other) return;
+      var k = other + '|' + e.type;
+      if (seen[k]) { seen[k].edges.push(e); return; }
+      var p = { other: other, type: e.type, dir: out ? 'out' : 'in', edges: [e], o: nm[other] || null };
+      seen[k] = p; pairs.push(p);
+    });
+    pairs.sort(function (a, b) {
+      var ra = REL_ORDER[a.type] == null ? 9 : REL_ORDER[a.type];
+      var rb = REL_ORDER[b.type] == null ? 9 : REL_ORDER[b.type];
+      if (ra !== rb) return ra - rb;
+      var ta = (TYPE_META[(a.o || {}).type] || {}).name || '';
+      var tb = (TYPE_META[(b.o || {}).type] || {}).name || '';
+      if (ta !== tb) return ta < tb ? -1 : 1;
+      var na = (a.o || {}).name || a.other, nb = (b.o || {}).name || b.other;
+      return na < nb ? -1 : (na > nb ? 1 : 0);
+    });
+    return pairs;
+  }
+  // 图上优先给「不同引擎各一个实现」，避免 8 个位置全被同一引擎的实现占满
+  function relPick(pairs, n) {
+    var seen = {}, out = [];
+    pairs.forEach(function (p) {
+      if (out.length >= n) return;
+      if (p.type === 'implements' && p.dir === 'in' && p.o && p.o.engine) {
+        if (seen[p.o.engine]) return;
+        seen[p.o.engine] = 1;
+      }
+      out.push(p);
+    });
+    return out;
+  }
+  function relSVG(pairs, rootNode, shown) {
+    var mobile = window.innerWidth < 640;
+    var list = relPick(pairs, shown), nm = nodeMap(), edgeSvg = '', nodeSvg = '';
+    var W, H, cx, cy, rootR = mobile ? 26 : 30, pos = [];
+    if (mobile) {
+      W = 380; cx = W / 2; cy = 48;
+      H = 78 + Math.ceil(list.length / 2) * 104 + 10;
+      list.forEach(function (p, i) {
+        var col = i % 2, row = Math.floor(i / 2);
+        pos.push({ x: col ? 288 : 92, y: 158 + row * 104 });
+      });
+    } else {
+      W = 900; H = 430; cx = W / 2; cy = H / 2;
+      var R = list.length <= 4 ? 104 : (list.length <= 6 ? 126 : 152);
+      var step = list.length ? (2 * Math.PI / list.length) : 0;
+      list.forEach(function (p, i) {
+        var a = -Math.PI / 2 + i * step;
+        pos.push({ x: cx + Math.cos(a) * R, y: cy + Math.sin(a) * R });
+      });
+    }
+    list.forEach(function (p, i) {
+      var x = pos[i].x, y = pos[i].y;
+      var o = nm[p.other] || { name: p.other, type: 'tech' };
+      var col = REL_COLORS[p.type] || '#94a3b8';
+      var en = (o.type === 'impl' && o.engine) ? engineNode(engineShort(o.engine)) : null;
+      var lbl = (o.type === 'impl' && o.engine)
+        ? ((en ? en.name : engineShort(o.engine)) + ' · ' + cardName(o)).slice(0, mobile ? 15 : 22)
+        : shortName(o, mobile ? 11 : 15);
+      var dash = p.dir === 'in' ? ' stroke-dasharray="6 5"' : '';
+      var ang = Math.atan2(y - cy, x - cx);
+      var x1 = cx + Math.cos(ang) * (rootR + 8), y1 = cy + Math.sin(ang) * (rootR + 8);
+      var x2 = x - Math.cos(ang) * 26, y2 = y - Math.sin(ang) * 26;
+      if (p.dir === 'in') { var tx = x1; x1 = x2; x2 = tx; var ty = y1; y1 = y2; y2 = ty; }
+      edgeSvg += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) +
+        '" stroke="' + col + '" stroke-width="1.6"' + dash + ' marker-end="url(#relArrow)" opacity=".85"/>';
+      if (p.edges.length > 1) {
+        edgeSvg += '<text x="' + ((x1 + x2) / 2).toFixed(1) + '" y="' + ((y1 + y2) / 2 - 6).toFixed(1) +
+          '" class="g-rel-multi" text-anchor="middle">×' + p.edges.length + '</text>';
+      }
+      nodeSvg += '<g class="g-rel-n" data-rel-go="' + esc(p.other) + '" transform="translate(' + x.toFixed(1) + ',' + y.toFixed(1) + ')">' +
+        '<circle r="21" fill="var(--card)" stroke="' + col + '" stroke-width="2"/>' +
+        '<text class="g-rel-nn" text-anchor="middle" y="4">' + esc(String((TYPE_META[o.type] || {}).name || '').slice(0, 1)) + '</text>' +
+        '<text class="g-rel-nn-label" text-anchor="middle" y="38">' + esc(lbl) + '</text></g>';
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" class="g-rel-svg' + (mobile ? ' mobile' : '') + '" role="img" aria-label="以 ' + esc(rootNode.name) + ' 为中心的局部关系图">' +
+      '<defs><marker id="relArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
+      '<path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/></marker></defs>' + edgeSvg +
+      '<g class="g-rel-root" transform="translate(' + cx + ',' + cy + ')">' +
+      '<circle r="' + rootR + '" fill="var(--card)" stroke="var(--ink)" stroke-width="2.5"/>' +
+      '<text class="g-rel-nn root" text-anchor="middle" y="4">' + esc(String(rootNode.name || '').slice(0, 1)) + '</text>' +
+      '<text class="g-rel-nn-label root" text-anchor="middle" y="' + (rootR + 19) + '">' + esc(shortName(rootNode, 16)) + '</text></g>' +
+      nodeSvg + '</svg>';
+  }
+  function renderRelations(rootId) {
+    var m = nodeMap(), n = m[rootId];
+    if (!n) return '<div class="g-v3-empty">没有这个条目：' + esc(rootId) + ' · <a class="g-v3-crumb-a" href="#browse">回目录</a></div>';
+    var pairs = relPairs(rootId), totalEdges = 0, byType = {};
+    pairs.forEach(function (p) { totalEdges += p.edges.length; byType[p.type] = (byType[p.type] || 0) + p.edges.length; });
+    var shown = Math.min(pairs.length, REL_MAX_NODES);
+    var chips = '<div class="g-rel-types">' + Object.keys(byType).map(function (t) {
+      return '<i class="g-rel-chip" style="--c:' + (REL_COLORS[t] || '#94a3b8') + '">' + esc((EDGE_META[t] || {}).name || t) + ' ' + byType[t] + '</i>';
+    }).join('') + '</div>';
+    var rowHTML = function (p) {
+      var o = m[p.other] || { name: p.other };
+      return '<li class="g-rel-row"><span class="g-rel-dir">' + (p.dir === 'out' ? '→' : '←') + '</span>' +
+        '<button class="g-v3-link" data-goto="' + esc(p.other) + '">' + esc(o.name) + '</button>' +
+        '<span class="g-rel-t" style="--c:' + (REL_COLORS[p.type] || '#94a3b8') + '">' + esc((EDGE_META[p.type] || {}).name || p.type) + '</span>' +
+        (p.edges.length > 1 ? '<span class="g-rel-x">' + p.edges.length + ' 条</span>' : '') +
+        '<span class="g-rel-note">' + esc(p.edges[0].note || '') + '</span></li>';
+    };
+    var headN = 18, head = pairs.slice(0, headN), rest = pairs.slice(headN + 0);
+    var restHTML = rest.length ? '<details class="g-rel-rest"><summary>展开其余 ' + rest.length + ' 个邻居</summary><ul class="g-rel-ul">' +
+      rest.map(rowHTML).join('') + '</ul></details>' : '';
+    var list = pairs.length ? '<ul class="g-rel-ul">' + head.map(rowHTML).join('') + '</ul>' + restHTML : '';
+    return '<div class="g-v3-lede"><h3>' + esc(n.name) + ' · 关系</h3>' +
+      '<p>共收录 ' + totalEdges + ' 条关系、' + pairs.length + ' 个邻居。图上最多画 ' + REL_MAX_NODES + ' 个：实线是它指向别人，虚线是别人指向它。每条关系的完整说明在下面清单里。</p></div>' +
+      (pairs.length ? chips + relSVG(pairs, n, shown) : '') +
+      (pairs.length > shown ? '<p class="g-rel-more">还有 ' + (pairs.length - shown) + ' 个邻居没画进图，都在下面的清单里。</p>' : '') +
+      (pairs.length ? '<div class="g-rel-listwrap"><h4>全部关系（' + totalEdges + ' 条）</h4>' + list + '</div>'
+        : '<p class="g-v3-empty">这个条目还没有收录任何关系。它可能只出现在全域资料索引和搜索里。</p>') +
+      '<div class="g-v3-back"><a class="g-v3-crumb-a" href="#node/' + encodeURIComponent(rootId) + '">← 回详情</a>' +
+      ' · <a class="g-v3-crumb-a" href="#compare/' + encodeURIComponent(rootId) + '">看双栈对照 →</a></div>';
+  }
+  function renderCompare(id) {
+    var m = nodeMap(), n = m[id];
+    if (!n) return '<div class="g-v3-empty">没有这个条目：' + esc(id) + ' · <a class="g-v3-crumb-a" href="#browse">回目录</a></div>';
+    var nv = v3ImplsOf('nvidia', id), asc = v3ImplsOf('ascend', id);
+    var eqs = state.doc.edges.filter(function (e) { return e.type === 'asc_equivalent' && (e.from === id || e.to === id); });
+    function col(stack, list, label) {
+      var rows = list.map(function (i) {
+        return '<li class="g-cmp-row"><button class="g-v3-link" data-goto="' + esc(i.id) + '">' + esc(i.name) + '</button>' +
+          '<span class="g-cmp-eng">' + esc(i.engine || '未记录引擎') + '</span>' +
+          '<span class="g-cmp-note">' + esc(String((i.one_line || i.principle || '')).slice(0, 90)) + '</span></li>';
+      }).join('');
+      return '<div class="g-cmp-col ' + stack + '"><h4>' + label + ' <b>' + list.length + '</b> 条实现</h4>' +
+        (rows ? '<ul>' + rows + '</ul>' : '<p class="g-v3-empty">这条栈没有实现记录。</p>') + '</div>';
+    }
+    var eqHTML = eqs.length ? '<div class="g-cmp-eq"><h4>双栈对照记录（' + eqs.length + '）</h4><ul>' + eqs.map(function (e) {
+      var oid = e.from === id ? e.to : e.from, o = m[oid];
+      return '<li><button class="g-v3-link" data-goto="' + esc(oid) + '">' + esc(o ? o.name : oid) + '</button>' +
+        '<span class="g-rel-note">' + esc(e.note || '') + '</span></li>';
+    }).join('') + '</ul></div>' : '<p class="g-v3-empty">没有显式的双栈对照记录；两侧列的是同一技术概念在各栈的实现。</p>';
+    return '<div class="g-v3-lede"><h3>' + esc(n.name) + ' · 两条栈各自怎么做</h3>' +
+      '<p>同一个技术概念，两边各有实现。这里只比实现差异，不评价优劣；数字与出处点进每一条看。</p></div>' +
+      '<div class="g-cmp-grid">' + col('nvidia', nv, 'NVIDIA') + col('ascend', asc, '昇腾') + '</div>' + eqHTML +
+      '<div class="g-v3-back"><a class="g-v3-crumb-a" href="#node/' + encodeURIComponent(id) + '">← 回详情</a>' +
+      ' · <a class="g-v3-crumb-a" href="#relations/' + encodeURIComponent(id) + '">看关系图 →</a></div>';
+  }
   function renderBrowse() {
     var body = $('gbrowsebody'), crumb = $('gbcrumb');
     if (!body) return;
+    if (state.browseMode === 'relations') {
+      var rn = nodeMap()[state.browseId];
+      crumb.innerHTML = '<a class="g-v3-crumb-a" href="#browse">全部栈</a> <i>/</i> <b>关系图</b>' +
+        (rn ? ' <i>/</i> ' + esc(rn.name) : '');
+      body.innerHTML = renderRelations(state.browseId);
+      return;
+    }
+    if (state.browseMode === 'compare') {
+      var cn = nodeMap()[state.browseId];
+      crumb.innerHTML = '<a class="g-v3-crumb-a" href="#browse">全部栈</a> <i>/</i> <b>双栈对照</b>' +
+        (cn ? ' <i>/</i> ' + esc(cn.name) : '');
+      body.innerHTML = renderCompare(state.browseId);
+      return;
+    }
     var st = state.browseStack, dm = state.browseDomain;
     if (!st) { crumb.innerHTML = ''; body.innerHTML = v3StacksHTML(); return; }
     if (!dm) { crumb.innerHTML = v3CrumbHTML(st); body.innerHTML = v3DomainsHTML(st); return; }
     crumb.innerHTML = v3CrumbHTML(st, dm); body.innerHTML = v3TechListHTML(st, dm);
   }
+
   function goBrowse(stack, domain, pushHash) {
     state.browseStack = stack || null;
     state.browseDomain = domain || null;
+    state.browseMode = 'browse'; state.browseId = null;
     closePanelSilent();
     if (state.view !== 'browse') setView('browse', false);
     renderBrowse();
@@ -1217,6 +1394,30 @@
       history.replaceState(null, '', h);
       setTimeout(function () { state.suppressHash = false; }, 0);
     }
+  }
+  function goRelations(id, pushHash) {
+    state.browseMode = 'relations'; state.browseId = id;
+    closePanelSilent();
+    if (state.view !== 'browse') setView('browse', false);
+    renderBrowse();
+    if (pushHash !== false) {
+      state.suppressHash = true;
+      history.replaceState(null, '', '#relations/' + encodeURIComponent(id));
+      setTimeout(function () { state.suppressHash = false; }, 0);
+    }
+    window.scrollTo(0, 0);
+  }
+  function goCompare(id, pushHash) {
+    state.browseMode = 'compare'; state.browseId = id;
+    closePanelSilent();
+    if (state.view !== 'browse') setView('browse', false);
+    renderBrowse();
+    if (pushHash !== false) {
+      state.suppressHash = true;
+      history.replaceState(null, '', '#compare/' + encodeURIComponent(id));
+      setTimeout(function () { state.suppressHash = false; }, 0);
+    }
+    window.scrollTo(0, 0);
   }
 
   function copyText(t) {
@@ -1430,6 +1631,10 @@
   function applyHash() {
     if (!state.doc) return;
     var h = location.hash;
+    var rm = h.match(/^#relations\/(.+)$/);
+    if (rm) { goRelations(decodeId(rm[1]), false); return; }
+    var cm = h.match(/^#compare\/(.+)$/);
+    if (cm) { goCompare(decodeId(cm[1]), false); return; }
     var m = h.match(/^#browse(?:\/([a-z]+))?(?:\/([a-z0-9-]+))?$/);
     if (m && (!m[1] || V3_STACK_NAME[m[1]])) { goBrowse(m[1] || null, m[2] || null, false); return; }
     m = h.match(/^#node\/(.+)$/);
@@ -1585,6 +1790,8 @@
     var br = $('gbrowse');
     if (br) br.addEventListener('click', function (e) {
       var t = e.target;
+      var rg = t.closest && t.closest('[data-rel-go]');
+      if (rg) { goRelations(rg.getAttribute('data-rel-go'), true); return; }
       var sb = t.closest && t.closest('[data-browse-stack]');
       if (sb) { goBrowse(sb.getAttribute('data-browse-stack'), null, true); return; }
       var db2 = t.closest && t.closest('[data-browse-domain]');
