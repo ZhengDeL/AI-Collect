@@ -1619,6 +1619,7 @@
     var tBoot = performance.now();
     initTheme(); bindViewport(); bindHash(); bindNodes(); bindChrome();
     var s = $('gsearch');
+    if (s) {
     s.addEventListener('input', function () { state.query = s.value; applyVisibility(); });
     s.addEventListener('keydown', function (e) {
       if (e.key !== 'Enter') return;
@@ -1628,7 +1629,9 @@
       })[0];
       if (hit) selectNode(hit.id, true);
     });
-    $('gmatrix-clear').addEventListener('click', function () {
+    }
+    var mc = $('gmatrix-clear');
+    if (mc) mc.addEventListener('click', function () {
       state.matrixCell = null; state.filters.engine = '全部'; state.filters.domain = '全部';
       renderFilters(); renderMatrix(); applyVisibility();
     });
