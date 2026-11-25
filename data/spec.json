@@ -506,6 +506,78 @@
       "status": "已验证"
     },
     {
+      "line": "nvidia",
+      "family": "other",
+      "name": "vLLM · GDN ReplaySSM（缓存 SSM 输入加速 Mamba 解码）",
+      "mechanism": "把 Gated DeltaNet 标准解码每步重算的 SSM 状态改为输入环缓存（d/k/g）+ checkpoint 复用，输入张量追加在 paged KV block 的 (conv, ssm) 状态之后共 5 个 tensor，跨 decode 步存活；来自大 PR #47576 的 GDN 子 PR，标准解码与投机解码两条路径都覆盖。全 opt-in，关闭时 decode 路径与基线逐字节一致。",
+      "engine": "vLLM",
+      "versions": "vLLM main（PR #62004，merged 2026-11-24T22:18:59Z）；实测 Qwen3.5-4B BF16 / H100、Qwen3.5-122B-A10B-NVFP4 / B300；buffer length L=16（默认），greedy + CUDA graph。",
+      "config": "opt-in：--use-replayssm（走 Triton ReplaySSM，不要 FlashInfer 变体）；prefix caching 用 --mamba-cache-mode align；关闭即为基线。",
+      "gain": "作者 H100/B300 实测（端到端整步加速比 standard ms/step ÷ ReplaySSM ms/step）：Qwen3.5-4B H100 fp32 bs512 1.30x / bs128 1.21x / bs8 1.03x / bs1 0.99x；Qwen3.5-122B B300 fp32 bs512 1.22x / bs128 1.16x / bs1 0.96x。kernel 级 H100 fp32 bs128 1.66x、bs256 1.68x。buffer length L=16 每格最优（L=8/16/32 呈钟形）。GSM8K CoT N=1319 accuracy 0.917±0.008→0.920±0.008，一个标准误内持平。",
+      "cost": "小 batch 反而负向（kernel bs1 H100 fp32 0.88x、B300 fp16 0.39x），因为状态 footprint 小、launch grid 不足，收益只在 GDN 吃满 HBM 的 serving batch 出现；每 block 多 3 个输入环 tensor 占 KV 显存；prefix cache 命中率略降（align 模式 0.90→0.86，accuracy 都 0.925）。",
+      "pitfalls": {
+        "hit": "B300 上 fp16 state 本子 PR 不支持：Triton kernel 带宽被封顶在 44% DRAM 利用率；且 bs1/b8 是负向，拿小 batch 数字会误判为劣化。",
+        "fix": "B300 只用 fp32 state（fp16 要等后续 CuTe-DSL 子 PR，作者称 bs512 kernel 加速 1.49x→1.66x）；只用 serving batch（≥32）评估；走 Triton ReplaySSM + TRITON_ATTN，别用 FlashInfer 变体。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm/pull/62004",
+      "status": "实验性"
+    },
+    {
+      "line": "nvidia",
+      "family": "other",
+      "name": "vLLM · HiSparse + DSpark 前缀缓存命中修复",
+      "mechanism": "HiSparse 下 OffloadingConnector 只换出 indexer group，DSpark 的草稿 group 仍留在 GPU，成为可加载前缀的约束，导致叠加 DSpark k=3 后前缀命中率崩到 0。本 PR 在第一个 cached block 之前遍历请求队列、把已完成请求的 GPU 副本 splice 进来（此前只有 umbp connector 的 _free_to_cached_front 这么做）。",
+      "engine": "vLLM",
+      "versions": "vLLM main（PR #68820，merged 2026-11-24T21:08:44Z）；实测 8×B200 TP8 单机 + 2×(4×B200) 多机 TP8，NVFP4 HiSparse 模型 + DSpark k=3。",
+      "config": "复现负载：40 × 61.5k-token filler；叠加 OffloadingConnector 走多机 TP8；修复自动生效，无新增启动参数。测试 pytest tests/v1/core/test_prefix_caching.py -k hisparse。",
+      "gain": "作者 B200 实测（61.5k token 探针，prefix 命中）：单机 8×B200 TP8 HiSparse+DSpark k=3 无 offload，main 0/61511（0%）→ 本 PR 61504/61511（100%）；多机 2×(4×B200) + OffloadingConnector，main 0/61479（0%）→ 61504/61511（100%）。10k-block 模拟重发：间隔 2 请求 main 4720 / head 0 / PR 4720；间隔 10 请求 main 4400 / head 0 / PR 3528。",
+      "cost": "splice 需遍历队首未缓存段，150k free blocks 时每次 splice 约 12.6ms；未修版本（head）在任何重发间隔下命中都是 0，修复只恢复前缀命中、不直接提升 token 吞吐；仅覆盖 HiSparse + DSpark 组合。",
+      "pitfalls": {
+        "hit": "只测 HiSparse 不开 DSpark 时前缀命中 100%，误以为开了 DSpark 也没问题；实际叠加 DSpark k=3 + offload 后命中率掉到 0，GPU→CPU 流量 114 GB。",
+        "fix": "用 40×61.5k filler 探针复现并检查 get_metrics 的 prefix 命中；确认走的是含本修复的版本；不要只看单机无 offload 的命中数字。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm/pull/68820",
+      "status": "可上生产"
+    },
+    {
+      "line": "nvidia",
+      "family": "other",
+      "name": "TensorRT-LLM · one-model spec worker 词表并行温度采样",
+      "mechanism": "投机解码的单模型 worker 在做 temperature 采样时，把 gather 到单卡的路径改成按词表分片并行（_sample_sharded_temperature），与 argmax 分片路径共享 key exchange；仅在接受严格、key exchange 存在时启用。只影响采样路径，不改接受逻辑。",
+      "engine": "TensorRT-LLM",
+      "versions": "TensorRT-LLM main（PR #22057，merged 2026-11-24T18:12:34Z）；实测 TP2，MTP-Eagle（DeepSeek-V3-Lite）与 Eagle3（Llama-3.1-8B），temperature T=0.7 / 1.0。",
+      "config": "opt-in 默认关：export TLLM_SPEC_VOCAB_PARALLEL_TEMPERATURE=1 开启；TLLM_SPEC_VOCAB_PARALLEL_ARGMAX=0 同时关掉 sharded greedy 与 sharded temperature；temperature-only CUDA graph 需 cuda_graph_config.sampling_variants 里列 temperature_only 且无 watermark_config。",
+      "gain": "作者在 main TP2 复验：MTP-Eagle（DeepSeek-V3-Lite）与 Eagle3（Llama-3.1-8B）在 T=0.7/1.0 均无 hang；mean acceptance length 与 TLLM_SPEC_VOCAB_PARALLEL_TEMPERATURE=0 在采样误差内一致（|z| ≤ 0.69）。PR 未给吞吐倍数（未查到）。",
+      "cost": "开销是 key exchange + 分片采样，收益只在 TP>1 且温度采样占比高的负载；unseeded 且满足条件的请求走不同随机流，逐 token 输出可与基线不同（分布一致，非严格无损）；watermark / guided decoding / rejection sampling / penalties 仍阻止 graph capture。",
+      "pitfalls": {
+        "hit": "以为设了环境变量对所有 spec 模型都生效：llm_args 校验器只允许 MTP-Eagle 与 DSpark 走 temperature-only CUDA graph 变体，Eagle3 / MTP 即使用户设了 sampling_variants 仍走 gathered 路径。",
+        "fix": "先确认模型在 MTP-Eagle / DSpark 之列、TP>1、无 watermark；开 TLLM_SPEC_VOCAB_PARALLEL_TEMPERATURE=1 后对比 mean acceptance length 与关闭值（应在采样误差内），不要拿 seed 请求比逐 token 一致性。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/NVIDIA/TensorRT-LLM/pull/22057",
+      "status": "实验性"
+    },
+    {
+      "line": "nvidia",
+      "family": "draft",
+      "name": "TensorRT-LLM · Qwen3.8-Flash-Next MTP NVFP4 跨节点 dep2/dep8",
+      "mechanism": "modeling_v2 路径让 Qwen3.8-Flash-Next 在 sm_107（B300/GB300）上以 NVFP4 tp2/tep2 serve，MTP 在 dep2 / dep8 跨节点部署；目标与 KV 都支持 NVFP4，GDN replay 调优限定 SM10.3，MoE 走 CuTe DSL fast path。",
+      "engine": "TensorRT-LLM",
+      "versions": "TensorRT-LLM main（PR #22552，merged 2026-11-24T04:20:32Z）；目标硬件 sm_107（B300/GB300），NVFP4 target 的 CuTe DSL MoE 仅 SM10.3；test-db 覆盖 l0_b300 / l0_gb300 / l0_gb300_multi_gpus。",
+      "config": "新增 tp2 / dep2 / dep8 MTP3 用例；两卡 DEP2 NVFP4-KV FP8 case；acceptance_length.yaml 与 gsm8k.yaml 更新阈值（ref_al 3.281 / min_al 3.117，GSM8K reference 94.20）；target 声明 supports_nvfp4_kv_cache=True。",
+      "gain": "作者给的是验收阈值而非加速倍数：MTP acceptance length 参考 3.281 / 下限 3.117、GSM8K 参考 94.20（沿用既有 acceptance_length.yaml 值）；新增 tp2/dep2/dep8 MTP3 与两卡 DEP2 NVFP4-KV FP8 覆盖。端到端加速倍数未给（未查到）。",
+      "cost": "dep8 需要 MPI world（多机）；NVFP4 target 在非 SM10.3 上拒绝 CuTe DSL MoE backend；GDN replay 调优只对 SM10.3；这条是模型/部署支持 + 阈值更新，不是单点加速优化。",
+      "pitfalls": {
+        "hit": "在 sm_107 之外照抄 NVFP4 KV + CuTe DSL MoE，backend 被拒；或单卡跑 dep8 用例，缺 MPI world 失败。",
+        "fix": "确认 archs.fast_path('cute_dsl_moe') 命中（SM10.3）再用 NVFP4 target；dep8 用多机 MPI world；用 ref_al 3.281/min_al 3.117 与 GSM8K 94.20 做回归门禁，不要拿它当加速比。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/NVIDIA/TensorRT-LLM/pull/22552",
+      "status": "实验性"
+    },
+    {
       "line": "ascend",
       "family": "other",
       "name": "vllm-ascend · 通用配置与 16 token 硬上限",
@@ -810,8 +882,62 @@
       "evidence": "B",
       "url": "https://github.com/vllm-project/vllm-ascend/pull/22853",
       "status": "仅压测"
+    },
+    {
+      "line": "ascend",
+      "family": "draft",
+      "name": "vllm-ascend · GLM-5.3-Flash DFlash2 开 FA3 + ACL Graph（PD 混部/分离）",
+      "mechanism": "让 GLM-5.3-Flash 的 DFlash2 本地草稿在 A3 上用 FA3 注意力 + ACL Graph，不再强制 enforce_eager=true；把 target 全局 PP/PCP/DCP 与 C8 限制放到 local-draft 例外之后，保留 BLHNC/HND/LBHNC 物理 KV 布局并暴露零拷贝 [page,token,head,dim] FA3 逻辑视图；target 与 DFlash2 draft 图独立捕获。",
+      "engine": "vLLM-Ascend",
+      "versions": "vLLM-Ascend main（PR #22172，merged 2026-11-24T08:50:19Z）；实测 Ascend A3，GLM-5.3-Flash-w8a8-1013 + GLM-5.3-Flash-DFlash2；需叠已合入的 #22159（FA3 scheduler 初始化与 HND cache 修复）。",
+      "config": "enforce_eager=false + FULL_DECODE_ONLY；single-node PD-mixed 与 two-node PD-disagg 两种部署；GSM8K 全量 1319 题、4-shot CoT chat、greedy、batch size 16、max output 8192。",
+      "gain": "作者 A3 实测 GSM8K（MTP K=3 → DFlash2 K=7）：单机 PD 混部 accuracy 97.8014%→97.0432%、draft acceptance 83.3758%→64.9477%、accept len 3.5013→5.5463、TTFT 623.14→701.42ms、TPOT 30.645→26.975ms、output 437.17→515.16 tok/s（+17.8%）；两节点 PD 分离 accuracy 97.1190%→97.3465%、acceptance 81.7340%→63.8422%、accept len 3.4520→5.4690、TPOT 11.536→8.117ms、output 862.16→1286.94 tok/s（+49.3%）。关键：DFlash2 单 token 接受率更低，但接受长度更长、吞吐更高。",
+      "cost": "DFlash2 精度略降（PD 混部 97.8014→97.0432%，约 0.76pp）；TTFT 略升（623→701ms）；DFlash2 的 ITL/TPOT 抖动更大（3.461→5.618）；target config、live loader tag、draft 架构、dtype、硬件、FA3 operator 任一不支持就静默回退到原 backend。",
+      "pitfalls": {
+        "hit": "用 MTP 的接受率去比 DFlash2，看到 83.4%→64.9% 就判定 DFlash2 更差；实际 DFlash2 靠更长接受长度（3.50→5.55）换来 +17.8%~+49.3% 吞吐。另一个坑是 GSM8K 归一化前 1279/1319、修正千分位解析后才 1280/1319。",
+        "fix": "同时看 accept length 与 output tok/s，不要只看 draft acceptance；确认 A3 日志里 target 和 DFlash2 draft 都做了 FULL graph capture；不支持配置会 fallback，需查日志确认真的走了 FA3 图。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22172",
+      "status": "可上生产"
+    },
+    {
+      "line": "ascend",
+      "family": "draft",
+      "name": "vllm-ascend · Kimi DSpark C8 + QuantFlashMLA 集成",
+      "mechanism": "为 Kimi DSpark 草稿补齐 C8（8-bit）量化与 QuantFlashMLA 路径，草稿侧在量化权重下仍走 DSpark 投机验证；属投机解码的量化草稿集成。",
+      "engine": "vLLM-Ascend",
+      "versions": "vLLM-Ascend main（PR #22115，merged 2026-11-24T01:54:47Z）；实测栈 vLLM 4ba787ec + vLLM-Ascend 568d1249，image sha256:b235e6cd；A2/A3/310P device tests 在 2f91831 通过，A5 CI lane skipped。",
+      "config": "AISBench 3.1.20260630，30 道 GPQA Diamond + 16 条 GSM8K_prefix0_in16384_bs200_kimi 性能请求；每条性能请求 16472 输入 token / 1024 输出。",
+      "gain": "作者实测：GPQA acceptance 43.7513%→44.6818%；performance acceptance 69.6814%→68.1218%；output throughput 167.2521→170.4117 tok/s（+1.89%）；mean TPOT 13.9→14.1ms；mean request latency 22921.1→22884.6ms。",
+      "cost": "吞吐增益小（约 +1.9%）且 performance acceptance 略降 1.56pp，TPOT 微升；A5 未做 device 验证（CI lane skipped）；只验证 C8 量化 + 特定 Kimi DSpark 权重。",
+      "pitfalls": {
+        "hit": "把 C8 量化当作普适加速：本负载吞吐只涨 1.9%、接受率反而降，A5 平台根本没跑过。",
+        "fix": "只在 A2/A3/310P 且 Kimi DSpark C8 权重下用；用 GPQA + GSM8K 双集同时看接受率与吞吐，收益不足时回退非量化草稿；A5 需自行补测。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22115",
+      "status": "实验性"
+    },
+    {
+      "line": "ascend",
+      "family": "draft",
+      "name": "vllm-ascend · MRV2 dummy MTP 采样按 DP 请求容量约束",
+      "mechanism": "MRV2（lmhead）路径下用 dummy 权重启动时，MTP 草稿在 DP 多卡上可能按超出同步后请求容量的数量采样；本 PR 把 dummy MTP 采样边界绑到同步后的 DP request capacity，避免超额采样导致的结果不一致。",
+      "engine": "vLLM-Ascend",
+      "versions": "vLLM-Ascend main（PR #22231，merged 2026-11-24T06:04:34Z）；实测 GLM-5.2-w8a8c8，每轮 5 个草稿 token，DP0 /metrics 累计计数。",
+      "config": "vllm serve /weights/GLM-5.2-w8a8c8（MRV2 + MTP5）；从 DP0 的 /metrics 端点取 accepted draft tokens / acceptance rate / per-position 计数。",
+      "gain": "作者实测：AIME2026 accuracy 93.33%；GLM-5.2 W8A8C8 每轮 5 token 累计 accepted 38955、overall draft acceptance 61.15%、每轮平均接受 3.06、含额外 token 的 mean acceptance length 4.06。逐位置接受率：pos1 86.85%、pos2 72.35%、pos3 58.97%、pos4 48.32%、pos5 39.27%。",
+      "cost": "属正确性修复，不直接提升吞吐；逐位置接受率快速衰减（pos5 仅 39.27%），5 token 配置的第 4/5 位边际收益有限；需 DP 同步请求容量，dummy 启动路径才有意义。",
+      "pitfalls": {
+        "hit": "DP 多卡 + dummy 权重启动时按单卡请求数采样，超出同步后容量，各卡草稿不一致；或照搬 5 token 配置以为每位都高效。",
+        "fix": "升级到含本修复的版本并用 DP0 /metrics 核对 accepted 与 per-position 计数；若 pos4/pos5 接受率长期低于 50%，把 num_speculative_tokens 降到 3 更划算。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22231",
+      "status": "可上生产"
     }
   ],
   "version": "v1",
-  "generated_at": "2026-11-25T10:10:22+08:00"
+  "generated_at": "2026-11-25T10:13:33+08:00"
 }
