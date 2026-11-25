@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-24",
+  "date": "2026-11-25",
   "items": [
     {
       "line": "nvidia",
@@ -488,6 +488,24 @@
       "status": "实验性"
     },
     {
+      "line": "nvidia",
+      "family": "eagle",
+      "name": "TensorRT-LLM · Llama4 Maverick + Eagle3 最低延迟服务（8×B200）",
+      "mechanism": "Eagle3 草稿头基于目标模型 hidden state 预测 max_draft_len 个候选 token，Llama4 Maverick 主干一次前向并行验证并接受最长前缀；enable_min_latency 模式配合 CUDA graph 把验证与草稿阶段捕获进一张图，降低 CPU 开销。",
+      "engine": "TensorRT-LLM（trtllm-serve，PyTorch backend）",
+      "versions": "官方博客页由 TensorRT-LLM commit ab2dfeb 生成（页脚 Last updated on November 16, 2026）；草稿权重 NVIDIA Llama 4 Maverick 17B 128E Eagle3 BF16，8×B200",
+      "config": "c.yaml: enable_autotuner: false / enable_attention_dp: false / enable_min_latency: true / cuda_graph_config: {max_batch_size: 8} / speculative_config: {decoding_type: Eagle3, max_draft_len: 3, speculative_model_dir: /config/models/eagle} / kv_cache_config: {enable_block_reuse: false}；容器挂载 /path/to/maverick→/config/models/maverick、/path/to/eagle→/config/models/eagle；启动 trtllm-serve /config/models/maverick --config c.yaml",
+      "gain": "官方自报（引用第三方 Artificial Analysis 基准）：Llama4 Maverick 开 Eagle3 的 TensorRT-LLM 服务在 8×B200 上达 >1000 tokens/s/user（单用户每秒 token）。官方注明加速比依赖数据集、具体数字因负载而异。对照基线：未查到（该博客未给不开投机的同配置 TPS/user 对照，无法据此外推倍数）。",
+      "cost": "该配置专为最低延迟（enable_min_latency: true）与单用户优化，官方明确警告并发升高时每用户 TPS 快速退化，多并发场景需另调；关闭 block reuse（enable_block_reuse: false）牺牲前缀缓存复用；Eagle3 草稿权重与 draft KV 额外占显存。",
+      "pitfalls": {
+        "hit": "照搬这套 enable_min_latency + max_batch_size 8 配置到高并发场景，每用户 TPS 会快速下滑，达不到宣传的 >1000 tokens/s/user",
+        "fix": "该数字仅代表单用户最低延迟口径；高并发须关闭 enable_min_latency 并重设 cuda_graph_config.max_batch_size，按实际负载重新 benchmark"
+      },
+      "evidence": "A",
+      "url": "https://nvidia.github.io/TensorRT-LLM/latest/blogs/tech_blog/blog06_Llama4_maverick_eagle_guide.html",
+      "status": "已验证"
+    },
+    {
       "line": "ascend",
       "family": "other",
       "name": "vllm-ascend · 通用配置与 16 token 硬上限",
@@ -795,5 +813,5 @@
     }
   ],
   "version": "v1",
-  "generated_at": "2026-11-24T09:08:26+08:00"
+  "generated_at": "2026-11-25T10:10:22+08:00"
 }
