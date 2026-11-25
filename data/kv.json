@@ -1,6 +1,6 @@
 {
   "version": "v1",
-  "generated_at": "2026-11-24T09:26:16+08:00",
+  "generated_at": "2026-11-25T09:49:04+08:00",
   "items": [
     {
       "id": "N1",
@@ -2365,6 +2365,132 @@
         "active": "2026-11-23"
       },
       "url": "https://github.com/vllm-project/vllm-ascend/pull/22983",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "N52",
+      "line": "nvidia",
+      "name": "vLLM KV Offload 每主机共享一份复制的 MLA KV",
+      "scenario": [
+        "S1",
+        "S3"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "vLLM main (PR#69677, open 2026-11-24)",
+      "gain": "CPU offload 在引擎跨主机时按每个 TP rank 各存一份完全复制的 MLA KV；本 PR 把 #48906/#50301 的单主机去重扩展到多机多进程。每台主机首个 rank 写一份共享副本，本地所有 rank 从它恢复：TP8 跨两台四卡主机，8 份变 2 份。两台各 2×H100 上同样 16 MiB 容纳 512 chunks（原 256），四个 rank 均恢复出原始字节；GPU prefix-cache reset 后两个 DeepSeekV2 prompt 各从 CPU 重载 512 tokens、两轮都复现全部 48 个输出 token（cf1efb905d）；三个受影响模块 179 个测试全过（f284d7cfd7）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "仅针对完全复制的 MLA KV（all-replicated）；每主机第一个 rank 为 owner 写共享副本，其余本地 rank 从它 restore；configured CPU budget 仍覆盖整个引擎",
+        "consist": "共享副本按主机隔离，跨主机仍各存一份；GPU prefix-cache reset 后从 CPU 重载验证字节一致、两轮输出 token 全同",
+        "block": "无吞吐/TTFT 数字，只证明容量翻倍（同样内存 256→512 chunks）与恢复正确性；测试在两台各 2×H100，未测更大 TP 或异构主机",
+        "engine_change": "扩展既有单主机去重（#48906/#50301）到多机多进程；PR open 未合并",
+        "active": "2026-11-24"
+      },
+      "url": "https://github.com/vllm-project/vllm/pull/69677",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "N53",
+      "line": "nvidia",
+      "name": "vLLM CPU KV LRU 淘汰策略去除 O(n) 堆压缩停顿",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L2"
+      ],
+      "engine": "vLLM main (PR#69540, draft 2026-11-24)",
+      "gain": "LRUCachePolicy 周期性对全部可淘汰 chunk 重建 lazy min-heap，大 host tier（百万 chunk）每次重建阻塞 scheduler 线程 0.5–2 s。改为精确顺序索引后淘汰顺序不变：2M-chunk replay 最差 on_request_finished 1.98 s→0.28 s、最差 complete_load 1.98 s→0.004 s、策略 CPU 总时 70.7 s→51.9 s。Serving（MI355X TP4/EP4，1 TiB host tier ~1.7M chunks，58 并发 agentic multi-turn，1 小时窗口，--kv-offloading-backend native --kv-offloading-size 1024）每小时 54 次/110.6 s 压缩停顿消失，max prepare_store 2.90→0.68 s、max on_request_finished 2.87→0.81 s，GPU idle gaps≥0.5s/h 183.8→65.0/101.8/91.4 s；吞吐 +2.1% 在约 4% run-to-run 波动内，作者明确不声称吞吐收益。单测 119 passed、整个 kv_offload 971 passed/29 skipped",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "淘汰顺序与当前 heap 实现逐请求完全一致（differential test 对随机 store/access/pin/unpin/evict/finish 序列逐步断言），不是近似",
+        "consist": "部分 per-op 路径反而变慢（complete_store 3.4→7.7 s、prepare_load 3.5→4.9 s in replay），但总 CPU 与所有尾延迟下降；不变量是每个可淘汰 chunk 在当前 rank 下恰好索引一次",
+        "block": "吞吐数字在噪声内不声称；改的是 scheduler 线程上的策略 CPU 时间，不是 H2D 搬运带宽；GPU serving 只在 MI355X 单一配置测过",
+        "engine_change": "改 vllm/v1/kv_offload/cpu/policies/lru.py 的堆结构为插入序 dict + 有界子列表排序；保留 _push_evictable 语义；与 #64213/#63578/#57813/#67952 划界；draft 未合并",
+        "active": "2026-11-24"
+      },
+      "url": "https://github.com/vllm-project/vllm/pull/69540",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "N54",
+      "line": "nvidia",
+      "name": "SGLang HiCache egm 后端：经 NVLink fabric handle 用跨节点主机内存做 L3",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L4"
+      ],
+      "engine": "SGLang main (PR#52881, draft 2026-11-24)",
+      "gain": "GPU 同处一个 NVLink domain 时，HiCache L3 可放在该域内其他节点（如 PD 部署的 decode 节点）的 host memory，prefill GPU 用 CUDA fabric handle 经 NVLink copy engine 直接读写，无 NIC、无 RDMA transfer engine、CPU 不在数据路径。Qwen3-8B TP4 单节点 + 第二节点 4×16 GiB providers 功能测：set_pages_new 6303、get_pages_ok 1395/1395、mismatch 0、copy_errors 0，89280 prompt tokens 从 storage 命中；30 条多轮回放输出 28/30 与首轮一致（无 L3 对照 27/30，差异来自 greedy 下 prefix-cache 复用而非本后端）",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "页字节落到 L2 且 CRC32 校验通过才算 hit；任一 copy error / mismatch 超 egm_max_mismatch / provider 心跳丢失 / provider stop 则本次运行剩余时间拒用该 tier，全 query miss、服务继续走 L1/L2",
+        "consist": "每页写时 CRC32、读时校验；构造时对不支持的布局（MLA rank-replicated pool、head splitting、PP>1、attention CP>1）直接拒用该 tier",
+        "block": "已读到的 body 只给字节级正确性与 89280 token 命中，端到端 A/B benchmark 段在正文被截断、未取到具体吞吐数字，不声称吞吐收益；需 CUDA driver+系统支持 fabric handle、多机 NVLink 同 IMEX domain、cuda-python",
+        "engine_change": "新增 python/sglang/srt/mem_cache/storage/egm/ 包（provider.py/cuda_vmm.py/store.py/backend.py），注册 --hicache-storage-backend=egm 与多个 extra-config key（egm_handles/egm_rank_map/egm_streams/egm_hb_timeout_s/egm_max_mismatch 等）；draft 未合并",
+        "active": "2026-11-24"
+      },
+      "url": "https://github.com/sgl-project/sglang/pull/52881",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "A45",
+      "line": "ascend",
+      "name": "vllm-ascend 融合稀疏 KV 卸载 V2：LIM/Copy-SFA 经 AscendVMM 主机 KV 直接寻址",
+      "scenario": [
+        "S4"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "vllm-ascend main (PR#23106, open 2026-11-24)",
+      "gain": "把 DSA 稀疏 KV 卸载从四级 CPU 编排流水线（LI top-k readback→CPU LRU planner→独立 onload descriptor 装配+index-copy→SFA attention）压成两次 device 侧 launch：LIM 一次 launch 内完成 block 选择 + residency 决策；Copy-SFA 直接从 AscendVMM host memory 读缺失 KV 槽并在同一 kernel launch 算 attention，download+attention 融合。host KV 用 torch_npu.empty_with_swapped_memory 分配并注册为共享 AscendVMM 段，全局 VA 广播到 TP ranks。Mooncake 降为注册+批量恢复（每批一次 memcpy）；decode writeback 用 device 生成 Triton copy descriptor，无 device readback。要求 TopK=2048、block_size=128、1-7 query rows/请求、hot budget 256 对齐且在 [Q_max*2048,16128]、max_model_len<=2^21、无 DSpark；新增 25 个 UT 模块。本 PR 未给端到端吞吐对比数字",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "fused 路径前置条件不满足自动回落 V1（CPU LRU planner + 独立 onload），由 sparse_kv_offload_config.fused_op_type（none|fused_copy_sfa）选择；host_backend 可选 memfabric|mooncake",
+        "consist": "VMM host pool 与 fallback storage 隔离，非融合路径保持 MemFabric 语义不变；修了 fused V2 的 MAL 精度掉点（保存完整 reuse logical lengths + 回归测试）、rebase 回归、重复 npu_fused 注册、resident draft(MTP) KV 误入 host 卸载",
+        "block": "本 PR body 未给端到端吞吐/TTFT 对比数字，gain 主要是机制与正确性；host_backend=mooncake 要求 fused 路径且 PD 分离 decode；活跃 serving 下 SDMA/HBM 收益未量化",
+        "engine_change": "注册已入 main 但未接线的融合算子（npu_fused_lightning_indexer_manage / npu_fused_scatter_copy_sparse_flash_attention）到 torch bindings，backport LIM/Copy-SFA serving 与量化 LIM；新增 VLLM_ASCEND_SKIP_MIGRATEPAGES 等 env；改 layerwise_and_sparse_kv_cache_offloading.md + 3 个 release fragment；open 未合并",
+        "active": "2026-11-24"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/23106",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "A46",
+      "line": "ascend",
+      "name": "vllm-ascend Qwen4Exp prefill KV 卸载到 AscendStore + 提前分层 KV 预取",
+      "scenario": [
+        "S1",
+        "S4"
+      ],
+      "layers": [
+        "L1",
+        "L2",
+        "L4"
+      ],
+      "engine": "vllm-ascend (PR#23134, draft 2026-11-25)",
+      "gain": "A5（4×Ascend 950DT，TP4/EP，MTP5，eager，AscendStore Memcache，4 shared buffers，关 HBM prefix caching）Qwen4Exp W8A8 实测：E2E prefetch depth 2，4 个完成请求 HTTP 200 各出 1 token，两个 warm 10752-token 请求各从池读 9216 tokens，重复 prompt 有无 pool hit 都返回同一 token，四 rank 均报 shared-buffer reuse；rank0 profiling depth4 + L0–L3 resident，三个顺序 warm 10752-token 请求各命中 9216 pool tokens，33 次 QSA-to-QSA prefetch（链接 device MEMCPY_ASYNC）每次 transfer 在提交层 LightningIndexerV2 开始前 1.180–1.739 ms 完成",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "只对 QSA main K/V、compressed indexer cache、GDN conv+recurrent state 按 shared-buffer 规则卸载；关了 HBM prefix caching 才走该路径",
+        "consist": "重复 prompt 有无 pool hit 输出同一 token；future-layer load 在当前层 connector wait 完成后释放，保留当前层 save boundary 与重用槽的 prior-owner save 依赖",
+        "block": "matched timing baseline、GBSA case、PD transfer 在该 integrated revision 仍 pending；未跑本地 test suite（只过 ruff/markdownlint/filename/git diff --check）；本 draft 是 #20949+#23107 的集成记录，非独立新特性",
+        "engine_change": "A5 runtime driver 25.6.0 + CANN 9.2.1，vLLM c410543d9；release note fragment 23134.yaml；draft 未合并",
+        "active": "2026-11-25"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/23134",
       "status": "在读",
       "flag": "新增"
     }
