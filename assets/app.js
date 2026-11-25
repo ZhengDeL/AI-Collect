@@ -17,6 +17,7 @@
     filters: document.getElementById('filters'),
     search: document.getElementById('search'),
     list: document.getElementById('list'),
+    star: document.getElementById('starbox'),
     empty: document.getElementById('empty'),
     topbox: document.getElementById('topbox'),
     overview: document.getElementById('overview'),
@@ -429,6 +430,101 @@
     });
   }
 
+  // 星榜：20 条是「GitHub trending 榜单快照」，跨日天然大量重复（2026-11-25 实测
+  // 19/20 与昨日同仓、同链接）。因此不按新闻卡片渲染，改成一张榜单表：与昨日重复的
+  // 标「持平 / ↑N / ↓N」，只有「新进」才算今天的新内容。
+  function isStar(it) { return (it.source || '') === '星榜'; }
+
+  function parseStar(it) {
+    var title = String(it.title || '');
+    var parts = title.split(' — ');
+    var repo = parts[0].trim();
+    var desc = parts.length > 1 ? parts.slice(1).join(' — ').trim() : '';
+    var p0 = (it.points || [])[0] || '';
+    var stars = (p0.match(/([\d,]{3,})\s*stars/) || [])[1] || '';
+    var lang = (p0.match(/语言\s*([^｜|]+)/) || [])[1] || '';
+    var day = (p0.match(/近\s*24h\s*([+\-]?[\d,]+)/) || [])[1] || '';
+    return { repo: repo, desc: desc, stars: stars, lang: lang.trim(), day: day, url: it.url || '' };
+  }
+
+  function renderStars(items) {
+    if (!el.star) return;
+    var show = el.star;
+    if (state.focus || state.tune || (state.source !== '全部' && state.source !== '星榜')) {
+      show.hidden = true; show.innerHTML = ''; return;
+    }
+    var rows = items.filter(isStar);
+    if (!rows.length) { show.hidden = true; show.innerHTML = ''; return; }
+    var q = state.query.trim().toLowerCase();
+    if (q) {
+      rows = rows.filter(function (it) {
+        return [it.title, (it.points || []).join(' ')].join(' ').toLowerCase().indexOf(q) !== -1;
+      });
+    }
+    if (!rows.length) { show.hidden = true; show.innerHTML = ''; return; }
+
+    var prevRank = state.prevRank || {};
+    var ready = !!state.prevReady;
+    var body = rows.map(function (it, i) {
+      var s = parseStar(it);
+      var key = s.repo.toLowerCase();
+      var isNew = ready && !(key in prevRank);
+      var now = i + 1;
+      var delta = ready && typeof prevRank[key] === 'number' ? prevRank[key] - now : 0;
+      var move = isNew ? '<span class="star-badge is-new">新进</span>'
+        : (delta > 0 ? '<span class="star-badge up">↑' + delta + '</span>'
+          : delta < 0 ? '<span class="star-badge down">↓' + (-delta) + '</span>'
+            : '<span class="star-badge flat">持平</span>');
+      return '<tr' + (isNew ? ' class="row-new"' : '') + '>' +
+        '<td class="c-rank">' + now + '</td>' +
+        '<td class="c-repo"><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.repo) + '</a>' +
+          (s.desc ? '<span class="c-desc">' + esc(s.desc.slice(0, 52)) + '</span>' : '') + '</td>' +
+        '<td class="c-lang">' + esc(s.lang || '—') + '</td>' +
+        '<td class="c-num">' + esc(s.stars || '—') + '</td>' +
+        '<td class="c-num c-day">' + (s.day ? '+' + esc(s.day.replace(/^\+/, '')) : '—') + '</td>' +
+        '<td class="c-move">' + move + '</td>' +
+      '</tr>';
+    }).join('');
+
+    var newCount = ready ? rows.filter(function (it) {
+      return !(parseStar(it).repo.toLowerCase() in prevRank);
+    }).length : 0;
+
+    show.hidden = false;
+    show.innerHTML = '<div class="star-head">' +
+        '<span class="badge 星榜">星榜</span>' +
+        '<span class="star-title">GitHub 星榜 · Top ' + rows.length + '</span>' +
+        '<span class="star-note">' + (ready
+          ? '与昨日重复 ' + (rows.length - newCount) + ' 个仓（标持平/↑↓，不算今日新内容）· 今日新进 ' + newCount + ' 个'
+          : '榜单快照，跨日会有重复仓') + '</span>' +
+      '</div>' +
+      '<div class="star-wrap"><table class="star-table"><thead><tr>' +
+        '<th class="c-rank">#</th><th>仓库</th><th class="c-lang">语言</th>' +
+        '<th class="c-num">stars</th><th class="c-num">24h</th><th class="c-move">变化</th>' +
+      '</tr></thead><tbody>' + body + '</tbody></table></div>';
+  }
+
+  function loadPrevStars() {
+    state.prevReady = false;
+    state.prevRank = {};
+    var dates = (state.index && state.index.dates) || [];
+    var i = dates.findIndex(function (d) { return d.date === state.date; });
+    var older = i >= 0 ? dates[i + 1] : null;
+    if (!older) return Promise.resolve();
+    return loadJSON('data/' + older.date + '.json').then(function (day) {
+      var rank = {}, n = 0;
+      (day.items || []).forEach(function (it) {
+        if (!isStar(it)) return;
+        var key = String(it.title || '').split(' — ')[0].trim().toLowerCase();
+        if (!key || key in rank) return;
+        n += 1;
+        rank[key] = n;
+      });
+      state.prevRank = rank;
+      state.prevReady = true;
+    }).catch(function () { /* 拿不到昨日就只显示榜单，不标变化 */ });
+  }
+
   function renderList() {
     var items = (state.day && state.day.items) || [];
 
@@ -451,6 +547,7 @@
       el.list.innerHTML = bar + cardHTML(fit, 0, 0, foldAll.folded[key] || null, true);
       el.empty.hidden = true;
       el.topbox.hidden = true;
+      if (el.star) { el.star.hidden = true; el.star.innerHTML = ''; }
       el.summary.textContent = '正在查看 1 条 · 共 ' + items.length + ' 条';
       var back = document.getElementById('focus-back');
       if (back) back.addEventListener('click', exitFocus);
@@ -477,12 +574,24 @@
       return !(it.id && fold.hidden[String(it.id)]);
     });
 
+    // 星榜单独成表，卡片流只放「当日新增内容」，避免 20 条榜单把列表刷成重复。
+    renderStars(items);
+    var newsVisible = visible.filter(function (it) { return !isStar(it); });
+
+    var starTotal = items.filter(isStar).length;
     el.summary.textContent = '共 ' + items.length + ' 条' +
+      (starTotal ? '（星榜 ' + starTotal + ' 条见上方榜单表）' : '') +
       (visible.length !== items.length ? '，显示 ' + visible.length + ' 条' : '');
 
     renderTop(visible);
 
-    if (!visible.length) {
+    if (state.source === '星榜') {
+      el.list.innerHTML = '<p class="empty">星榜已在上方表格展示：' + starTotal + ' 个仓库，按排名排列。</p>';
+      el.empty.hidden = true;
+      return;
+    }
+
+    if (!newsVisible.length) {
       el.list.innerHTML = '';
       el.empty.hidden = false;
       el.empty.querySelector('p').textContent = items.length ? '没有匹配的内容。' : '这一天还没有内容。';
@@ -496,7 +605,8 @@
     var counts = sourcesOf(items);
     var order = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
     var html = order.map(function (src) {
-      var gi = visible.filter(function (it) { return (it.source || '其他') === src; });
+      if (src === '星榜') return '';
+      var gi = newsVisible.filter(function (it) { return (it.source || '其他') === src; });
       if (!gi.length) return '';
       gi.sort(byScore);
       var cards = gi.map(function (it, idx) {
@@ -524,6 +634,7 @@
     renderBriefing((state.day && state.day.items) || []);
     renderFilters();
     renderList();
+    loadPrevStars().then(function () { if (!state.focus) renderList(); });
     syncHeaderHeight();
   }
 
