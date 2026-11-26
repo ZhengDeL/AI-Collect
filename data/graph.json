@@ -1,9 +1,9 @@
 {
  "schema_version": "1.0",
- "generated_at": "2026-11-25T10:16:13+08:00",
+ "generated_at": "2026-11-26T09:49:57+08:00",
  "counts": {
-  "nodes": 237,
-  "edges": 258
+  "nodes": 242,
+  "edges": 263
  },
  "views": [
   {
@@ -11662,6 +11662,371 @@
    "updated_by": "案例"
   },
   {
+   "id": "case/20261126-01",
+   "type": "case",
+   "name": "Qwen3.8-27B-w8a8 在 Atlas 8…",
+   "one_line": "混合注意力）",
+   "why": "Qwen3.8-27B-w8a8 在 Atlas 800 A2（8×910B2）上的 DP2×TP4 部署与 TP scaling 实测",
+   "principle": "说明：vllm serve /mnt/weight/Eco-Tech/Qwen3.8-27B-w8a8 --host 0.0.0.0 --port 8000 --data-parallel-size 2 --tensor-parallel-size 4 --quantization ascend --served-model-name qwen3.8 --max-num-seqs 64 --max-model-len 131072 --max-num-batched-tokens 16384 --trust-remote-code --enable-prefix-caching --gpu-memo",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "parallel",
+    "serving"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "hardware_scope": [
+    "A2 / 910B / 910B3（机型 Atlas 800 A2，即 800T A2）"
+   ],
+   "gain": [
+    {
+     "metric": "吞吐",
+     "value": "TP4+DP2：32K 输入下 C=20 吞吐 379 tok/s；TP2+DP4：357 tok/s；TP8+DP1：2.3 s TTFT、无并发数据",
+     "source": "https://atomgit.com/Ascend-SACT/qwen3.8-27b-optimization",
+     "evidence": "A"
+    },
+    {
+     "metric": "TTFT",
+     "value": "32K 输入 TTFT：TP4+DP2 3.3 s；TP2+DP4 5.9 s；TP8+DP1 2.3 s",
+     "source": "https://atomgit.com/Ascend-SACT/qwen3.8-27b-optimization",
+     "evidence": "A"
+    },
+    {
+     "metric": "tp_scaling",
+     "value": "32K 输入 C=1 TTFT：TP1 7.08 s → TP2 5.88 s（1.20×）→ TP4 3.56 s（1.99×）→ TP8 2.39 s（2.96×）",
+     "source": "https://atomgit.com/Ascend-SACT/qwen3.8-27b-optimization",
+     "evidence": "A"
+    },
+    {
+     "metric": "结论",
+     "value": "上游说明：matmul_allreduce 在 v0.26 同步 PR #12849 中丢失；TP4 吞吐 +42%、精度零损失；GDN 7 步串行链效率仅约 4%（1.22 s vs 理论 0.05 s）",
+     "source": "https://atomgit.com/Ascend-SACT/qwen3.8-27b-optimization",
+     "evidence": "A"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "挂载宿主机 ascend-toolkit 后启动失败：libvllm_ascend_kernels.so 加载时报 aclnn... aclrtLaunchKernelWithHostArgs 符号找不到",
+     "fix": "根因：宿主机 CANN 8.5.0 与镜像内置 CANN 9.0.1 符号冲突　修法：不挂宿主机 ascend-toolkit，只用镜像内置 CANN 9.0.1"
+    },
+    {
+     "hit": "开 enable_matmul_allreduce 启动即崩：RuntimeError: K of x1 and x2 should be same, but they are x1_k: 4352, x2_k: 5120",
+     "fix": "根因：int8 weight 被喂给 bf16 GEMM 路径（matmul_allreduce 未支持 W8A8)　修法：打 patches/0001-linear_op-W8A8-matmul-allreduce.patch，改走 torch_npu.npu_mm_all_reduce_base 的 antiquant_scale/offset"
+    },
+    {
+     "hit": "每个副本首次请求输出乱码",
+     "fix": "根因：EngineCore 冷启动未预热　修法：打 patches/0002-core-self-warmup-coldstart-fix.patch，注入 8-token 预热"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://atomgit.com/Ascend-SACT/qwen3.8-27b-optimization"
+   ],
+   "evidence": "A",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261126-02",
+   "type": "case",
+   "name": "GLM-5.3-Flash-w8a8 1P1D 在 …",
+   "one_line": "大模型与 MoE（PD 分离）：48 并发 4534 tok/s，64 并发崩溃",
+   "why": "GLM-5.3-Flash-w8a8 1P1D 在 vllm-ascend 0.32.0rc1：48 并发 4534 tok/s，64 并发崩溃",
+   "principle": "说明：原文未给完整启动命令（只给镜像 tag 与 1P1D 拓扑）。压测侧参数：evalscope，model=GLM-5.3-Flash-w8a8，api=openai，输入 4096 token / 输出 1024 token，并发 48 与 64 两档",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "parallel"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "hardware_scope": [
+    "代际未标注（原文只说 vllm-ascend:0.32.0rc1 镜像；未写 910B/910C/910_93）"
+   ],
+   "gain": [
+    {
+     "metric": "吞吐",
+     "value": "48 并发：输出 906.86 tok/s、总吞吐 4534.63 tok/s、Req 0.89 req/s（240/240 成功，耗时 270.98 s）",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23237",
+     "evidence": "C"
+    },
+    {
+     "metric": "TTFT",
+     "value": "48 并发 Avg TTFT 18985.76 ms（P99 45470.70 ms，max 76955.41 ms）",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23237",
+     "evidence": "C"
+    },
+    {
+     "metric": "TPOT",
+     "value": "48 并发 Avg TPOT 30.64 ms；Avg ITL 60.27 ms",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23237",
+     "evidence": "C"
+    },
+    {
+     "metric": "speculative",
+     "value": "Avg Decoded Tok/Iter 2.01，接受率 50.2%",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23237",
+     "evidence": "C"
+    },
+    {
+     "metric": "kv",
+     "value": "KV Cache Hit Rate 0%",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23237",
+     "evidence": "C"
+    },
+    {
+     "metric": "failure",
+     "value": "64 并发崩溃（原文附崩溃日志，具体报错原文未取全）",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23237",
+     "evidence": "C"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "64 并发下服务崩溃（48 并发 240/240 正常）",
+     "fix": "根因：原文未给根因；作者以 bug 形式提交　修法：未查到（issue 2026-11-25 提交，尚无修复）"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/issues/23237"
+   ],
+   "evidence": "C",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261126-03",
+   "type": "case",
+   "name": "Qwen3-4B + Qwen3-0.6B draf…",
+   "one_line": "小模型 ≤7B（投机解码负向案例）：--enforce-eager 下投机解码反而慢约 8 倍",
+   "why": "Qwen3-4B + Qwen3-0.6B draft：--enforce-eager 下投机解码反而慢约 8 倍",
+   "principle": "说明：原文只给关键开关：基线为默认（graph capture 开启，未开 --enforce-eager）；对照组为 --enforce-eager + speculative draft_model，num_speculative_tokens=2。完整命令行原文未给。负载：300 输入 / 50 输出、并发 1、60 prompt + 20 warmup",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "serving"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "hardware_scope": [
+    "A3 / 910C / 910_93（原文 soc_version Ascend910_9391）"
+   ],
+   "gain": [
+    {
+     "metric": "吞吐",
+     "value": "未单列；由 E2EL 反推单请求吞吐下降约 8×",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23202",
+     "evidence": "C"
+    },
+    {
+     "metric": "TTFT",
+     "value": "不投机 46.74 ms → 投机 + eager 202.22 ms（+332%）",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23202",
+     "evidence": "C"
+    },
+    {
+     "metric": "TPOT",
+     "value": "不投机 7.60 ms → 投机 + eager 61.87 ms（+714%）",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23202",
+     "evidence": "C"
+    },
+    {
+     "metric": "e2e",
+     "value": "419.29 ms → 约 3.2 s",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23202",
+     "evidence": "C"
+    },
+    {
+     "metric": "success",
+     "value": "两组均 60/60 成功（不是报错，是变慢）",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23202",
+     "evidence": "C"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "开 draft_model 投机后 TPOT 从 7.60 ms 涨到 61.87 ms",
+     "fix": "根因：开启 --enforce-eager 会关闭图模式；投机解码的多次 draft forward 失去 ACL Graph 重放收益，host 下发成为瓶颈。作者明说这不是干净 A/B：第二组只有关掉 graph capture 才跑得起来　修法：未查到（作者建议：eager 回退时自动禁用投机，并加 CI 门限 TPOT ≤1.2× 基线）"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/issues/23202"
+   ],
+   "evidence": "C",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261126-04",
+   "type": "case",
+   "name": "Qwen3.5-122B-A10B bf16 双机 …",
+   "one_line": "大模型与 MoE（多机多卡 + 静默退化）：TP16/DP2/EP32 下 1.6% 请求不终止",
+   "why": "Qwen3.5-122B-A10B bf16 双机 32 卡：TP16/DP2/EP32 下 1.6% 请求不终止",
+   "principle": "说明：vllm serve <model> --tensor-parallel-size 16 --data-parallel-size 2 --enable-expert-parallel --max-model-len 131072 --max-num-seqs 32 --seed 29 --no-enable-prefix-caching --async-scheduling\n\n（原文另注明 EP=32；完整命令未逐字给出）\n负载：单 prompt（多项式因式题，答案 2400）复制 N 份，temperature=1.0 / top_p=1.0 / top_k=1e8 / max_token",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "parallel"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "hardware_scope": [
+    "A3 / 910C / 910_93（原文写 910C，未写代号）"
+   ],
+   "gain": [
+    {
+     "metric": "failure_rate",
+     "value": "run1 240 条退化 3 次（1.25%）；run2 320 条 0 次；run3 1000 条退化 16 次（1.6%）",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23210",
+     "evidence": "C"
+    },
+    {
+     "metric": "failure_shape",
+     "value": "先输出正确 `Answer: \\boxed{2400}` 后不终止：14/16 为答案重复，另有 `<newline>` 双 token 循环（token id 59/198）、推导片段重复；最长三条烧满 122879 token 直到 finish_reason=length",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23210",
+     "evidence": "C"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "部分请求在给出正确答案后不停止，一直生成到 max_tokens",
+     "fix": "根因：原文未给根因（issue 2026-11-25 提交，复现率随采样量变化：1.25% / 0 / 1.6%）　修法：未查到"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/issues/23210"
+   ],
+   "evidence": "C",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261126-05",
+   "type": "case",
+   "name": "MiniMax-M2.5（229B/10B 激活）9…",
+   "one_line": "大模型与 MoE（单机 910C 调优方案）：TPOT 102 ms → 65 ms（100K 入 / 1K 出 / C=10）",
+   "why": "MiniMax-M2.5（229B/10B 激活）910C 单机：TPOT 102 ms → 65 ms（100K 入 / 1K 出 / C=10）",
+   "principle": "说明：原文未给完整 vllm serve 命令（只给镜像 tag 与压测命令片段：`--percentile-metrics ttft,tpot,itl,e2el`）。调优项：ACL Graph 图模式、jemalloc、AIV 模式、融合算子 / MoE 大融合算子、共享专家多流、投机解码（Eagle3 微调或模型自带 MTP）、suffix 接受率提升\n\n压测场景：输入 100k / 输出 1k / 并发 10",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "parallel"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "hardware_scope": [
+    "A3 / 910C / 910_93（原文写 910C 单机 / A3 导入）"
+   ],
+   "gain": [
+    {
+     "metric": "吞吐",
+     "value": "原文被脱敏为「单卡吞吐较开箱提升 x 倍以上」，具体数字未给",
+     "source": "https://ai.atomgit.com/Ascend-SACT/minimax2.5",
+     "evidence": "A"
+    },
+    {
+     "metric": "TPOT",
+     "value": "100K 入 / 1K 出 / C=10：102 ms → 65 ms",
+     "source": "https://ai.atomgit.com/Ascend-SACT/minimax2.5",
+     "evidence": "A"
+    },
+    {
+     "metric": "ablation",
+     "value": "使能 AIV 模式：TPOT 减少 8 ms，吞吐提升 36%",
+     "source": "https://ai.atomgit.com/Ascend-SACT/minimax2.5",
+     "evidence": "A"
+    },
+    {
+     "metric": "结论",
+     "value": "原文自评：A3 代际访存弱于 H20、算力有优势，故用投机解码把计算往算力侧压（verify 时 batch 等效放大 n+1 倍）",
+     "source": "https://ai.atomgit.com/Ascend-SACT/minimax2.5",
+     "evidence": "A"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "0 day 镜像开箱性能差、吞吐低",
+     "fix": "根因：单算子模式频繁下发带来 Host 瓶颈；未开图模式/融合算子　修法：ACL Graph 一次捕获多次重放 + jemalloc + AIV + 融合算子 + 投机解码逐项叠加"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://ai.atomgit.com/Ascend-SACT/minimax2.5"
+   ],
+   "evidence": "A",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
    "id": "engine/vllm",
    "name": "vLLM",
    "alias": [
@@ -14885,6 +15250,36 @@
    "to": "engine/vllm-ascend",
    "type": "runs_on",
    "note": "StandardOne-35B-SH（Qwen3.5… 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261126-01",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Qwen3.8-27B-w8a8 在 Atlas 8… 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261126-02",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "GLM-5.3-Flash-w8a8 1P1D 在 … 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261126-03",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Qwen3-4B + Qwen3-0.6B draf… 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261126-04",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Qwen3.5-122B-A10B bf16 双机 … 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261126-05",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "MiniMax-M2.5（229B/10B 激活）9… 在 vLLM-Ascend 上实跑"
   },
   {
    "from": "engine/vllm",
