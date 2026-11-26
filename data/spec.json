@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-25",
+  "date": "2026-11-26",
   "items": [
     {
       "line": "nvidia",
@@ -578,6 +578,42 @@
       "status": "实验性"
     },
     {
+      "line": "nvidia",
+      "family": "other",
+      "name": "vLLM · Kimi-K3.1-Pro DSpark 专用解码编译瘦身（8×B300）",
+      "mechanism": "decode_backend=latency_specialized 下按实际 capture size 编译，去掉从不使用的 CuTe DSL kernel（compile_oproj 的 @cache 键改成只含 kernel 真正读取的参数），不改投机解码验证逻辑；DSpark draft（num_speculative_tokens=4、probabilistic draft + synthetic rejection）接受长度钉在 4.05。属启动编译优化，稳态 decode 吞吐基本不变。",
+      "engine": "vLLM",
+      "versions": "PR #69669；base 0bf9c07376 → PR 2409d9a93a（未查到对应 release 版本）；8×B300；moonshotai/Kimi-K3.1-Pro + Inferact/Kimi-K3.1-Pro-DSpark",
+      "config": "vllm serve moonshotai/Kimi-K3.1-Pro --trust-remote-code --tensor-parallel-size 8 --kv-cache-dtype fp8 --mamba-ssm-cache-dtype float32 --use-replayssm --no-enable-flashinfer-autotune --max-num-batched-tokens 16384 --gpu-memory-utilization 0.9 --attention-config '{\"indexer_kv_dtype\":\"mxfp4\"}' --max-num-seqs 64 --language-model-only --speculative-config '{\"model\":\"Inferact/Kimi-K3.1-Pro-DSpark\",\"num_speculative_tokens\":4,\"method\":\"dspark\",\"draft_sample_method\":\"probabilistic\",\"rejection_sample_method\":\"synthetic\",\"synthetic_acceptance_length\":4.05}' --compilation-config '{\"cudagraph_mode\":\"FULL_DECODE_ONLY\",\"cudagraph_capture_sizes\":[5,10,15,20,25,30,35,40,80,120,160,240,320]}'",
+      "gain": "启动编译（weights loaded→server up）TP8 583→260 s、TP8+DCP8 675→316 s（每 rank CuTe DSL 编译 1435→479 / 1553→549，省约 2/3）；decode 吞吐无回归，base vs PR 在 C1–C64 变化 −1.4%~+1.0%（TP8 C64 2649.6→2659.7 tok/s、TP8+DCP8 C64 2439.0→2438.3 tok/s），接受长度恒定 4.05；21 passed。",
+      "cost": "只省编译启动时间、不提升稳态吞吐，C8（40-row steps）反而慢约 1%；synthetic rejection 把接受长度钉死 4.05，吞吐不随 draft 质量变化；仅测单机 8×B300 的 TP8 与 TP8+DCP8，TP16(GB300)/DEP/hybrid 未测；base/PR 四次交叉、每 bench 独立 seed、无 prefix-cache 复用。",
+      "pitfalls": {
+        "hit": "按默认 capture sizes 编译会编进从不使用的 kernel，启动编译 TP8 长达 583 s；另外 base/PR 若用不同 synthetic_acceptance_length 或复用 prefix-cache，吞吐对比不可信。",
+        "fix": "按实际 capture sizes 编译（FULL_DECODE_ONLY + cudagraph_capture_sizes 列全）；对比时 base/PR/PR/base 交叉起服、固定同一 synthetic_acceptance_length=4.05、每 bench 独立 seed 关掉 prefix-cache 复用。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm/pull/69669",
+      "status": "实验性"
+    },
+    {
+      "line": "nvidia",
+      "family": "draft",
+      "name": "SGLang · AMD Inkling-2 MTP / DSpark draft kernel（MI35x）",
+      "mechanism": "为 Inkling-2-Small 在 MI35x（AMD ROCm）上实现 DSpark draft 的 Markov RNN step 单 kernel（inkling2_mtp_hip.py）与末行 mix+RMSNorm 融合；attention residual 与后续 RMSNorm 融合成 one-CTA 与 row-split 两版（graph-replay 安全、确定性）；MTP 走 DSpark recipe。",
+      "engine": "SGLang",
+      "versions": "PR #52728；AMD ROCm 10；MI35x；SGLANG_USE_AITER=1；全栈依赖 #50187（未查到 SGLang release 版本）",
+      "config": "SGLANG_USE_AITER=1；Balanced 与 DSpark 两种 recipe；per-row mix+RMSNorm 提取为 inkling2_mtp.py 的 _mix_rmsnorm_row 复用",
+      "gain": "全栈（#50187）服务 Inkling-2-Small 在 Balanced 与 DSpark recipe 下 GSM8K 97.0–97.5%；AMD ROCm 10 PR Test 通过。无独立 MTP 吞吐倍数（未查到），只有精度数字。",
+      "cost": "仅 AMD MI35x / ROCm 10 且依赖 AITER；无单独 MTP 吞吐数字，无法判断相对 baseline 的加速倍数；PR Test base job 失败（Run #45466680731），AMD 专项通过。",
+      "pitfalls": {
+        "hit": "base PR Test 失败但 AMD ROCm 10 通过，容易被误判成整体 PR 挂掉；且正文只有 full-stack 精度，没有 MTP 单独吞吐。",
+        "fix": "按 AMD 专项 CI 结果判定，别用 base job 下结论；要吞吐必须自己跑 balanced vs dspark 对比，不要拿 full-stack GSM8K 精度当投机解码加速证据。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/sgl-project/sglang/pull/52728",
+      "status": "实验性"
+    },
+    {
       "line": "ascend",
       "family": "other",
       "name": "vllm-ascend · 通用配置与 16 token 硬上限",
@@ -936,8 +972,26 @@
       "evidence": "B",
       "url": "https://github.com/vllm-project/vllm-ascend/pull/22231",
       "status": "可上生产"
+    },
+    {
+      "line": "ascend",
+      "family": "other",
+      "name": "vLLM-Ascend · DeepSeek-V4.1-Flash DSpark 在 A5 共享 MegaMoE 通信 buffer",
+      "mechanism": "DeepSeek-V4.1-Flash + DSpark 的 target 有 384 专家/top6、draft 有 128 专家/top3，专家数不同会生成两个 FUSED_MC2 通信对象，A5 上两个 MegaMoE context 冲突。修复后由 target 持有分配、draft 串行复用同一 buffer（CANN r148 允许通信属性一致时共用 communicator/op tag），跨 sleep/wake 保留 capture 上下文地址。属正确性修复，非算法加速。",
+      "engine": "vLLM-Ascend",
+      "versions": "PR #23017；CANN 9.3.0 r148 镜像（9722b0304456 / 9bd8129dbc44）；vLLM pin c410543d9（732 passed）与镜像 vLLM 4ba787ec9（725 passed/7 skipped）；Atlas A5；依赖 #21830",
+      "config": "enable_fused_mc2=2；DeepSeek-V4.1 Flash W4A8MXFP + 5-token DSpark；1P1D（Prefill rank 107/108）与同机 DP8/TP1/EP8 FULL_DECODE_ONLY；配合 #21830 一起打；openEuler CANN 9.3.0 r148",
+      "gain": "正确性修复非加速：A5 上 target(384/top6) 与 draft(128/top3) 现在能共用同一 MegaMoE buffer；1P1D 短/长/decode 请求均 HTTP 200 且文本与 token ID 一致；同机 DP8/TP1/EP8 全部 8 rank 确认同一通信 context/设备地址/buffer 所有权；eager 6 请求返回 1/1/1/8/16/32 token、spec decode 计数 130 proposed/29 accepted；732 passed。无吞吐倍数（未查到）。",
+      "cost": "仅当 draft 执行 MoE、A5 CANN MXFP 通道、MegaMoE 开启且选 FUSED_MC2 时才复用；专家数相同/布局相同的 pair 走原路径；若某 rank 的 CANN factory 抛错，所有 rank 需重建 MC2 group 才能重试；buffer 所有权归 target，draft 不能独立释放。",
+      "pitfalls": {
+        "hit": "A5 上 target 384 专家与 draft 128 专家各建一个 FUSED_MC2 对象导致 MegaMoE 初始化失败/通信冲突；tag 注册失败后不重建 group，重试会撞已注册的 tag。",
+        "fix": "按 target 分配、draft 复用的 eligibility 判断（专家数不同 + 通信属性一致 + draft 容量放得进 target 分配）；factory 失败后全部 rank 重建 MC2 group 再重试；核验时分清 vLLM pin（732 passed）与镜像版本（725 passed/7 skipped）两套测试集。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/23017",
+      "status": "实验性"
     }
   ],
   "version": "v1",
-  "generated_at": "2026-11-25T10:13:33+08:00"
+  "generated_at": "2026-11-26T09:47:27+08:00"
 }
