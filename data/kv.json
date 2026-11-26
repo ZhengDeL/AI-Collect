@@ -1,6 +1,6 @@
 {
   "version": "v1",
-  "generated_at": "2026-11-25T09:49:04+08:00",
+  "generated_at": "2026-11-26T09:45:43+08:00",
   "items": [
     {
       "id": "N1",
@@ -2492,6 +2492,132 @@
       },
       "url": "https://github.com/vllm-project/vllm-ascend/pull/23134",
       "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "N55",
+      "line": "nvidia",
+      "name": "vLLM SimpleCPUOffloadConnector share_replicated_regions TP复制KV只存一份",
+      "scenario": [
+        "S2",
+        "S3"
+      ],
+      "layers": [
+        "L2"
+      ],
+      "engine": "vLLM 主线 SimpleCPUOffloadConnector (share_replicated_regions=true, MooncakeConnector 旁挂)",
+      "gain": "MiniMax-M3.1-Flash TP4 同一1499GB host tier 容纳266157 blocks vs main 205599 (+29.5%);PD分离 AgentX 12x MI355X 1P2D TP4 并发128 吞吐52639→65279 tok/s/GPU (+24.0%)、TTFT p90 20.05→5.87s;并发144 42645→64761 tok/s/GPU (+51.9%)、TTFT p90 37.05→15.23s",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "依赖max_tp_shards=1声明复制层(MiniMax-M3 index cache);无该声明无收益",
+        "consist": "rank0存共享区、各rank读回;需私有层不与复制层重叠否则单元校验拒绝",
+        "block": "PD benchmark为offline逐请求不模拟在线调度阻塞",
+        "engine_change": "需设kv_connector_extra_config.share_replicated_regions且改模型层spec;不改核心",
+        "active": "2026-11-25 created,open非draft,MiniMax为AMD MI355X非NVIDIA卡需注明"
+      },
+      "url": "https://github.com/vllm-project/vllm/pull/69920",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N56",
+      "line": "nvidia",
+      "name": "vLLM SimpleCPUOffloadConnector lazy_offload 分配器复用时才落KV",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "vLLM 主线 SimpleCPUOffloadConnector (lazy_offload, V2 runner)",
+      "gain": "Qwen3.8-27B GB200 CPU tier=4x GPU KV:多轮chat重算prompt token 21.0%→15.3%、输出吞吐372→399 tok/s(+7%);revisit 32k前缀重算41.4%→25.9%、mean TTFT -9%、median TTFT 约1.1s→0.23s;2x tier下lazy 45%重算 vs eager 52-56%;依赖#59410(handle_preemptions先于清零)",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "命中取决于CPU tier容量;4x tier收益明显、重负载下CPU tier成瓶颈时与eager趋同",
+        "consist": "无#59410时复用块被update_requests清零再copy,CPU tier存错数据(0/8 warm匹配、输出ducduct);正确性硬依赖该前置PR",
+        "block": "copy在step覆盖复用块前完成;需V2 runner及#59410",
+        "engine_change": "需enable lazy_offload并cherry-pick #59410;改V2 runner时序",
+        "active": "2026-11-25 created,open非draft"
+      },
+      "url": "https://github.com/vllm-project/vllm/pull/69799",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N57",
+      "line": "nvidia",
+      "name": "vLLM Session KV cache 状态树复用(content resolver)",
+      "scenario": [
+        "S1",
+        "S6"
+      ],
+      "layers": [
+        "L1",
+        "L2"
+      ],
+      "engine": "vLLM 主线 --session-cache (state-tree store + token radix resolver, draft/experimental)",
+      "gain": "opt-in状态树KV复用(draft):GLM-5.3-Flash chat +2.1%/共享system prompt +8.9%/agent +35.8%(APC在chat上零复用);Qwen3.5-35B-A3B 共享system +110.7%/agent +82.6%;6模型GSM8K与APC/无缓存同区间;CPU 139 passed+1484 passed(4 failed与main同)、GB200 e2e 5+2 passed;release_sessions可回收RL轨迹状态",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "APC默认;必须--session-cache opt-in;hybrid模型复用远多于APC、attention-only基本持平",
+        "consist": "按saved state而非内容索引,resolver radix树回答前缀共享;恢复后token需匹配cold run(6模型已验)",
+        "block": "状态树在GPU内存,只回答是否仍在/从何处续;未描述跨级搬运阻塞",
+        "engine_change": "新增resolver+store两层、改KV组织方式;API形状(EngineCore.release_sessions)未定",
+        "active": "2026-11-25 created,draft/experimental默认关"
+      },
+      "url": "https://github.com/vllm-project/vllm/pull/69956",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "A47",
+      "line": "ascend",
+      "name": "vllm-ascend PCP owner-sharded KV 分段P2P传输(-layer 3)",
+      "scenario": [
+        "S2",
+        "S3"
+      ],
+      "layers": [
+        "L2",
+        "L5"
+      ],
+      "engine": "vllm-ascend PCP owner-sharded KV + MultiConnector(AscendStore+MooncakeHybrid/V1), draft stacked on #22958",
+      "gain": "修owner模式bounded replay被排除致decoder读3/4滑窗行来自peer page、attention kernel 10-19ms→1.6-2.1ms(owner-vs-replicated前缀缓存退化根因);Engram接收容量由硬编码MAX_ROWS=262144改按每NPU HBM预算1/64上限1GiB→3728270 rows(~155k tok@24 heads),解A2 PD在MBT12288启动失败;A3实测staging buffer须2MiB对齐否则Mooncake add_buffer拒绝",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "owner gate只放行MooncakeHybridConnector,layerwise及其余connector仍拒;V1因decode对齐断言被gate out",
+        "consist": "A2拒绝注册含peer-mapped page的整个logical range,须分段staging buffer+handshake通告区域;staging须2MiB对齐",
+        "block": "A3各rank请求确切完整block后pull;未完成所有worker transfer(含TP0 Main receive)请求不ready",
+        "engine_change": "5个code commit+release note,stacked在#22502/#22958之上;改GlobalTE注册为增量、改Engram容量逻辑",
+        "active": "2026-11-25 created,draft,生产A2/A3 PD拓扑定向修复"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/23232",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "A48",
+      "line": "ascend",
+      "name": "vllm-ascend AscendStore 按请求 max_offload_tokens 节流",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L2"
+      ],
+      "engine": "vllm-ascend AscendStoreConnector (kv_transfer_params.max_offload_tokens)",
+      "gain": "A3 NPU E2E Qwen3-1.7B TP1 AscendStoreConnector+mooncake_master0.3.14 block=128:cap=0写0外部token、cap=200 floor到1完整块(128 hit token)、读路径不变(uncapped存后cap=0回放 hit1023/need_load127 输出逐字节一致)、混合batch caps=[0,200,None,1]→0/128/1023/0;62 passed+AscendStore 1255 passed12 skipped;双基线vLLM v0.34.0与main c410543d",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "不影响外部前缀命中与load;只限制外部写入容量,cap按cache_transfer_granularity向下取整",
+        "consist": "cap生效时抑制尾块(last_block_gva)save、publish_partial_tail受控;invalid值(bool/负数/float/字符串)告警后回退无上限",
+        "block": "layerwise_offload下buffer复用需整步save,此时忽略cap并告警;未测该fallback",
+        "engine_change": "改metadata/pool_scheduler/kv_transfer/ascend_store_connector/pool_worker多文件+文档+release fragment;需上游CI重跑未完成",
+        "active": "2026-11-25 created,open;A3 E2E为rebase前验证"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/23194",
+      "status": "已验证",
       "flag": "新增"
     }
   ]
