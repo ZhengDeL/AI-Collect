@@ -1,0 +1,1085 @@
+{
+  "date": "2026-11-26",
+  "generated_at": "2026-11-26T09:31:33+08:00",
+  "items": [
+    {
+      "id": "20261126-001",
+      "source": "英伟达",
+      "title": "NVIDIA cuDNN Frontend v1.34.0.dev85344621 自动夜版发布（官方标注非支持版本）",
+      "url": "https://github.com/NVIDIA/cudnn-frontend/releases/tag/v1.34.0.dev85344621",
+      "time": "2026-11-25",
+      "points": [
+        "事件：11-25（UTC 13:47，北京 21:47）NVIDIA 发布 cuDNN Frontend v1.34.0.dev85344621 自动 nightly 版本。",
+        "要点：继 dev85038338（11-24）之后的夜版 tag，官方标注「Automated nightly build from NVIDIA-internal CI. Not a supported release」，GitLab aa576226f8db / GitHub 05c049a1bf6c（develop）；仅保留最近 14 个 tag、不建议 pin。",
+        "判断：例行夜版、无稳定保证；只跟踪 cuDNN Python 前端 API 演进节奏，不用于生产。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（NVIDIA 官方 GitHub Release 页面标注非支持版本）",
+      "tags": [
+        "CUDA",
+        "Release Notes",
+        "开源"
+      ]
+    },
+    {
+      "id": "20261126-002",
+      "source": "英伟达",
+      "title": "FlashInfer v0.7.6 正式版发布：NVFP4/MXFP8 MoE 登陆 Rubin，batch-invariant 扩展到线性注意力",
+      "url": "https://github.com/flashinfer-ai/flashinfer/releases/tag/v0.7.6",
+      "time": "2026-11-25",
+      "points": [
+        "事件：11-25（UTC 06:18，北京 14:18）FlashInfer 发布 v0.7.6 正式版（此前 11-24 发 v0.7.6rc2、11-20 发 rc1）。",
+        "要点：正式版把 NVFP4 与 MXFP8 MoE 带到 Rubin，专家权重放到双 die Rubin 的每个 die 上；batch-invariant 模式扩展到 linear attention、token sampling 及更多 Blackwell/Rubin MoE 格式，linear-attention 与 Mamba2 kernel 可直接工作。",
+        "判断：正式版节点、特性实质扩展，值得跟踪；但绑定 Rubin/Blackwell（我们 A2/A3/950 无对应路径），先观察兼容性演进，不急落地。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（FlashInfer 官方 GitHub Release 正文）",
+      "tags": [
+        "MoE",
+        "量化",
+        "Release Notes"
+      ]
+    },
+    {
+      "id": "20261126-003",
+      "source": "英伟达",
+      "title": "NVIDIA 官方博客：通过寄存器回收优化 RTX Blackwell 上的 NVFP4 注意力",
+      "url": "https://developer.nvidia.com/blog/how-to-optimize-nvfp4-attention-on-nvidia-rtx-blackwell-through-register-recycling/",
+      "time": "2026-11-26",
+      "points": [
+        "事件：11-25（UTC 19:30，北京 11-26 03:30）NVIDIA 技术博客发文《How to Optimize NVFP4 Attention on NVIDIA RTX Blackwell Through Register Recycling》。",
+        "要点：优化 SageAttention3 kernel，把 N128 score tile 拆成两个 N64 寄存器槽，softmax 量化后复用寄存器以重叠下一 tile 的 QK 计算；RTX PRO 6000 Blackwell 上 NVFP4 attention kernel 延迟最高改善 1.64×，Reactor 集成后端到端推理延迟降最高 15.34%（LongLive/Helio 等 world model）。",
+        "判断：官方博客发布事件，只报结论；寄存器回收的调优配方与实测数字归调优情报线，我们无 RTX Blackwell 路径，观察。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（NVIDIA 官方技术博客，含客户实测基准）",
+      "tags": [
+        "官方博客",
+        "量化",
+        "推理"
+      ]
+    },
+    {
+      "id": "20261126-004",
+      "source": "英伟达",
+      "title": "FlashAttention 4 beta41 发布：SM100 反向传播与 MXFP8 PV 更新",
+      "url": "https://github.com/Dao-AILab/flash-attention/releases/tag/fa4-v4.0.0.beta41",
+      "time": "2026-11-25",
+      "points": [
+        "事件：11-25（UTC 08:12，北京 16:12）Dao-AILab 发布 flash-attention 4 beta41（fa4-v4.0.0.beta41）。",
+        "要点：3 项变更——CuTe SM100 反向按 fp32 dV staging size 分配 sdO 并用直接 dK/dV store（#3065）、CuTe SM100 增加带 BF16 band 的 causal native MXFP8 PV（#3022）、dKGemmKernel 修复释放累加器前等待 tcgen05.ld（#3208）。",
+        "判断：FA4 系列持续迭代、面向 SM100（Blackwell）的新特性与正确性修复；我们无 SM100 路径，观察。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（Dao-AILab 官方 GitHub Release 正文）",
+      "tags": [
+        "CUDA",
+        "Release Notes",
+        "推理"
+      ]
+    },
+    {
+      "id": "20261126-005",
+      "source": "昇腾",
+      "title": "vllm-ascend 合入 #22750：稀疏注意力 MLA 支持 HiF8 C8 KV cache",
+      "url": "https://github.com/vllm-project/vllm-ascend/commit/8fd83996b0b82d740556069f18f14191b60fc657",
+      "time": "2026-11-25",
+      "points": [
+        "事件：11-25（UTC 08:47，北京 16:47）vllm-ascend 合入 #22750，Feature/Quantization：为 sparse-attention MLA 支持 HiF8 C8 KV cache。",
+        "要点：面向稀疏注意力的 MLA 路径引入 HiF8 C8 格式 KV cache，目标是降低 KV 显存占用、扩大可承载并发。",
+        "判断：KV cache 量化新特性，落在我们 A2/A3 栈可评估；收益数字待调优/实测线补，新闻线只报合入事件。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（vllm-ascend 官方 GitHub commit 标题与分类）",
+      "tags": [
+        "vLLM-Ascend",
+        "量化",
+        "KV Cache"
+      ]
+    },
+    {
+      "id": "20261126-006",
+      "source": "昇腾",
+      "title": "vllm-ascend 合入 #21627：Qwen4Exp 集成 union GBSA prefill",
+      "url": "https://github.com/vllm-project/vllm-ascend/commit/118c369eafe91b95b5d9bf5a8033f906f98ee0cd",
+      "time": "2026-11-25",
+      "points": [
+        "事件：11-25（UTC 14:39，北京 22:39）vllm-ascend 合入 #21627，Performance：为 Qwen4Exp 集成 union GBSA prefill。",
+        "要点：Qwen4Exp 的 prefill 改用 union GBSA（分组稀疏注意力）路径，属长上下文 prefill 优化方向。",
+        "判断：性能类合入，配方与实测收益归调优情报线；新闻线报合入事件，观察实际增益。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（vllm-ascend 官方 GitHub commit 标题与分类）",
+      "tags": [
+        "vLLM-Ascend",
+        "推理",
+        "算子融合"
+      ]
+    },
+    {
+      "id": "20261126-007",
+      "source": "昇腾",
+      "title": "vllm-ascend 合入 #23123：移除旧 storage_block_size shim，KV Cache 统一到 num_states",
+      "url": "https://github.com/vllm-project/vllm-ascend/commit/ffcda6117c5f72a17ffa985d46161761f83cc858",
+      "time": "2026-11-26",
+      "points": [
+        "事件：11-26（UTC 00:09，北京 08:09）vllm-ascend 合入 #23123，Refactor/KV Cache：移除 legacy storage_block_size shims、统一用 num_states。",
+        "要点：删除历史 storage_block_size 兼容层，KV Cache 状态计数统一改用 num_states，属明确行为变化。",
+        "判断：破坏性/行为变更，依赖旧 shim 的下游需跟进适配；观察升级影响。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（vllm-ascend 官方 GitHub commit 标题与分类）",
+      "tags": [
+        "vLLM-Ascend",
+        "KV Cache",
+        "破坏性变更"
+      ]
+    },
+    {
+      "id": "20261126-008",
+      "source": "其他",
+      "title": "llama.cpp b12751：BPE 统一启用 Metaspace prepend_scheme",
+      "url": "https://github.com/ggml-org/llama.cpp/releases/tag/b12751",
+      "time": "2026-11-26",
+      "points": [
+        "事件：11-25（UTC 23:29，北京 11-26 07:29）llama.cpp 发 b12751。",
+        "要点：vocab 层 BPE 统一启用 Metaspace prepend_scheme（#33038），并移除 test-tokenizer-mmbert 测试。",
+        "判断：tokenizer 行为变化，可能影响 BPE 分词结果一致性；观察对多语言词表的影响。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（llama.cpp 官方 GitHub Release 正文）",
+      "tags": [
+        "开源",
+        "Release Notes",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261126-009",
+      "source": "其他",
+      "title": "llama.cpp b12738：Windows 下 server 支持 CTRL_BREAK_EVENT 干净退出",
+      "url": "https://github.com/ggml-org/llama.cpp/releases/tag/b12738",
+      "time": "2026-11-25",
+      "points": [
+        "事件：11-25（UTC 22:35，北京 11-26 06:35）llama.cpp 发 b12738。",
+        "要点：server 处理 Windows 的 CTRL_BREAK_EVENT 实现干净关闭（#32080）——此前 Windows 不能向子进程发 SIGINT，脚本只能 kill 从而跳过清理流程。",
+        "判断：Windows 部署运维体验修复；观察。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（llama.cpp 官方 GitHub Release 正文）",
+      "tags": [
+        "开源",
+        "Release Notes",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261126-010",
+      "source": "其他",
+      "title": "llama.cpp b12734：Metal 后端分块提交 graph 到单 command buffer 线程",
+      "url": "https://github.com/ggml-org/llama.cpp/releases/tag/b12734",
+      "time": "2026-11-25",
+      "points": [
+        "事件：11-25（UTC 22:14，北京 11-26 06:14）llama.cpp 发 b12734。",
+        "要点：Metal 后端改为按块提交 graph、共用单个 command buffer 线程（#32947）。",
+        "判断：Apple Silicon 性能优化；我们无该路径，观察。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（llama.cpp 官方 GitHub Release 正文）",
+      "tags": [
+        "开源",
+        "Release Notes",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261126-011",
+      "source": "其他",
+      "title": "llama.cpp b12726：SYCL 后端初步支持 F8 e4m3",
+      "url": "https://github.com/ggml-org/llama.cpp/releases/tag/b12726",
+      "time": "2026-11-25",
+      "points": [
+        "事件：11-25（UTC 14:42，北京 22:42）llama.cpp 发 b12726。",
+        "要点：SYCL 后端初步支持 F8 e4m3 的 SET_ROWS、CPY、ADD、MUL_MAT、MUL_MAT_ID 算子（#31871）。",
+        "判断：Intel GPU 量化支持扩展；观察。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（llama.cpp 官方 GitHub Release 正文）",
+      "tags": [
+        "开源",
+        "量化",
+        "Release Notes"
+      ]
+    },
+    {
+      "id": "20261126-012",
+      "source": "其他",
+      "title": "llama.cpp b12719：CUDA 修复 MMVF 矩阵偏移整型溢出",
+      "url": "https://github.com/ggml-org/llama.cpp/releases/tag/b12719",
+      "time": "2026-11-25",
+      "points": [
+        "事件：11-25（UTC 05:59，北京 13:59）llama.cpp 发 b12719。",
+        "要点：CUDA 后端修复 MMVF 矩阵偏移的整型溢出（#32965）。",
+        "判断：正确性 bugfix；观察是否影响大尺寸模型推理。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（llama.cpp 官方 GitHub Release 正文）",
+      "tags": [
+        "开源",
+        "CUDA",
+        "Release Notes"
+      ]
+    },
+    {
+      "id": "20261126-013",
+      "source": "其他",
+      "title": "Hugging Face 博客：科学家在哪里划下 AI agent 的边界",
+      "url": "https://huggingface.co/blog/allenai/where-scientists-draw-the-line-on-ai-agents",
+      "time": "2026-11-26",
+      "points": [
+        "事件：11-25（UTC 18:52，北京 11-26 02:52）Hugging Face 博客发布 allenAI《Where scientists draw the line on AI agents》。",
+        "要点：讨论科研人员对 AI agent 能力边界的划分，属研究观点长文。",
+        "判断：agent 能力边界讨论；观察，如与快讯线撞请正德核。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（Hugging Face 官方博客，RSS pubDate 核实）",
+      "tags": [
+        "官方博客",
+        "Agent",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261126-014",
+      "source": "其他",
+      "title": "Hugging Face 博客：IBM Research 的印度语言语音 agent（CUGA）",
+      "url": "https://huggingface.co/blog/ibm-research/an-indic-voice-agent-with-cuga",
+      "time": "2026-11-25",
+      "points": [
+        "事件：11-25（UTC 10:22，北京 18:22）Hugging Face 博客发布 IBM Research《An Indic Voice Agent with CUGA》。",
+        "要点：面向印度多语言的语音 agent 实践（CUGA 框架）。",
+        "判断：多语言语音 agent 实践；观察，如与快讯线撞请正德核。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（Hugging Face 官方博客，RSS pubDate 核实）",
+      "tags": [
+        "官方博客",
+        "Agent",
+        "多模态"
+      ]
+    },
+    {
+      "id": "20261126-015",
+      "source": "快讯",
+      "title": "Anthropic 发布 GRH 黎曼猜想 Lean 精简验证：76,000 行，仅机器检查无数学家通读",
+      "url": "https://github.com/lsernau/grh-lean",
+      "time": "2026-11-25",
+      "points": [
+        "HN 243 分当日头条：Anthropic 与 lsernau 发布 GRH（Dirichlet L 函数广义黎曼猜想）Lean 4 精简版，Apache 2.0。",
+        "基于 Levent Alpöge 的证明，可读版约 30 万行、精简版约 7.6 万行（同样五个定理），仅依赖 propext/Classical.choice/Quot.sound 三条公理。",
+        "仓库明示「仅通过机器检查、无数学家通读、无论文」，需 Lean 4.35.0+Mathlib、12 核 24GB 构建 1-2 小时；状态标未证实。"
+      ],
+      "verdict": "值得",
+      "credibility": "官方",
+      "tags": [
+        "AI",
+        "论文",
+        "未证实",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261126-016",
+      "source": "快讯",
+      "title": "Anthropic 把 Messages API 从 Python 迁到 Rust：流量两年涨 1800 倍",
+      "url": "https://www.anthropic.com/research/migrating-api-to-rust",
+      "time": "2026-11-25",
+      "points": [
+        "Anthropic 11-25 工程博客：把承载客户与 Claude Code/Cowork 的 Messages API 从 Python 迁到 Rust。",
+        "2024 初到 2026 秋 API 流量增长约 1800 倍，迁移难点在「生成易、验证难」——线上系统的边界用例难用测试覆盖。",
+        "作者用 generator-verifier gap 框架，靠可靠验证回路保证迁移可信；具体性能收益数字正文未摘到，写未查到。"
+      ],
+      "verdict": "值得",
+      "credibility": "官方",
+      "tags": [
+        "AI",
+        "官方博客"
+      ]
+    },
+    {
+      "id": "20261126-017",
+      "source": "快讯",
+      "title": "OpenAI 数学库新增反例：多项式 Hirsch 猜想被证伪",
+      "url": "https://github.com/openai/math/blob/main/preprints/Superpolynomial-graph-diameter-of-simple-polytopes-November-25-2026",
+      "time": "2026-11-25",
+      "points": [
+        "HN 118 分：openai/math 新增预印本，给出简单多面体图直径的超多项式下界，即多项式 Hirsch 猜想的反例。",
+        "延续该内部模型产出数学手稿的发布模式（仓库自述约 42% 顶层结果已 Lean 形式化，其余可能有误）。",
+        "结果与形式化状态以仓库为准，标未证实/需复现；与 11-25 期 VP≠VNP 属不同数学课题。"
+      ],
+      "verdict": "观察",
+      "credibility": "论文",
+      "tags": [
+        "AI",
+        "论文",
+        "未证实",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261126-018",
+      "source": "快讯",
+      "title": "Google DeepMind 发布 DiffusionGemma：单张 H100 每秒超 1000 token",
+      "url": "https://deepmind.google/models/gemma/diffusiongemma/",
+      "time": "2026-11-25",
+      "points": [
+        "Google DeepMind 上线 DiffusionGemma 模型页，走扩散式文本生成路线。",
+        "官方称把解码瓶颈从显存带宽转到算力，token 输出最高快 4 倍，单张 NVIDIA H100 上超过 1000 tokens/s。",
+        "数字为厂商自测，第三方复现未见；模型权重与使用条款以官方页为准。"
+      ],
+      "verdict": "值得",
+      "credibility": "官方",
+      "tags": [
+        "AI",
+        "多模态",
+        "行业动向"
+      ]
+    },
+    {
+      "id": "20261126-019",
+      "source": "快讯",
+      "title": "OpenAI 推 Private Intelligence：ZDR、私有推理与机密计算打包给企业",
+      "url": "https://openai.com/business/private-intelligence/",
+      "time": "2026-11-25",
+      "points": [
+        "OpenAI 11-25 上线 Private Intelligence 企业产品页，主打把前沿智能用于敏感工作负载。",
+        "提供访问限制、零数据保留（ZDR）、私有推理、机密计算，agent 的数据访问/可用工具/允许动作/审批门槛由客户先设定。",
+        "官方强调数据所有权归客户、含输入输出；属企业产品线发布，具体可用范围以官网为准。"
+      ],
+      "verdict": "观察",
+      "credibility": "官方",
+      "tags": [
+        "AI",
+        "行业动向"
+      ]
+    },
+    {
+      "id": "20261126-020",
+      "source": "快讯",
+      "title": "Cloudflare 上线 Search for Agents：面向 AI agent 的搜索服务",
+      "url": "https://blog.cloudflare.com/search-for-agents/",
+      "time": "2026-11-25",
+      "points": [
+        "Cloudflare 11-25 官方博客发布 Search for Agents，面向 AI agent 提供搜索能力（HN 有讨论）。",
+        "归类在 Cloudflare Agents / AI Search 产品线，延续其把 CDN 能力开放给 agent 的方向。",
+        "正文关键参数在本次抓取中被导航淹没未取到，具体接口与计费写未查到。"
+      ],
+      "verdict": "观察",
+      "credibility": "官方",
+      "tags": [
+        "AI",
+        "Agent"
+      ]
+    },
+    {
+      "id": "20261126-021",
+      "source": "快讯",
+      "title": "Zapier MCP：9000+ 应用、66000+ 触发器，1 月 5 日前免费用工具调用",
+      "url": "https://zapier.com/mcp",
+      "time": "2026-11-25",
+      "points": [
+        "Zapier 11-25 主推 MCP 服务，让 Claude/ChatGPT/Cursor 等客户端调用 9000+ 应用、66000+ 触发器与动作。",
+        "HN 讨论指其工具调用在 2026-01-05 前免费；无标准动作时 agent 可写代码访问内部 API。",
+        "认证与权限由 Zapier 托管，属 MCP 生态商业化动向。"
+      ],
+      "verdict": "观察",
+      "credibility": "官方",
+      "tags": [
+        "AI",
+        "Agent"
+      ]
+    },
+    {
+      "id": "20261126-022",
+      "source": "快讯",
+      "title": "Amazon：攻击者的 AI agent 几乎无人干预就发现并利用 0day",
+      "url": "https://arstechnica.com/security/2026/11/amazon-says-hackers-ai-agents-found-and-exploited-0-day-with-little-human-input/",
+      "time": "2026-11-25",
+      "points": [
+        "Ars Technica 11-24 报道、11-25 HN 传播：Amazon 称攻击者用开源 AI 渗透框架 Cairn 的 agent，几乎无人监督下发现并利用 0day。",
+        "攻击者仅给出 IP 列表和「obtain shell access」目标，agent 在东亚某大学服务器的开源医学影像 AI 应用中挖出 0day 并取得系统控制权。",
+        "Amazon 据此提醒防御方为 agent 攻击的速度与持续性做准备；事件由其观测披露，标实测。"
+      ],
+      "verdict": "值得",
+      "credibility": "实测",
+      "tags": [
+        "AI",
+        "Agent",
+        "实测"
+      ]
+    },
+    {
+      "id": "20261126-023",
+      "source": "快讯",
+      "title": "24KB 纯汇编裸机跑 Qwen3-0.6B：无 Linux/C/Rust，134.9 tok/s",
+      "url": "https://github.com/alesha-pro/llm.asm/tree/main/02-baremetal-os",
+      "time": "2026-11-25",
+      "points": [
+        "GitHub 项目 llm.asm 第二阶段（HN 51 分）：用 24,252 字节纯 x86-64 汇编做成可引导 OS，直接在硬件/KVM 上跑 Qwen3-0.6B。",
+        "无 Linux/Windows/C/Rust/libc，74-94ms 冷启动进多轮对话，KV cache 跨轮保持，2MB 大页零拷贝绑定模型。",
+        "作者实测 QEMU KVM 16 vCPU 134.9 tok/s、Proxmox VE 12 核 55.4 tok/s，1-32 vCPU 输出逐 token 一致；数字为项目自测。"
+      ],
+      "verdict": "观察",
+      "credibility": "实测",
+      "tags": [
+        "AI",
+        "开源",
+        "实测"
+      ]
+    },
+    {
+      "id": "20261126-024",
+      "source": "快讯",
+      "title": "用 Lean + 差分测试检查 Clojure 核心，发现 HAMT/vector 未报 bug",
+      "url": "https://s.conao3.com/blog/2026/e4f733",
+      "time": "2026-11-25",
+      "points": [
+        "HN 181 分：作者仿照「用 Lean 4 形式验证知名 Rust 开源项目找 bug」的做法，检查 Clojure 用 Java 写的核心数据结构。",
+        "在 Lean 中建模整数与位运算搜索反例，并对 java.util 集合做差分测试，在 HAMT 与 vector-of 中找出未报告过的 bug。",
+        "属个人实测研究，非厂商结论，可作形式化验证实用性的案例参考。"
+      ],
+      "verdict": "观察",
+      "credibility": "实测",
+      "tags": [
+        "AI",
+        "论文",
+        "实测"
+      ]
+    },
+    {
+      "id": "20261126-025",
+      "source": "快讯",
+      "title": "Claude Opus 5.5 用 2500 轮打磨一部四乐章交响乐：929 小节、350 亿 token",
+      "url": "https://danprice.ai/blog/opus-symphony",
+      "time": "2026-11-25",
+      "points": [
+        "HN 51 分：开发者用 Claude Opus 5.5 经约 2500 轮迭代创作、演奏并制作视频一部四乐章管弦交响乐。",
+        "成品 929 小节、22979 个音符、约 25 分钟，作者估算耗费约 350 亿 Opus token。",
+        "属个人长程 agent 创作实测，展示长上下文与迭代一致性，非模型官方能力声明。"
+      ],
+      "verdict": "观察",
+      "credibility": "实测",
+      "tags": [
+        "AI",
+        "实测"
+      ]
+    },
+    {
+      "id": "20261126-026",
+      "source": "快讯",
+      "title": "纽约州立法禁 AI 玩具五年：含用互联网与儿童对话的玩偶/机器人",
+      "url": "https://www.theguardian.com/us-news/2026/nov/25/new-york-bans-ai-toys",
+      "time": "2026-11-25",
+      "points": [
+        "Guardian 11-25：纽约州州长 Hochul 周三签署法案，对 AI 聊天机器人驱动的玩具实施五年制造与销售禁令。",
+        "覆盖会说话的毛绒玩具、玩偶及用互联网与儿童对话的机器人，州总检察长称会「毫不犹豫」执法。",
+        "Hochul 此前还对该州 AI 数据中心建设设一年暂停令，属监管动向。"
+      ],
+      "verdict": "观察",
+      "credibility": "二手",
+      "tags": [
+        "AI",
+        "行业动向"
+      ]
+    },
+    {
+      "id": "20261126-027",
+      "source": "快讯",
+      "title": "纽约时报警告摄影师别更新 Photoshop：AI 功能「可能不明显」",
+      "url": "https://www.theverge.com/ai-artificial-intelligence/1041227/the-new-york-times-warns-photographers-not-to-update-photoshop-over-ai-features",
+      "time": "2026-11-25",
+      "points": [
+        "The Verge 11-24 报道、11-25 HN 181 分：纽约时报向自由摄影师发邮件，警告别更新 Photoshop。",
+        "邮件称最新版以「可能并不明显」的方式使用 AI，涉及新闻图片真实性risk。",
+        "属媒体转述的行业动向，具体 AI 功能与政策细节以原邮件为准。"
+      ],
+      "verdict": "观察",
+      "credibility": "二手",
+      "tags": [
+        "AI",
+        "行业动向"
+      ]
+    },
+    {
+      "id": "20261126-028",
+      "source": "快讯",
+      "title": "Vibrant Labs 开源 swarmbox：agent rollout 沙箱，3.9GB 镜像半秒就绪",
+      "url": "https://vibrantlabs.com/research/swarmbox",
+      "time": "2026-11-25",
+      "points": [
+        "Vibrant Labs 11-24 发布 swarmbox（HN 11-25 上榜）：把每个 agent trial 放进含工作区容器与各服务容器的独立 World，起落一致。",
+        "若平台凑不齐整个 World 则记为基础设施错误、不给分，避免脏数据污染评测与训练；220 个 Harbor 任务 32 并发 4 分钟内跑完。",
+        "3.9GB 镜像预热后半秒就绪（常规拉取需 48 秒），设计沿袭 DeepSeek DSec 论文，Python SDK 与 Harbor provider 开源。"
+      ],
+      "verdict": "观察",
+      "credibility": "实测",
+      "tags": [
+        "AI",
+        "Agent",
+        "开源",
+        "实测"
+      ]
+    },
+    {
+      "id": "20261126-029",
+      "source": "昇腾",
+      "title": "vLLM-Ascend 官方自测（A3 910_93，无第三方复现）：union GBSA prefill 用于 Qwen3.8-Flash-Next，A3 TTFT −12.23%、A5 TTFT −14.92%",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/21627",
+      "time": "2026-11-25",
+      "points": [
+        "是什么：为 Qwen4Exp 系的 union sparse attention 引入 GBSA（gated block sparse attention）prefill 路径，替代既有的分块 prefill 选择逻辑。2026-11-25T14:39:22Z 合入（PR#21627），同一 PP4 修复同时用于 A3 与 A5 对照。",
+        "为什么有效：Qwen3.8-Flash-Next W4A8、8×A3 NPU（TP2×PP4）五请求预热后 TTFT 1935.8→1699.0ms（−12.23%）；同模型 W4A8-MXFP、4×A5（TP2×DP2）TTFT 2278.4→1938.5ms（−14.92%）。算子级 prefill 延迟 A3 22.858→16.875ms（−26.17%）、A5 22.799→12.629ms（−44.61%）。",
+        "代价与限制：A3/A5 用不同并行配置（TP2×PP4 vs TP2×DP2），结果不可直接跨平台对比；作者自测、无第三方复现。可照做前提：A3 910_93 或 A5 + Qwen3.8-Flash-Next W4A8 + 对应 PP4 修复；升级为值得的触发条件：我方 A3 同配置复现 TTFT 降幅且精度门通过（标待验证）。"
+      ],
+      "verdict": "值得",
+      "credibility": "vLLM-Ascend 官方 PR 实测（含 A3/A5 双平台 TTFT 与算子级延迟前后对比、五请求预热协议，作者自测、无第三方复现）",
+      "tags": [
+        "业界调优",
+        "vLLM-Ascend",
+        "推理",
+        "实测",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261126-030",
+      "source": "昇腾",
+      "title": "vLLM-Ascend 官方自测（A2 910B3，无第三方复现）：int8 量化 all-reduce 的 min_numel 按 TP 取默认，TP2 盈亏点降到 16MiB、1.45×",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/22085",
+      "time": "2026-11-25",
+      "points": [
+        "是什么：#19000 引入的 int8 量化 all-reduce 由单一 payload 阈值 min_numel=16777216 元素（32MiB bf16）门控，本 PR 按 TP 度分别取默认值。2026-11-25T11:36:48Z 合入。",
+        "为什么有效：910B3（A2）16 个集合通信依赖链的盈亏点（可复现 serving TTFT 到 1–5%）：TP2 默认 8388608 元素（16MiB）、1.45×（160MiB 达 1.82×）；TP4 16777216（32MiB）、1.30×；TP8 31457280（60MiB）、1.11×。空闲 8 卡 910B3 上实测盈亏 10.6/22.7/43.7MiB（TP2/4/8），增益 1.47×/1.28×/1.07×。原单一 32MiB 默认值在 TP2/TP4 偏保守（约 1.5× 高于盈亏点）。",
+        "代价与限制：仅 A2 910B3 + int8 all-reduce（依赖 #19000）实测；增益随 payload 增大，小 payload 仍走 bf16；作者自测、无第三方复现。可照做前提：A2 910B3 + 该量化通信路径 + 按 TP 设 min_numel；升级为值得的触发条件：我方 A2 同配置复现盈亏点与加速比。"
+      ],
+      "verdict": "值得",
+      "credibility": "vLLM-Ascend 官方 PR 实测（含 910B3 多 TP 盈亏点表、16 集合依赖链协议与 vllm bench serve 对照，作者自测、无第三方复现）",
+      "tags": [
+        "业界调优",
+        "vLLM-Ascend",
+        "通信优化",
+        "量化",
+        "实测"
+      ]
+    },
+    {
+      "id": "20261126-031",
+      "source": "昇腾",
+      "title": "vLLM-Ascend 官方自测（A2/A3，无第三方复现）：DFlash2 草稿注意力改用 FA3，A3 Qwen3.8-27B 精度 GPQA 88.38% / GSM8K 97.57%",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/21444",
+      "time": "2026-11-25",
+      "points": [
+        "是什么：Ascend A2/A3 上注意力选择器对 Qwen3-Next/Qwen3.5 混合目标的全注意力层与 DFlash2 草稿注意力层统一走 FA3（需装可选算子），安装后按硬件/注意力特征/并行配置/KV cache dtype 自动选择。2026-11-25T08:34:27Z 合入。",
+        "为什么有效：A3 上 Qwen3.8-27B BF16 + Qwen3.8-27B-DFlash2、TP2、7 个投机 token、FULL_DECODE_ONLY、FA3 0.5.1、vLLM c410543d9 验证：GPQA Diamond 175/198（88.38%）、GSM8K 1287/1319（97.57%）、解码同步检查通过；baseline 用 FIA，PR 换 FA3。",
+        "代价与限制：正文吞吐/TPOT 对比表在抓取时被截断、未取到具体倍数，故只记精度与正确性；需可选 FA3 算子包；作者自测、无第三方复现。可照做前提：A2/A3 + DFlash2 + FA3 算子；升级为值得的触发条件：补到完整吞吐/TPOT 对比数字并在我方 A3 复现。"
+      ],
+      "verdict": "观察",
+      "credibility": "vLLM-Ascend 官方 PR 实测（含 A3 双卡 GPQA/GSM8K 精度与解码同步检查，吞吐表未取到、作者自测、无第三方复现）",
+      "tags": [
+        "业界调优",
+        "vLLM-Ascend",
+        "算子融合",
+        "推理",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261126-032",
+      "source": "昇腾",
+      "title": "vLLM-Ascend 官方自测（8×910B3，无第三方复现）：PCP 下本地 Q 投影与全局 cache 准备重叠， representative 场景 −21~24%",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/21414",
+      "time": "2026-11-25",
+      "points": [
+        "是什么：在 PCP（prefill context parallel）下把每个 rank 的本地 Q 投影计算与全局 KV cache 准备重叠执行，减少串行等待。2026-11-25T03:16:16Z 合入。",
+        "为什么有效：8×Ascend 910B3（TP1 + PCP8）NPU 微基准（ms）：1024 balanced 1138.5→877.7（−22.9%）、512 balanced 583.2→459.6（−21.2%）、128 balanced 225.0→170.1（−24.4%）、128 uneven/strided/empty rank 各 −23.0/−23.1/−24.4%；仅全空输入 32.4→33.0ms（+1.8%）为噪声。",
+        "代价与限制：只有 NPU 微基准（kernel/阶段耗时），非端到端 serving TTFT/吞吐；全空输入微幅变慢；绑 PCP + Q projection 这一特定路径；作者自测、无第三方复现。可照做前提：A2 910B3 + PCP 并行；升级为值得的触发条件：我方 A2 上拿到 E2E TTFT/吞吐增益。"
+      ],
+      "verdict": "观察",
+      "credibility": "vLLM-Ascend 官方 PR 实测（含 8×910B3 多 token 数/多布局 NPU 微基准表，kernel 级、作者自测、无第三方复现）",
+      "tags": [
+        "业界调优",
+        "vLLM-Ascend",
+        "通信优化",
+        "推理",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261126-033",
+      "source": "昇腾",
+      "title": "vLLM-Ascend 官方自测（Qwen4Exp，无第三方复现）：QSA top-k buffer 跨层共享，每 rank 省 352.52MiB（91.67%）、TP8 共 2.754GiB",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/21295",
+      "time": "2026-11-25",
+      "points": [
+        "是什么：Qwen4Exp 的 QSA（query-style attention）top-k 候选 buffer 原本每层各存一份，本 PR 改为跨层共享同一 buffer。2026-11-25T06:06:17Z 合入。",
+        "为什么有效：8 个 rank 探针全部通过，每 rank 节省 352.52MiB（91.67%）、TP8 合计 2.754GiB，实测节省与预期 11×4096×… 一致；固定长度随机负载（128 输入/100 输出/并发 10/每轮 80 请求）三轮吞吐冒烟测试无回退。",
+        "代价与限制：吞吐数字在正文被截断、仅得「三轮无回退」定性；收益主要是显存容量，未给 TTFT/TPOT 改善；针对 Qwen4Exp QSA 特定结构；作者自测、无第三方复现。可照做前提：Qwen4Exp + QSA 多层；升级为值得的触发条件：我方拿到完整吞吐对比并确认跨层共享不影响精度。"
+      ],
+      "verdict": "观察",
+      "credibility": "vLLM-Ascend 官方 PR 实测（含 8 rank 显存节省精确数字与三轮吞吐冒烟，吞吐表未取到、作者自测、无第三方复现）",
+      "tags": [
+        "业界调优",
+        "vLLM-Ascend",
+        "KV Cache",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261126-034",
+      "source": "英伟达",
+      "title": "vLLM 官方自测（H100 SM90，无第三方复现）：ShardQ 用于 FlashInfer NoPE sparse MLA prefill，长上下文 TTFT −34~45%、聚合吞吐 +40.38%",
+      "url": "https://github.com/vllm-project/vllm/pull/69086",
+      "time": "2026-11-25",
+      "points": [
+        "是什么：把 ShardQ（按 query 分片）用于 SM90 FlashInfer 的 NoPE sparse MLA prefill，每个 query 按 token 分片并行。2026-11-25T19:33:23Z 合入。",
+        "为什么有效：温度 0、stream、return_token_ids、ignore_eos 下测 TTFT：131072 输入 9.63→6.35s（−34.08%）、E2E 11.02→7.74s（−29.82%）；511744 输入 47.15→26.02s（−44.81%）、E2E −43.54%；短请求 P95 TTFT −33.80%、长请求中位 TTFT −35.16%、短请求 P95 TPOT −17.34%；聚合输出吞吐 256.08→359.47 tok/s（+40.38%）。",
+        "代价与限制：仅 SM90（H100）FlashInfer NoPE sparse MLA prefill 生效；长上下文收益最明显、短请求增益小；作者同机自测、无第三方复现。可照做前提：H100 + FlashInfer + NoPE sparse MLA + 长上下文；升级为值得的触发条件：我方 H100 同配置复现 TTFT 与吞吐数字。"
+      ],
+      "verdict": "值得",
+      "credibility": "vLLM 官方 PR 实测（含 H100 多输入长度 TTFT/E2E/TPOT 与聚合吞吐前后表，作者自测、无第三方复现）",
+      "tags": [
+        "业界调优",
+        "KV Cache",
+        "推理",
+        "实测",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261126-035",
+      "source": "英伟达",
+      "title": "vLLM 官方自测（无第三方复现）：削减 Qwen3 音频编码器开销，ASR encoder 阶段 6.5~20.2% 更快、OMNI 4.8~15.4%",
+      "url": "https://github.com/vllm-project/vllm/pull/69116",
+      "time": "2026-11-25",
+      "points": [
+        "是什么：优化 Qwen3 音频（ASR/OMNI）编码器的 host 元数据、排序/暂存/拷贝、transformer/projection 与输出处理链路，减少每批音频编码开销。2026-11-25T16:14:14Z 合入。",
+        "为什么有效：encoder 阶段 wall latency（含 CNN、host 元数据、排序/staging/copy、transformer/projection、输出处理、GPU 完成）ASR 6.5–20.2% faster、OMNI 4.8–15.4% faster；实测 ASR/128 短片段 −6.55%/−6.40%、ASR/96 混合 −4.15%、OMNI/128 短片段 −6.14%/−6.69%。",
+        "代价与限制：patch 内部 graph 开启的回退路径仍比 eager 慢至多 4.1%；只测 encoder 阶段、不含特征提取与 decode；作者自测、无第三方复现。可照做前提：Qwen3-ASR/OMNI 多模态服务 + 批音频；升级为值得的触发条件：我方同模型 E2E 复现延迟下降。"
+      ],
+      "verdict": "观察",
+      "credibility": "vLLM 官方 PR 实测（含 ASR/OMNI 多批型 encoder 阶段 latency 前后表，作者自测、无第三方复现）",
+      "tags": [
+        "业界调优",
+        "CUDA",
+        "推理",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261126-036",
+      "source": "英伟达",
+      "title": "SGLang 官方自测（无第三方复现）：Mooncake ranged get 按批设带宽上限，per-rank restore 带宽 +43~58%、平均 req/s +5.6%",
+      "url": "https://github.com/sgl-project/sglang/pull/52906",
+      "time": "2026-11-25",
+      "points": [
+        "是什么：对 Mooncake 的 ranged get 按批限定每次读取的 range 数，使大批量 load 保持带宽（避免过多小 range 把带宽打散）。2026-11-25T13:17:50Z 合入。",
+        "为什么有效：per-rank restore 带宽（set1/set2）29.2/26.7 → 41.9/42.2 GB/s（+43%/+58%）；六轮全快，平均 req/s +5.6%。属服务化 KV 加载通用优化（Mooncake 后端）。",
+        "代价与限制：只给带宽与 req/s 汇总、未给 TTFT/TPOT 分位；绑 Mooncake ranged-get 路径；作者自测、无第三方复现。可照做前提：SGLang + Mooncake 分层 KV + 大批量 load；升级为值得的触发条件：我方同后端复现带宽与 req/s 增益并补 TTFT 分位。"
+      ],
+      "verdict": "观察",
+      "credibility": "SGLang 官方 PR 实测（含 Mooncake restore 带宽前后与六轮 req/s 均值，作者自测、无第三方复现）",
+      "tags": [
+        "业界调优",
+        "KV Cache",
+        "通信优化",
+        "推理",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261126-037",
+      "source": "英伟达",
+      "title": "vLLM 官方自测（8×B300，无第三方复现）：Kimi-K3 specialized decode 只编译会用到的 kernel，启动 583→260s（约省 2/3 编译）",
+      "url": "https://github.com/vllm-project/vllm/pull/69669",
+      "time": "2026-11-25",
+      "points": [
+        "是什么：NVIDIA Kimi-K3 专用 decode（decode_backend=latency_specialized）启动时会编译所有 shape 的 kernel，本 PR 只编译被捕获 graph 实际用到的 kernel。2026-11-25T16:28:06Z 合入。",
+        "为什么有效：8×B300、Kimi-K3.1-Pro、--max-num-seqs 64，启动（权重加载完→服务就绪）TP8 583→260s、TP8+DCP8 675→316s（CuTe DSL 每 rank 编译 1435→…）；decode 无回退——捕获 graph 相同、编译 kernel key 是 base 的严格子集、中位 step time/吞吐不变（TP8 C1 ITL 8.00 vs 7.98ms、吞吐 429.4 vs 427.7 tok/s）。",
+        "代价与限制：绑 B300（Blackwell）+ Kimi-K3 专用 decode；收益是启动时间非稳态吞吐；作者自测、无第三方复现。可照做前提：B300 + Kimi-K3 + latency_specialized；升级为值得的触发条件：我方若在 B300 部署该模型复现启动加速。"
+      ],
+      "verdict": "观察",
+      "credibility": "vLLM 官方 PR 实测（含 8×B300 启动时间前后、kernel key 子集证明与 decode 无回退对照，作者自测、无第三方复现）",
+      "tags": [
+        "业界调优",
+        "CUDA",
+        "推理",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261126-038",
+      "source": "英伟达",
+      "title": "vLLM 官方自测（仅 SM10x/GB300，无第三方复现）：GLM-5.3 KDA short-conv 改 Triton planar，kernel 2.09×、TTFT −2.5~4.5%",
+      "url": "https://github.com/vllm-project/vllm/pull/66884",
+      "time": "2026-11-25",
+      "points": [
+        "是什么：为 GLM-5.3-Flash 的 KDA q/k/v short conv（chunked prefill）写 Triton planar kernel，在 SM10x GPU 上默认开启，替代原实现。2026-11-25T21:46:13Z 合入。",
+        "为什么有效：64 heads TP1、8×8192+194 decode，wall-clock 2.148→1.027ms（2.09×）、GPU time 2.10×；单 8K prompt GPU time 1.5–1.9×。GB300 端到端 TP1 4K/8K 平均 TTFT 低 2.5–4.5%、吞吐最多 +1.4%；TP4 TTFT 在 1% 内。",
+        "代价与限制：绑 SM10x（GB300/Blackwell），packed FP32 f32x2 路径仅 sm_103a 可用，sm_100a/f 上慢约 20%；不适用于我们在 A2/A3/950 上的部署（无 CUDA 路径）；2K/1K 行跨轮双稳。判不值得是平台绑定，非技术本身无效。"
+      ],
+      "verdict": "不值得",
+      "credibility": "vLLM 官方 PR 实测（含 GB300 多 shape kernel 加速表与 TTFT/吞吐 E2E，作者自测、绑 SM10x、无第三方复现）",
+      "tags": [
+        "业界调优",
+        "CUDA",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261126-039",
+      "source": "其他",
+      "title": "论文自报（Ascend NPU，无第三方复现）：Corrective Prefix Attention 并行投机，较 DSpark 多提交 13~15% token、greedy 均速 3.35×/3.37×",
+      "url": "https://arxiv.org/abs/2611.31112",
+      "time": "2026-11-25",
+      "points": [
+        "是什么：论文《Look Back, Draft Ahead: Corrective Prefix Attention for Parallel Speculative Decoding》提出 CPA——前缀感知选择 + 自回归监督，让并行草稿的每个候选 attend 到块内更早的选择；用固定候选 shortlist 把所有成对交互在选择前算完，把串行 walk 降为表查找/累加/打分。",
+        "为什么有效：Qwen3-4B 与 Qwen3-8B 目标、8 个数学/代码/对话基准、Ascend NPU 实测：CPA 每验证轮比 DSpark 多提交 13–15% token、比 DFlash 多 25–26%；greedy 平均加速 3.35×/3.37×、采样 2.86×。辅助自回归损失在干净前缀上训练、不增加推理 pass。",
+        "代价与限制：论文自报、无第三方复现；固定 shortlist 的实现依赖特定 NPU 算子支持；未给端到端 serving 并发数据。升级为值得的触发条件：我方 Ascend 环境复现接受长度与加速比，并确认与现有 DSpark/DFlash 配置的兼容成本。"
+      ],
+      "verdict": "观察",
+      "credibility": "arXiv 论文自报（含 8 基准、双模型、Ascend NPU 接受长度与加速比，无第三方复现）",
+      "tags": [
+        "业界调优",
+        "推理",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261126-040",
+      "source": "其他",
+      "title": "论文自报（无第三方复现）：DECAL 用承诺风险先验做 W4A4 扩散 LLM 量化校准，LLaDA/Dream 上 W4A4 平均精度最优",
+      "url": "https://arxiv.org/abs/2611.30587",
+      "time": "2026-11-25",
+      "points": [
+        "是什么：论文《Quantizing Diffusion LLMs under Parallel Decoding》指出 dLLM 的加速解码器（缓存上下文、置信度过阈即整段 commit）决定了量化在哪里伤精度、代价是什么；提出 DECAL——按部署解码器上测得的承诺风险先验重加权逐层校准，并用保 argmax 的 commit 温度补偿量化带来的「并行税」。",
+        "为什么有效：W4A4 下不可逆误差主要来自 forced commitment（无位置过阈时的强制提交，占比少却贡献多数量化翻转）；量化还通过压缩 top logit gap 把位置推到阈下、增加每响应前向次数（parallelism tax）。DECAL 在 LLaDA 与 Dream 上取得 W4A4 方法中最好的平均精度。",
+        "代价与限制：论文自报、无第三方复现；针对扩散 LLM（dLLM）而非自回归 LLM，与我方主力自回归推理栈不直接对应；具体精度数字在正文截断处未取全。升级为值得的触发条件：我方若上 dLLM 服务，复现 DECAL 相对基线的精度/前向次数收益。"
+      ],
+      "verdict": "观察",
+      "credibility": "arXiv 论文自报（含 W4A4 量化机理诊断与 LLaDA/Dream 精度对比，具体数值未取全、无第三方复现）",
+      "tags": [
+        "业界调优",
+        "量化",
+        "需复现"
+      ]
+    },
+    {
+      "id": "20261126-041",
+      "source": "星榜",
+      "title": "rustdesk/rustdesk — 开源远程桌面工具",
+      "url": "https://github.com/rustdesk/rustdesk",
+      "time": "2026-11-26",
+      "points": [
+        "累计 131486 stars｜语言 Rust｜近 24h +246（trending 日榜实测 stars today）",
+        "可自托管的开源远程桌面，支持多平台。",
+        "自托管中继与端到端连接的架构可参考；连接质量需自行实测。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row，netfetch.py 经 A3-253 通道实测 2026-11-26；stars today 为官方近 24h 增量）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261126-042",
+      "source": "星榜",
+      "title": "chen08209/FlClash — 基于 Clash.Meta 的多平台代理客户端",
+      "url": "https://github.com/chen08209/FlClash",
+      "time": "2026-11-26",
+      "points": [
+        "累计 65462 stars｜语言 Dart｜近 24h +230（trending 日榜实测 stars today）",
+        "多平台图形化代理客户端，基于 Clash.Meta 内核。",
+        "内核与 GUI 解耦的客户端架构可参考；网络行为需自行核实合规。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row，netfetch.py 经 A3-253 通道实测 2026-11-26；stars today 为官方近 24h 增量）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261126-043",
+      "source": "星榜",
+      "title": "anomalyco/opencode — 开源编码 Agent",
+      "url": "https://github.com/anomalyco/opencode",
+      "time": "2026-11-26",
+      "points": [
+        "累计 229203 stars｜语言 TypeScript｜近 24h +226（trending 日榜实测 stars today）",
+        "终端里的开源 coding agent，支持多模型与工具调用。",
+        "agent 的工具编排与交互设计可参考；编码效果需自行实测。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row，netfetch.py 经 A3-253 通道实测 2026-11-26；stars today 为官方近 24h 增量）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261126-044",
+      "source": "星榜",
+      "title": "localsend/localsend — 开源跨平台文件互传工具",
+      "url": "https://github.com/localsend/localsend",
+      "time": "2026-11-26",
+      "points": [
+        "累计 100866 stars｜语言 Dart｜近 24h +211（trending 日榜实测 stars today）",
+        "无需服务器的跨平台局域网文件/消息互传。",
+        "局域网发现与点对点传输实现可参考；传输稳定性需自行实测。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row，netfetch.py 经 A3-253 通道实测 2026-11-26；stars today 为官方近 24h 增量）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261126-045",
+      "source": "星榜",
+      "title": "p-e-w/heretic — 免训练的语言模型改造工具",
+      "url": "https://github.com/p-e-w/heretic",
+      "time": "2026-11-26",
+      "points": [
+        "累计 43202 stars｜语言 Python｜近 24h +206（trending 日榜实测 stars today）",
+        "无需训练即可修改语言模型行为（如去除审查）的方法。",
+        "免训练权重干预技术思路可参考；合规与效果需自行核实。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row，netfetch.py 经 A3-253 通道实测 2026-11-26；stars today 为官方近 24h 增量）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261126-046",
+      "source": "星榜",
+      "title": "multica-ai/multica — 让人与 AI Agent 协同工作的平台",
+      "url": "https://github.com/multica-ai/multica",
+      "time": "2026-11-26",
+      "points": [
+        "累计 57930 stars｜语言 Go｜近 24h +197（trending 日榜实测 stars today）",
+        "把人和多个 AI agent 组织成协同团队的平台。",
+        "多 agent 协作与任务编排的产品形态可借鉴；协作效率需自行实测。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row，netfetch.py 经 A3-253 通道实测 2026-11-26；stars today 为官方近 24h 增量）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261126-047",
+      "source": "星榜",
+      "title": "nginx/nginx — NGINX 官方开源仓库",
+      "url": "https://github.com/nginx/nginx",
+      "time": "2026-11-26",
+      "points": [
+        "累计 33375 stars｜语言 C｜近 24h +176（trending 日榜实测 stars today）",
+        "高性能 Web 服务器 / 反向代理的官方源码仓库。",
+        "成熟的高并发架构与模块机制是经典学习材料；部署需按官方指引。"
+      ],
+      "verdict": "值得",
+      "credibility": "高（GitHub trending 日榜 article.Box-row，netfetch.py 经 A3-253 通道实测 2026-11-26；stars today 为官方近 24h 增量）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261126-048",
+      "source": "星榜",
+      "title": "earendil-works/pi — 统一 LLM API 的 Agent 工具箱",
+      "url": "https://github.com/earendil-works/pi",
+      "time": "2026-11-26",
+      "points": [
+        "累计 123896 stars｜语言 TypeScript｜近 24h +173（trending 日榜实测 stars today）",
+        "提供统一 LLM API、agent loop 等能力的 agent toolkit。",
+        "统一模型接口与 agent 循环抽象可复用；稳定性需自行实测。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row，netfetch.py 经 A3-253 通道实测 2026-11-26；stars today 为官方近 24h 增量）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261126-049",
+      "source": "星榜",
+      "title": "Imbad0202/academic-research-skills — 面向学术研究的 Agent 技能集",
+      "url": "https://github.com/Imbad0202/academic-research-skills",
+      "time": "2026-11-26",
+      "points": [
+        "累计 58560 stars｜语言 Python｜近 24h +153（trending 日榜实测 stars today）",
+        "把文献检索、阅读、综述等科研流程封装成 agent skills。",
+        "科研流程 skill 化的拆分方式可复用；产出可靠性需自行核实。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row，netfetch.py 经 A3-253 通道实测 2026-11-26；stars today 为官方近 24h 增量）",
+      "tags": [
+        "热点仓库",
+        "AI"
+      ]
+    },
+    {
+      "id": "20261126-050",
+      "source": "星榜",
+      "title": "sveltejs/svelte — 面向开发者的前端框架",
+      "url": "https://github.com/sveltejs/svelte",
+      "time": "2026-11-26",
+      "points": [
+        "累计 89933 stars｜语言 JavaScript｜近 24h +136（trending 日榜实测 stars today）",
+        "以编译期优化著称的 Web 前端框架。",
+        "编译期优化与响应式设计思路值得学习；性能需自行实测。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row，netfetch.py 经 A3-253 通道实测 2026-11-26；stars today 为官方近 24h 增量）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261126-051",
+      "source": "星榜",
+      "title": "DigitalPlatDev/FreeDomain — 免费域名注册与实用工具",
+      "url": "https://github.com/DigitalPlatDev/FreeDomain",
+      "time": "2026-11-26",
+      "points": [
+        "累计 209264 stars｜语言 Markdown｜近 24h +94（trending 日榜实测 stars today）",
+        "提供免费域名注册及配套网络工具的开源项目。",
+        "域名与配套工具的工程组织可参考；服务条款需自行核实。"
+      ],
+      "verdict": "观察",
+      "credibility": "高（GitHub trending 日榜 article.Box-row，netfetch.py 经 A3-253 通道实测 2026-11-26；stars today 为官方近 24h 增量）",
+      "tags": [
+        "热点仓库",
+        "其他领域"
+      ]
+    },
+    {
+      "id": "20261126-901",
+      "source": "创新",
+      "title": "GTP 统一 DP/TP/SP/CP/FSDP 五种并行为一个框架：参数 all-gather 下沉到每个 GEMM 前调度，2T MoE 在 12288 GB300 达 13.0 model EFLOP/s、98% 弱扩展",
+      "url": "https://arxiv.org/abs/2611.32057",
+      "time": "2026-11-24",
+      "points": [
+        "新机制（对比对象与出处）：现有并行各折衷——数据并行复制参数、TP/FSDP 给每个 microbatch 加激活/参数通信、pipeline 并行在填充排空时空转。GTP（arXiv 2611.32057，24 Nov 提交 / Wed 25 Nov 公告，NVIDIA）证明线性层的五种并行（DP/TP/sequence/context/FSDP）是同一框架的特例：每层参数与激活都分块、任一侧可用 all-gather 重材质化。关键差异是把参数 all-gather 从 FSDP 惯常的「整个 Transformer block 前一步」下沉为「每个 GEMM 前的可选预处理」，发得足够早以隐藏通信、又足够晚以压住显存。对比对象=Megatron-FSDP、调优过的 3D 并行（含 PP）。有开源 github.com/NVIDIA/Megatron-LM。",
+        "实测数字（论文自报）：内部 2T 参数 MoE 在 12288 张 GB300 上达 13.0 model EFLOP/s、98% 弱扩展效率，512 卡跑 1M-token 序列；256–1024 卡上吞吐为 Megatron-FSDP 的 1.05–1.55×、为调优 3D 并行的 1.27–1.31×（DeepSeek-V4-Pro proxy）。",
+        "可用性与代价：值得。框架/调度层思想，H800 线上 Megatron-LM 生态可直接评估 all-gather per-GEMM 的通信隐藏；昇腾 A2/A3/950 要落到 MindSpeed/自研通信库重写 all-gather 调度粒度，310P 规模够不着、A5/950 无真机。代价=训练侧方法，需万亿级预训练才见收益、要改并行框架调度器；复现难度高，代码开源但规模门槛极高，本机无卡未复现。"
+      ],
+      "verdict": "值得",
+      "credibility": "论文自报（arXiv 2611.32057，24 Nov 提交 / Wed 25 Nov 公告；有开源实现 github.com/NVIDIA/Megatron-LM，未独立复现）",
+      "tags": [
+        "论文",
+        "训练",
+        "并行策略",
+        "开源",
+        "需复现",
+        "交架构师"
+      ]
+    },
+    {
+      "id": "20261126-902",
+      "source": "创新",
+      "title": "Norn 按上下文长度切换卸载执行计划：sublayer 级离线 profiling 预计算切换点，单卡 Qwen3-32B 端到端延迟比 Pipelined Sharding 快 16.8×",
+      "url": "https://arxiv.org/abs/2611.32295",
+      "time": "2026-11-24",
+      "points": [
+        "新机制（对比对象与出处）：把权重与 KV cache 卸载到 host 内存可让大模型跑在单张显存受限 GPU 上，但 KV 随 decode 增长会改变显存需求与传输/attention 开销， existing 卸载方法用静态计算分配与放置、无法自适应。Norn（arXiv 2611.32295，24 Nov 提交 / Wed 25 Nov 公告）离线 profiling 后在 sublayer 级联合优化计算分配与放置、预计算多套执行计划及切换点；decode 时随上下文增长切计划、无需预知输出长度即可重叠计算与传输；prefill 用 operator-major chunked prefill 避免重复权重传输并自动选 chunk 大小。对比对象=Pipelined Sharding、预知输入输出长度的 oracle 变体。未查到代码链接。",
+        "实测数字（论文自报）：Qwen3-14B 与 Qwen3-32B 两个单 GPU 系统上，端到端延迟比 Pipelined Sharding 最高快 16.8×，比预知长度的 oracle 变体仍快 4.2×。",
+        "可用性与代价：值得。卸载调度层、硬件相对无关——昇腾 A2/A3 单卡显存受限跑大模型、H800 单卡场景都可评估；310P 带宽低收益存疑，A5/950 无真机。代价=要离线 profiling + 改推理引擎的 plan 切换与 prefill 分块；复现难度中高，未查到开源代码，本机无卡未复现。"
+      ],
+      "verdict": "值得",
+      "credibility": "论文自报（arXiv 2611.32295，24 Nov 提交 / Wed 25 Nov 公告；未查到公开代码，未独立复现）",
+      "tags": [
+        "论文",
+        "推理",
+        "KV Cache",
+        "需复现",
+        "未查到",
+        "交架构师"
+      ]
+    },
+    {
+      "id": "20261126-903",
+      "source": "创新",
+      "title": "FlashQLA 给 Gated DeltaNet 加上下文并行：decay-aware 边界态准备 + Dual CP 共享摘要，8 卡 1M token 比 FLA KCP 快 4.8×",
+      "url": "https://arxiv.org/abs/2611.32039",
+      "time": "2026-11-24",
+      "points": [
+        "新机制（对比对象与出处）：Gated DeltaNet（GDN）靠循环状态更新拿到线性复杂度，但 chunk 间顺序依赖限制并行，长上下文 + 小 batch / 每卡 head 少时尤甚。FlashQLA（arXiv 2611.32039，24 Nov 提交 / Wed 25 Nov 公告）用 decay-aware 准备降低边界态预处理开销、Dual CP 跨并行层共享摘要计算扩展序列维并行、Auto CP 按负载自适应、CP-aware kernel 协同设计。对比对象=Flash Linear Attention（FLA）、FLA KCP。未查到代码链接。",
+        "实测数字（论文自报）：单卡比 FLA 的 forward 快 1.7–3.1×、backward 最高 4.4×；8 卡上下文最高 1M token 时 Dual CP 比 FLA KCP 的 forward 最高 4.8×、fwd+bwd 合计 4.4×。",
+        "可用性与代价：观察。绑 GDN 线性注意力架构 + CUDA kernel，方法论（decay-aware 边界态、跨 CP 层共享摘要）有借鉴价值，但昇腾缺对应 GDN kernel、不能直接搬。升级触发=我们上 GDN/线性注意力长上下文模型，或昇腾侧具备等价 context-parallel kernel。代价=要改注意力 kernel 与 CP 通信；复现难度高，未查到代码，本机无卡未复现。"
+      ],
+      "verdict": "观察",
+      "credibility": "论文自报（arXiv 2611.32039，24 Nov 提交 / Wed 25 Nov 公告；未查到公开代码，未独立复现）",
+      "tags": [
+        "论文",
+        "推理",
+        "并行策略",
+        "需复现",
+        "未查到",
+        "交架构师"
+      ]
+    },
+    {
+      "id": "20261126-904",
+      "source": "创新",
+      "title": "MXFP4 PTQ 可组合性实证：6 模型 × 3 微缩放格式证明量化配方格式依赖、不可迁移；Midmax 免校准 scale 改善多数 MXFP4 配置",
+      "url": "https://arxiv.org/abs/2611.32873",
+      "time": "2026-11-24",
+      "points": [
+        "新机制（对比对象与出处）：微缩放格式（group 16/32 共享 scale）支撑激进低比特量化，精度取决于格式与 rotation/PTQ/scale 的交互。本文（arXiv 2611.32873，24 Nov 提交 / Wed 25 Nov 公告）系统研究可组合性：6 个 LLM、MXFP6/MXFP4/NVFP4 三种格式，扫 Hadamard rotation 粒度、PTQ 算法、scale 选择策略。核心发现=有效量化配方是格式依赖的，MXFP4 大幅受益于 rotation + 纠错 PTQ，NVFP4 受益少（更细粒度 scale 已捕捉块内变化）；提出 Midmax 免校准 scale 选择缓解 2 的幂块 scale 的截断误差。对比对象=各格式默认配方、in-house BF16。未查到代码链接。",
+        "实测数字（论文自报）：MXFP6 激活 + MXFP4 权重组合找回大部分 4-bit 精度损失，Llama-3.1-8B 上追平或超过自家 BF16 baseline；给 MXFP4 加 per-tensor macroscale（NVFP4 固有机制）未提升平均精度。",
+        "可用性与代价：观察。量化配方方法论有价值，但 MXFP4/NVFP4 微缩放是 Hopper/Blackwell 的低精度表示，H800 线可评估 4-bit、昇腾 A2/A3/310P 是否支持这些格式未确认、不能直接搬。升级触发=昇腾支持 MXFP4/NVFP4 微缩放，或我们评 H800/Blackwell 4-bit 推理。代价=要跑 rotation + PTQ + scale 搜索的校准；复现难度中，未查到代码，本机无卡未复现。"
+      ],
+      "verdict": "观察",
+      "credibility": "论文自报（arXiv 2611.32873，24 Nov 提交 / Wed 25 Nov 公告；未查到公开代码，未独立复现）",
+      "tags": [
+        "论文",
+        "推理",
+        "量化",
+        "需复现",
+        "未查到",
+        "交架构师"
+      ]
+    },
+    {
+      "id": "20261126-905",
+      "source": "创新",
+      "title": "Joule is FLOP：功率墙下 tensor-core kernel 按能量-频率耦合建模，用满 B200 TMEM 的 wide-tile，60 shape GEMM 比 cuBLAS 快 2–6.6%",
+      "url": "https://arxiv.org/abs/2611.32440",
+      "time": "2026-11-24",
+      "points": [
+        "新机制（对比对象与出处）：当 tensor-core kernel 平均板级功耗贴近 GPU 功耗上限时，运行时间约等于每次调用能耗除以功耗上限；被计算隐藏延迟的数据搬运仍耗能，减流量可抬持续频率。Joule（arXiv 2611.32440，24 Nov 提交 / Wed 25 Nov 公告）把能量-频率耦合纳入 kernel 设计与调度，成本模型结合硬件事件计数、物理数据通路能耗、非线性电压缩放，求功耗上限下的持续频率与运行时间；配数据搬运下界得 power-aware speed of light（PSoL）。据此设计用满 B200 TMEM 容量的 wide-tile kernel + 细粒度异步轮转，以及功率感知的时空 tile 调度。对比对象=穷举选出的 cuBLAS 算法、上游 DeepGEMM。称发表时开源。",
+        "实测数字（论文自报）：B200 上能量预测平均误差 0.69%；60 个 dense-layer shape 上 GEMM 比穷举 cuBLAS 几何平均快 4.94%（B200）、6.64%（H100 NVL）、2.12%（RTX PRO 6000）；8×B200 fused Mega-MoE 比上游 DeepGEMM（die-local expert weights）快 2.60–5.17%。",
+        "可用性与代价：不值得。前提是我们在 Blackwell/B200 平台做 kernel 极致优化才成立——核心设计吃 TMEM（Blackwell 专有），H800 无 TMEM、昇腾 A2/A3/310P/950 更无对应结构，方法论可借鉴但机制无法直接落；且收益仅 2–6.6%，与事件计数建模 + tile 调度重写的工程量不匹配。升级触发=团队引入 B200/Blackwell 且要做 GEMM kernel 级压榨。代价=需底层硬件计数器与 tile 调度改造；复现难度高，称将开源但当前未放出，本机无卡未复现。"
+      ],
+      "verdict": "不值得",
+      "credibility": "论文自报（arXiv 2611.32440，24 Nov 提交 / Wed 25 Nov 公告；称发表时开源，当前未查到代码，未独立复现）",
+      "tags": [
+        "论文",
+        "推理",
+        "训练",
+        "需复现",
+        "未查到",
+        "交架构师"
+      ]
+    }
+  ]
+}
