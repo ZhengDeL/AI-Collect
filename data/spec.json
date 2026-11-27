@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-26",
+  "date": "2026-11-27",
   "items": [
     {
       "line": "nvidia",
@@ -614,6 +614,42 @@
       "status": "实验性"
     },
     {
+      "line": "nvidia",
+      "family": "other",
+      "name": "vLLM · Mooncake PD 分离 draft context KV 缺失的静默低接受率修复",
+      "mechanism": "PD 分离下 Mooncake 会把 target KV 传给 decode worker，但 prefill 侧没有 drafter 时不会产出 draft context KV；decode 从不完整的 draft context 起步，draft acceptance 暴跌却没有任何传输错误。本修复让 prefill 在写 KV 前先拒绝交接并要求配置同一 drafter，把静默低接受率变成显式报错。",
+      "engine": "vLLM",
+      "versions": "PR #69870（merged 2026-11-26T07:27:55Z）；镜像 vllm/vllm-openai:nightly-eff4de9be3c901c6ad12cb651de64e4b10ced219，DeepSeek-V4.1-Flash-1017，两臂都含 #69577（KV layout 对齐），B 臂叠本 PR 34a8b7dc1",
+      "config": "Prefill：PP2×TP4（rank 14/26）、eager、DSpark 关；Decode：TP8、DSpark5、FULL_DECODE_ONLY；两臂 block_size=64、kv_load_failure_policy=fail；冷输入 512 / 8192 / 24576 token 三档；需 prefill 与 decode 配同一 drafter",
+      "gain": "正确性修复非加速：A（无本 PR）P/D 请求 decode 返回 HTTP 200、发生 48 次 RDMA WRITE，但 P/D draft acceptance 只有 4.9%（19/385）；B（有本 PR）prefill 端直接拒绝、3 请求全 HTTP 500、0 次 RDMA WRITE，日志报 `Missing draft context KV. Configure the same drafter on prefill.`；decode-local draft acceptance 两臂都是 90/90（说明问题纯在 P/D 交接）。",
+      "cost": "修复后缺 drafter 的 PD 服务会直接拒绝请求（HTTP 500）而非带病跑，必须 prefill 侧也配同一 drafter 才能用 DSpark；只验证单机 16×RTX PRO 5000 的 8P+8D + Mooncake RDMA，其他网络后端未测；对 decode-local（非 PD）场景无影响。",
+      "pitfalls": {
+        "hit": "prefill 没配 drafter 时，decode 表面正常（HTTP 200、KV 传输成功），但 draft acceptance 掉到 4.9% 且无报错，容易被误判成模型/drafter 质量问题。",
+        "fix": "prefill 与 decode 配同一 drafter；看到 `Missing draft context KV. Configure the same drafter on prefill.` 即按此配齐，不要去调 DSpark 参数；验证以 P/D draft acceptance 而非 decode-local acceptance 为准（后者两臂都是 90/90）。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm/pull/69870",
+      "status": "可上生产"
+    },
+    {
+      "line": "nvidia",
+      "family": "other",
+      "name": "SGLang · DFlash committed block 单次 launch（commit block kernel 提速）",
+      "mechanism": "把 DFlash 的 committed block 构造合成一次 kernel launch；HiSparse commit 调用 dflash_chain_accept_indices，移除旧的 _chain_accept_indices；accept indices 仍留在消费端单独 launch，因为要读 commit block 之后由 SGLANG_SIMULATE_ACC_LEN 改写的最终 accept counts。采样路径输入为 int32 accept counts、int64 bonus tokens 与 prefix lengths。",
+      "engine": "SGLang",
+      "versions": "PR #52452（merged 2026-11-26T04:58:22Z）；1×GB300，torch 2.14.1，Triton 3.8.0；测试 120 passed（dflash_commit_block）/ 302 passed（test_next_verify_prep.py）/ 18 passed（test_dflash_logits.py）",
+      "config": "默认 greedy 路径与 sampled 路径均覆盖；SGLANG_SIMULATE_ACC_LEN 会改写 accept counts；图捕获用一次 capture + flush/event/replay/event 连排 1000 次后一次 sync 计时（event 计时约 2us 步进）",
+      "gain": "kernel 级 device 时间：eager 下 commit block 约 157us→约 40us、HiSparse indices 约 131us→约 42us（每轮）；graph-captured 下 commit block 13–17us→6.7us、indices 13–19us→6.4us。无端到端吞吐倍数（未查到）。",
+      "cost": "只有 kernel 微秒数字，没有 serving 级吞吐/接受率实测；indices 仍是一次单独 launch（要读改写后的 accept counts），没有完全合并；仅单机 GB300 + Triton 3.8 计时，其他 GPU/版本未测。",
+      "pitfalls": {
+        "hit": "把 indices 也塞进 commit block 的同一次 launch，会读到 commit 之后才被 SGLANG_SIMULATE_ACC_LEN 改写的 accept counts，导致 accept 结果错。",
+        "fix": "commit block 单次 launch，但 indices 保留在消费端单独 launch；对比计时区分 eager（约 2 位有效数字）与 graph-captured（event 约 2us 步进），不要把 kernel 微秒直接外推成端到端加速倍数。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/sgl-project/sglang/pull/52452",
+      "status": "实验性"
+    },
+    {
       "line": "ascend",
       "family": "other",
       "name": "vllm-ascend · 通用配置与 16 token 硬上限",
@@ -990,8 +1026,26 @@
       "evidence": "B",
       "url": "https://github.com/vllm-project/vllm-ascend/pull/23017",
       "status": "实验性"
+    },
+    {
+      "line": "ascend",
+      "family": "draft",
+      "name": "SGLang · GLM-5.2 DSpark draft 权重静态解码加载（NPU A2/A5）",
+      "mechanism": "共享 HF 配置解析读取嵌套 Qwen3 decoder config，保留 DSparkDraftModel 架构并把导出的辅助层 ID 映射到 SGLang capture ID（id-1）；QuaRot target 下从 draft checkpoint 加载 embed_tokens.weight 与 lm_head.weight，并在加载时把 target 旋转 Q 折进 draft feature projection 的输入块（F_i @ Q，主机 CPU FP32），使 draft 与旋转后的 target 对齐。",
+      "engine": "SGLang",
+      "versions": "PR #38860（merged 2026-11-26T12:09:48Z）；arch 2201（Atlas A2）GLM-5.2-W8A8 INT8、arch 3510（Atlas A5）GLM-5.2-W8A8 MXFP8；两节点 smoke test；依赖 #942d749",
+      "config": "export SGLANG_RAGGED_VERIFY_MODE=static；export SGLANG_NPU_GLM_DSPARK_APPLY_QUAROT_TO_DRAFT=true；--speculative-algorithm DSPARK --speculative-draft-model-path \"$DRAFT_MODEL\" --speculative-draft-model-quantization unquant --speculative-dspark-block-size 8 --speculative-num-draft-tokens 9；draft 用 target 的 NPU prefill attention backend；arch 2201 另加 --mem-fraction-static 0.65",
+      "gain": "精度：arch 2201 / GLM-5.2-W8A8 INT8 / GPQA 全量 92.4%；arch 3510 / GLM-5.2-W8A8 MXFP8 / AIME2026（30 题）90%。PR 自陈未报吞吐与 draft acceptance（未查到），只有精度与两节点 smoke。",
+      "cost": "只做加载与正确性，无吞吐/接受率数字，不能据此判断投机解码加速；draft 权重 unquant 加载，旋转折叠在主机 CPU 以 FP32 做（加载期开销）；arch 2201 的 batch size 8 capture 版本未确认；draft 走 target 的 prefill attention backend，backend 不匹配可能出问题。",
+      "pitfalls": {
+        "hit": "只把 draft checkpoint 的权重路径指过去、不把 target 旋转 Q 折进 draft 的 feature projection（或忘记开 NPU QuaRot 修正），QuaRot target 下 draft 与 target 空间不对齐，精度/接受率异常。",
+        "fix": "同时设 SGLANG_NPU_GLM_DSPARK_APPLY_QUAROT_TO_DRAFT=true 与 SGLANG_RAGGED_VERIFY_MODE=static，用 --speculative-dspark-block-size 8 --speculative-num-draft-tokens 9；A2/A5 分属 arch 2201/3510，量化分别 INT8/MXFP8，别混用；要吞吐必须自己跑，别拿 GPQA/AIME 精度当加速证据。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/sgl-project/sglang/pull/38860",
+      "status": "实验性"
     }
   ],
   "version": "v1",
-  "generated_at": "2026-11-26T09:47:27+08:00"
+  "generated_at": "2026-11-27T09:48:40+08:00"
 }
