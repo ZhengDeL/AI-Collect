@@ -1,6 +1,6 @@
 {
   "version": "v1",
-  "generated_at": "2026-11-26T09:45:43+08:00",
+  "generated_at": "2026-11-27T09:45:22+08:00",
   "items": [
     {
       "id": "N1",
@@ -2617,6 +2617,130 @@
         "active": "2026-11-25 created,open;A3 E2E为rebase前验证"
       },
       "url": "https://github.com/vllm-project/vllm-ascend/pull/23194",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N58",
+      "line": "nvidia",
+      "name": "vLLM PD P2P decoder本地命中时释放未用prefiller stores",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L2",
+        "L5"
+      ],
+      "engine": "vLLM 主线 TieringOffloadingManager P2P (GB10, ZMQ/NIXL, TRITON_ATTN)",
+      "gain": "SmolLM2-135M GB10 PD:decoder本地命中时prefiller CPU read-pinned 100%→0%、parked jobs 12→0、本地命中新增0 P2P read bytes;894/894输出token一致;竞争请求GPU completion中位222.245→201.143ms(-9.50%);182个64-token chunks(255.9375 MiB)变为可驱逐;单测343→347 passed",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "仅当decoder从本地GPU/CPU cache命中才释放;冷decoder真实P2P fetch无变化(0→0 pins)",
+        "consist": "894/894输出token一致;local-hit从0 producer pins/jobs起;segment区间重叠(1.758-1.788→1.740-1.804s)不声称通用吞吐增益",
+        "block": "请求finish时发terminal fetch替代默认60s超时;不阻塞decode步",
+        "engine_change": "改TieringOffloadingManager P2P store释放逻辑;需PD proxy+ZMQ/NIXL",
+        "active": "2026-11-26 created,open非draft;GB10为NVIDIA Grace Blackwell已上机"
+      },
+      "url": "https://github.com/vllm-project/vllm/pull/70052",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N59",
+      "line": "nvidia",
+      "name": "vLLM CPU offload LRU/ARC 优先驱逐non-retained块",
+      "scenario": [
+        "S1"
+      ],
+      "layers": [
+        "L2"
+      ],
+      "engine": "vLLM 主线 CPU tier LRU/ARC (RFC#69888 work item 1)",
+      "gain": "LRU/ARC在retained块前回收eligible non-retained块;1000随机case(每策略500)全部命中预期victim顺序含不可满足batch后的驱逐;158 passed 5 skipped;容量/共享区/块交换99 passed;GPU smoke(opt-125m,RTX3050,16MiB CPU tier)清GPU前缀缓存后从CPU重载64 token、输出与cold一致[28,10,11,12]",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "只改驱逐优先级,保留块仍可被驱逐(当cache全满);为后续lease管理提供策略接口",
+        "consist": "protected/loading/write-pending块仍ineligible;failed batch保持cache不变;retention hook对外部策略默认no-op",
+        "block": "LRU在eviction heap记录retention、pop时校验;ARC扫描T1/T2两遍才回退retained;无decode阻塞声明",
+        "engine_change": "改CPU tier LRU/ARC驱逐堆+策略接口;核心改动小",
+        "active": "2026-11-26 created,open非draft;RTX3050实测"
+      },
+      "url": "https://github.com/vllm-project/vllm/pull/70026",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N60",
+      "line": "nvidia",
+      "name": "vLLM CPU KV hint retention leases (cpu.retain/release)",
+      "scenario": [
+        "S1",
+        "S6"
+      ],
+      "layers": [
+        "L2"
+      ],
+      "engine": "vLLM 主线 CPU tier 租约 (#69888 work item 2, TieringOffloadingManager转发hook)",
+      "gain": "session prefix hits 5turn×16chunks:无cpu.retain 16/80→有 80/80;1000个活租约on_schedule_end中位0.079us/step;105 passed+331 passed;完整offload suite与main同44个GPU/_C/权重失败(本PR不新增失败);key被驱逐后重存且租约仍活会重新retained",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "best-effort租约:满cache时仍驱逐retained块;cpu.release在on_new_request清除;TTL由on_schedule_end到期并eviction/re-store前惰性检查",
+        "consist": "未知/畸形/非cpu.*动作不使请求失败,只计数ignored/rejected;被驱逐又重存的key在租约期内重新retain",
+        "block": "on_schedule_end每步0.079us(1000租约),idle engine无需pending work",
+        "engine_change": "改CPU tier retention+TieringOffloadingManager转发;分层部署同样成立",
+        "active": "2026-11-26 created,open非draft;实测为aarch64 CPU-only(torch2.14+cpu)未上GPU卡,CPU tier机制与卡无关"
+      },
+      "url": "https://github.com/vllm-project/vllm/pull/70151",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A49",
+      "line": "ascend",
+      "name": "vllm-ascend AscendStore 整块传输layout缓存",
+      "scenario": [
+        "S3"
+      ],
+      "layers": [
+        "L2"
+      ],
+      "engine": "vllm-ascend AscendStoreConnector KV Pool (910B3, PCP8)",
+      "gain": "整块descriptor准备42.34→5.89 us/block(5.15-7.19x,63 descriptors/block);mean later-turn TTFT 14.68→13.80s(-6.0%,DeepSeek V4 Flash 910B3,2 prefill PCP8+2 decode,96对话675请求,并发32,100K-120K prompt,1024 output);GSM8K 1273→1275/1319,C-Eval 1202→1193/1319(p=0.356),needle 24/24,多轮188→190/192;16000/16000随机地址字节一致",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "整块读走缓存模板、partial块仍用原clipping;buffer注册使模板失效",
+        "consist": "16000/16000随机case地址与字节长度一致;C-Eval 9题回退p=0.356不显著",
+        "block": "减少host CPU准备时间而非device搬运;TTFT收益为metadata-only patch在deployed snapshot上实测",
+        "engine_change": "AscendStore descriptor缓存+失效逻辑;当前PR head的NPU验证pending(vLLM0.32.0/ascend0.33.0/torch_npu2.10.0.post7/CANN9.2)",
+        "active": "2026-11-26 created,open非draft"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/23415",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "A50",
+      "line": "ascend",
+      "name": "vllm-ascend Memcache layerwise transfer for DeepSeek V4.1 (v0.30.0 backport)",
+      "scenario": [
+        "S2",
+        "S3"
+      ],
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "engine": "vllm-ascend KV Pool Memcache GVA layerwise (A3, backend=memcache,use_layerwise=true)",
+      "gain": "A3 DeepSeek V4.1 Flash W8A8 P DP4xTP4/D DP8xTP2,144请求64K prompt,36共享前缀90%复用,并发36:修正后144/144完成、external prefix hit 90.00%、9392.67 prefill tok/s、mean TTFT 6980.6ms;三次独立重启的三层(每host 200GiB DRAM+私有128GiB NVMe block device)同288 warmup+144 frozen请求均完成、90.00%外部前缀命中",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "90%外部前缀命中依赖36共享前缀90%复用负载;冷/热回放8-token完成逐字一致",
+        "consist": "首跑5/144失败:DSpark draft层GVA读在V1 target forward释放读租约后到达→-3106/租约过期;修为最后target attention层提交所有resident draft load;三层均独立重启验证",
+        "block": "composite attention边界做一次load+final-write save;滑动窗口层在源层变current时预取",
+        "engine_change": "backport #21949到releases/v0.30.0;release分支用单pool worker/scheduler处理bulk+layerwise;需#23180",
+        "active": "2026-11-26 created,open非draft;单次DRAM-backed观察,NVMe三层数字正文被截断未取全不声称"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/23460",
       "status": "已验证",
       "flag": "新增"
     }
