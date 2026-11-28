@@ -1,6 +1,6 @@
 {
   "version": "v1",
-  "generated_at": "2026-11-27T09:45:22+08:00",
+  "generated_at": "2026-11-28T09:02:12+08:00",
   "items": [
     {
       "id": "N1",
@@ -2741,6 +2741,132 @@
         "active": "2026-11-26 created,open非draft;单次DRAM-backed观察,NVMe三层数字正文被截断未取全不声称"
       },
       "url": "https://github.com/vllm-project/vllm-ascend/pull/23460",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N61",
+      "line": "nvidia",
+      "name": "vLLM Qwen4Exp QSA prefill 在 FlashInfer 上跑 FP8 KV cache",
+      "scenario": [
+        "S1",
+        "S4"
+      ],
+      "layers": [
+        "L1"
+      ],
+      "engine": "vLLM 主线 QSA prefill FlashInfer QToken-KvBlock-Sparse + FP8 KV cache (--kv-cache-dtype fp8 + use_prefill_query_quantization)",
+      "gain": "B300 TP1 Qwen3.8-Flash-Next-FP8:8K prefill step 170.9→152.5ms(-10.8%);QSA kernel 12层25.5→6.4ms;serving TTFT 8K 180-190→163ms、32K 746→682ms、4并发8K 708-815→634ms;2K在噪声内;GSM8K 5-shot 0.970、MRCR 2/4/8 0.874/0.873(main FP8 0.971/0.876/0.892);30 passed+338 passed 1 failed(RDMA connect timeout,main同样失败)",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "opt-in开关use_prefill_query_quantization默认关;不开则FP8 cache走Triton无变化;只改prefill Q精度不改KV存储布局",
+        "consist": "FP8 Q端到端正确;GSM8K 0.970、MRCR 0.874/0.873与main FP8 0.971/0.876/0.892同区间;FP8 Q是否适合负载由用户判断",
+        "block": " fused qsa_prepare launch直接写FP8 prefill rows无额外cast/launch;不阻塞decode步",
+        "engine_change": " need FlashInfer 0.7.4/0.7.6 + Blackwell(B300);不改KV cache dtype默认行为",
+        "active": "2026-11-27 created,draft;机器有间歇2-3x prefill变慢(main同样出现),表中取第二次运行"
+      },
+      "url": "https://github.com/vllm-project/vllm/pull/70349",
+      "status": "在读",
+      "flag": "新增"
+    },
+    {
+      "id": "N62",
+      "line": "nvidia",
+      "name": "vLLM MooncakeConnector 支持 producer PP 导入 HiSparse host pool",
+      "scenario": [
+        "S2"
+      ],
+      "layers": [
+        "L2",
+        "L5"
+      ],
+      "engine": "vLLM 主线 MooncakeConnector producer PP(TP4xPP2 prefiller→TP8xPP1 HiSparse decoder)+HiSparseConnector host_pool_gib=32",
+      "gain": "16x H200 GLM-5.2-FP8 RDMA端到端:129/513/1025/4097 prompt tokens冷导入token id与prefiller replay全一致(import_tokens_equal_p_replay=true);5074-token needle三种路径均返回预期50;144 transfers/1,390,989,312 bytes/33,294 descriptors/0 failed transfers/0 failed receives;CPU单测9 passed;FP8/BF16 logprob差0.20-0.65(不同TP/PP reduction顺序预期)",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "每个prefiller PP stage各自校验传输自己的sparse-MLA源KV到decoder host pool;PP=2→PP=1;无wire-protocol改动",
+        "consist": "standalone单层MLA tensor register_kv_caches时记row_offset=-1防误判opaque packed row;远端PP>1或缺producer stage layer直接拒绝",
+        "block": " host池导入不阻塞decode步;completion accounting复用Mooncake现有heterogeneous PP peer选择",
+        "engine_change": "需Mooncake RDMA + FLASHMLA_SPARSE + enforce-eager + MultiConnector;改docs/mooncake_connector_usage.md",
+        "active": "2026-11-27 created,open;16x H200真实权重E2E在CI外验证"
+      },
+      "url": "https://github.com/vllm-project/vllm/pull/70358",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "N63",
+      "line": "nvidia",
+      "name": "vLLM HY4 Flash disk-backed Engram 表卸载",
+      "scenario": [
+        "S1",
+        "S4"
+      ],
+      "layers": [
+        "L2",
+        "L3"
+      ],
+      "engine": "vLLM 主线 HY4 Flash Engram table disk_offload(lazy safetensors mmap,保留pinned UVA默认)",
+      "gain": "L40 TP4+EP官方Hy4-flash-FP8(BF16 Engram 118.02GiB):进程树PSS就绪时137.55→9.58GiB、请求后137.65→9.63GiB;256 lookups四层四TP slice行级bitwise一致;32-token p95 pinned UVA 0.0576ms vs SSD repeat 0.5073ms vs SSD after DONTNEED 10.6412ms;1-token 0.0596/0.2669/0.6419ms;4x L40 eager A/B 6/6匹配(stop reason/selected logprobs);11 passed",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "只读取distinct needed rows,保留BF16/packed FP8表示和row scales;需enforce-eager且不支持weight reload",
+        "consist": "包括masked和duplicate lookup在内与pinned表exact parity;官方checkpoint无FP8 Engram,FP8 scale路径只由fixture覆盖",
+        "block": "每层staging多一次host同步和存储读,是降RAM不是加速;首轮E2EL两arm都升;DONTNEED后32-token p95 10.64ms显著变慢",
+        "engine_change": " Engram是n-gram查表非attention KV cache,不改attention/KV/Qwen4Exp路径;需native reader #67347",
+        "active": "2026-11-27 created,open;hosted CI未跑,Hopper/Blackwell未覆盖;单次pinned-then-disk非通用吞吐对比"
+      },
+      "url": "https://github.com/vllm-project/vllm/pull/70324",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A51",
+      "line": "ascend",
+      "name": "vllm-ascend DeepSeek V4.1 Flash G64 INT8 长 KV 缓存(A2/A3)",
+      "scenario": [
+        "S1",
+        "S4"
+      ],
+      "layers": [
+        "L1"
+      ],
+      "engine": "vllm-ascend SparseFlashMla G64 INT8 long KV(--additional-config dsv41_int8_long_kv)+四源两物理槽allocator",
+      "gain": "A2/A3 serving 18 agents 144请求(205824→241664 tok/请求,1024 output):吞吐55.04→115.82 tok/s(+110.43%)、wall time 2678.88→1273.17s(-52.47%)、mean TTFT 33.65→14.15s、mean TPOT 112.22→55.00ms、mean E2EL 148.45→70.41s;8 agents吞吐115.50→112.60(-2.51%);P99 E2EL +4.20%;BF16每长KV行1024B→INT8 512B+8 FP32 scale=544B;1292 passed 1 skipped(两vLLM pin)",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "8 local query heads/TopK512时每层组首层可发布选中INT8行给后续层;>256 query token走per-layer G64读",
+        "consist": "CPU正确性覆盖physical page offsets/dtypes/共享block pool/prefix reuse/ring copy/PCP dummy slots/256-token边界;native kernel精度与A3 PCP4/TP2 serving设备验证待做",
+        "block": "每层组首层发布选中行避免重复gather;两物理槽容纳四源;收益在第5轮后随revisit显现",
+        "engine_change": "需--additional-config dsv41_int8_long_kv默认false;需重装matching native operators+OPP;worker-local A2/A3 PP1/DCP1",
+        "active": "2026-11-27 created,open;单次运行/配置,首轮E2EL两arm都升,需cache counters确认evict/recompute"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/23515",
+      "status": "已验证",
+      "flag": "新增"
+    },
+    {
+      "id": "A52",
+      "line": "ascend",
+      "name": "vllm-ascend AscendStore boundary-state offload stride 节流",
+      "scenario": [
+        "S1",
+        "S3"
+      ],
+      "layers": [
+        "L2"
+      ],
+      "engine": "vllm-ascend AscendStoreConnector boundary_state_offload_stride(token bucket,backend=mooncake)",
+      "gain": "A2 Qwen3.8-27B-w8a8 TP1 AscendStore/Mooncake 16GiB 16会话x6轮:外部前缀命中率23.6%→30.5%;turn5 cached share 0.5347→0.6927、turn6 0.8750不变;turn5 TTFT P50/P90 4793/5248→4195/4516ms、turn6 1585/1894→1439/1618ms;Store keys 286→277、allocated 15.41→15.22GB、evictions 17/20→14/14、put failures 0;stride=4096跳过240/接受96(71.4%跳过);1316 passed 12 skipped",
+      "evidence": "A",
+      "pitfalls": {
+        "hit": "accept iff boundary_tokens//stride > last_boundary_state_tokens//stride;默认stride=0关闭;多轮小delta时抑制近似重复的recurrent-state写入",
+        "consist": "watermark从Store lookup hit length播种(无额外RPC,自愈Store丢失/单rank PUT失败);finish/preempt/failed receive时清理;无put failure,hit正确性保持",
+        "block": "token bucket在scheduler侧按boundary原子分组决策;skipped boundary不产生orphan非Mamba partial-tail块",
+        "engine_change": "需extra_config加boundary_state_offload_stride非负整数(拒bool/None/负/str/float);mirrors vLLM #69710但AscendStore自有scheduler不继承",
+        "active": "2026-11-27 created,open;Qwen3.8-27B allocated字节仅降~1.2%(GDN boundary state小),Kimi-KDA类(boundary~50%写入)节省更大;stride增大最坏recompute<stride tokens"
+      },
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/23547",
       "status": "已验证",
       "flag": "新增"
     }
