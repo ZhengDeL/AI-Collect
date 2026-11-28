@@ -1,9 +1,9 @@
 {
  "schema_version": "1.0",
- "generated_at": "2026-11-27T09:51:26+08:00",
+ "generated_at": "2026-11-28T09:31:49+08:00",
  "counts": {
-  "nodes": 248,
-  "edges": 269
+  "nodes": 253,
+  "edges": 274
  },
  "views": [
   {
@@ -12435,6 +12435,325 @@
    "updated_by": "案例"
   },
   {
+   "id": "case/20261128-01",
+   "type": "case",
+   "name": "EmbeddingGemma2 在 310P 上跑通",
+   "one_line": "多模态 embedding：EN STS 0.8623、COCO Hit@1 67%、32 短文本 102 req/s",
+   "why": "EmbeddingGemma2 在 310P 上跑通：EN STS 0.8623、COCO Hit@1 67%、32 短文本 102 req/s",
+   "principle": "未查到",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "multimodal",
+    "serving"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "hardware_scope": [
+    "300I DUO / 310P / 310P3（Atlas 300I Duo）"
+   ],
+   "gain": [
+    {
+     "metric": "精度",
+     "value": "EN STSBenchmark Spearman 0.8623（1379 对，HF eager fp16 参考 0.8749）；ZH STSB Spearman 0.7848（C-MTEB STSB，1361 对，参考 0.7999）；COCO caption 检索 Hit@1 67% / Hit@5 86%（200 候选）；ESC50 音频→query Hit@1 67%（6 类，随机 16.7%）；跨模态检索方向性正确（q1→image 0.78、q2→text 0.88",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23487",
+     "evidence": "C"
+    },
+    {
+     "metric": "吞吐",
+     "value": "32 条短文本批 102 req/s；4×600 token 批 2.2 req/s",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23487",
+     "evidence": "C"
+    },
+    {
+     "metric": "modality_limits",
+     "value": "图像任意分辨率（processor 重采样到 280 soft tokens，6000x4000 与 64x64 均验证）；音频 >11.2 s 被截断（8 s、40 s 验证）；视频 1 fps 均匀采样最多 32 帧（140 soft tokens，57 s 与 120 s 验证）；文本 8192 token",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23487",
+     "evidence": "C"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "aclrtAllocatorGetByStream failed: stream is not registered with any allocator（首次调用通过 torch_npu._npu_flash_attention 走 ATB SelfAttentionOperation 时）",
+     "fix": "根因：310P 上 ATB SelfAttentionOperation 在 encoder-only attention 每进程首次调用即失败；更糟的是后续调用不报错而是静默破坏 device 内存，实测已加载权重被清零　修法：PR #18335 把 ENCODER_ONLY attention 改走原生 torch 路径（fp32 计算）；pooling 负载下开销可接受，精度对齐参考"
+    },
+    {
+     "hit": "多个 EncoderOnlyAttentionSpec 组时 runner 只认一个（模型同时含 sliding 窗口 head 256 与 full head 512 的 encoder-only 层）",
+     "fix": "根因：runner 侧假设只有一个 encoder-only 组　修法：合并成单组（encoder-only spec 不分配 KV cache，合并无副作用）"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/issues/23487"
+   ],
+   "evidence": "C",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261128-02",
+   "type": "case",
+   "name": "310P3 上 MTP(K=3) + FULL_DE…",
+   "one_line": "310P 投机解码：≥2 请求并发首个 draft 步 EngineCore fatal，整引擎死亡",
+   "why": "310P3 上 MTP(K=3) + FULL_DECODE_ONLY：≥2 请求并发首个 draft 步 EngineCore fatal，整引擎死亡",
+   "principle": "未查到",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "serving"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "hardware_scope": [
+    "300I DUO / 310P / 310P3（原文写 Atlas 300I Duo 类）"
+   ],
+   "gain": [
+    {
+     "metric": "精度",
+     "value": "单请求 acceptance length 1.93–2.14（正常路径）",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23499",
+     "evidence": "C"
+    },
+    {
+     "metric": "吞吐",
+     "value": "未给（崩溃场景）",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23499",
+     "evidence": "C"
+    },
+    {
+     "metric": "matrix",
+     "value": "capture [4,16] + 1 请求 ✅；capture [4,16] + 3 请求 ❌ fatal；capture [4] + 1 请求 ✅；capture [4] + ≥2 请求 ⚠️ 不崩但退化成 eager（解码 token 数 8/12 超过最大桶 4），图模式+MTP 收益全失",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23499",
+     "evidence": "C"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "RuntimeError: copy_d2d_baseformat_opapi:.../CopyKernelOpApi.cpp:126 NPU function error: call aclnnInplaceCopy failed, error code is 161002；硬件侧 The size of tensor self [16, 144] must match the size of tensor src [4, 144]",
+     "fix": "根因：draft 步持久 block table buffer `_buf` 按 input_batch_size（token 维，4 请求×4 token=16，padding 到捕获桶）分配行数，而 `_bt`（运行时 block table）只有 num_reqs_padded 行（请求维=4）；buffer 重建条件只比较了列数与 dtype，行数完全未参与判断　修法：原文未给修复，仅报 bug；规避手段是不要同时开 MTP 与 FULL_DECODE_ONLY 多请求并发，或把 cudagraph_capture_sizes 设成不能容纳并发 token 数（会静默退化 eager）"
+    },
+    {
+     "hit": "metadata_builder.py:101 UserWarning: An output ... was resized since it had shape [4], which does not match the required output shape [16]",
+     "fix": "根因：`_query_lens_cpu_buffer` 按 max_num_seqs 容量分配，捕获更大桶时被 torch 强制 resize；resize 可能破坏 pinned host buffer 的地址稳定性　修法：同属请求维/token 维容量混淆，需一并修"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/issues/23499"
+   ],
+   "evidence": "C",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261128-03",
+   "type": "case",
+   "name": "DeepSeek-V4.1-Flash w8a8 +…",
+   "one_line": "内存泄漏：256K 长压 17 小时，P 节点 used 涨 18 GB，每 DP worker Private_Dirty 每小时 +1.15 GiB",
+   "why": "DeepSeek-V4.1-Flash w8a8 + memcache SSD 三级缓存：256K 长压 17 小时，P 节点 used 涨 18 GB，每 DP worker Private_Dirty 每小时 +1.15 GiB",
+   "principle": "未查到",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "parallel"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "hardware_scope": [
+    "Ascend 910（原文未标 A2/A3 代际；npu-smi 26.1.1 显示单机 8× Ascend910 65536 MB）"
+   ],
+   "gain": [
+    {
+     "metric": "显存/内存",
+     "value": "free -k 五个时点：11-26 09:00 used 1098323808 KB / available 778435044 KB；12:07 used 1101131168 / avail 776129656；18:00 used 1106756068 / avail 771525468；11-27 02:08 used 1116125088 / avail 759916476；03:40 used 1113071260 / avail 767768220。17–18",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23577",
+     "evidence": "C"
+    },
+    {
+     "metric": "detail",
+     "value": "P 节点 PSS_TOP20：主进程 31.9 GB，17 个 VLLM::Worker_DP 各约 20.3–20.9 GB；逐 PID 对比 Private_Dirty 每小时 +1.15～+1.21 GiB，Shared_Dirty 恒为 51.52 GiB 不变",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23577",
+     "evidence": "C"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "P 节点 free -h 里 used 随时间持续上涨、available 持续下降，但服务不报错、吞吐不掉、无 OOM",
+     "fix": "根因：疑似内存泄漏：增长全部落在 VLLM::Worker_DP 的 Private_Dirty（每进程每小时约 +1.15 GiB），Shared_Dirty 与 Shared_Clean 基本不变，说明不是共享 KV/权重区，而是各 rank 私有分配在涨；原文未定位到具体代码路径，怀疑与 memcache + SSD 三级缓存的元数据/句柄分配有关　修法：原文未给修复；临时手段是定时重启或把压测时长控制在内存余量内（2.1 TB 机器上 17 小时吃掉 18 GB，按此速率约 10 天耗尽）"
+    },
+    {
+     "hit": "Swap 4194300 KB 几乎全被占用（free 列只剩 2–8 KB）",
+     "fix": "根因：宿主层内存压力已经传导到 swap，说明泄漏不只是进程 RSS，而是宿主可用内存被持续挤占　修法：同上一并处理；排查时应同时看 available 而不是只看 used"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/issues/23577"
+   ],
+   "evidence": "C",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261128-04",
+   "type": "case",
+   "name": "Kimi-Linear-48B 开 prefix c…",
+   "one_line": "前缀缓存静默错：长文检索 8K/32K 得分 0.0/33.3 → 关掉后 100.0",
+   "why": "Kimi-Linear-48B 开 prefix caching 后并发请求互相串答案：长文检索 8K/32K 得分 0.0/33.3 → 关掉后 100.0",
+   "principle": "未查到",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "parallel"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "hardware_scope": [
+    "A5 / 950DT（原文写 Ascend 950DT）"
+   ],
+   "gain": [
+    {
+     "metric": "精度",
+     "value": "长上下文检索：开 prefix caching 时 8K 得分 0.0、32K 得分 33.3；关掉后两者均 100.0（对 ground truth 核过）",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23545",
+     "evidence": "C"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "并发请求共享长前缀时返回彼此的内容：三个请求各在共享文章不同深度埋了不同 magic number，三条回复全部只含最先填充共享前缀那个请求的数字；另两种任务上三个不同输入产出逐字节相同的输出；8K 请求出现 128 个连续的 '!' 退化",
+     "fix": "根因：prefix caching 开启后 vLLM core 给 KimiLinear 选了 mamba cache 'align' 模式，GDN 状态在不同 prompt 之间被复用；当分叉点不是安全的状态边界时，线性注意力状态与当前请求不匹配（原文判断不是 Ascend 特有，但在此栈复现）　修法：`--no-enable-prefix-caching` 完全解决；同批请求串行跑也全部正确，证明是复用而非模型能力问题"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/issues/23545"
+   ],
+   "evidence": "C",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
+   "id": "case/20261128-05",
+   "type": "case",
+   "name": "A2 910B3 + driver 26.2",
+   "one_line": "A2 主机内存注册：Engram cpu_offload 的 aclrtHostRegisterV2 一律 rc=107000，128 MiB 与 12 GiB 都失败",
+   "why": "A2 910B3 + driver 26.2：Engram cpu_offload 的 aclrtHostRegisterV2 一律 rc=107000，128 MiB 与 12 GiB 都失败",
+   "principle": "未查到",
+   "stack": [
+    "ascend"
+   ],
+   "domains": [
+    "parallel"
+   ],
+   "engines": [
+    "vllm-ascend"
+   ],
+   "hardware_scope": [
+    "A2 / 910B / 910B3"
+   ],
+   "gain": [
+    {
+     "metric": "吞吐",
+     "value": "未给（起不来）",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23532",
+     "evidence": "C"
+    },
+    {
+     "metric": "显存/内存",
+     "value": "Engram 表约 12 GiB，走 host UVA 注册；原文强调失败与大小无关",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23532",
+     "evidence": "C"
+    },
+    {
+     "metric": "matrix",
+     "value": "size=134217728 flags=0x2 → malloc=0 register=0 getptr=0 devptr_ok=True；size=134217728 flags=0x10000002 → register=107000、无 devptr；size=12884901888 flags=0x2 → register=0、devptr_ok=True",
+     "source": "https://github.com/vllm-project/vllm-ascend/issues/23532",
+     "evidence": "C"
+    }
+   ],
+   "pitfalls": [
+    {
+     "hit": "RuntimeError: aclrtHostRegisterV2 failed: rc=107000 size=~12GiB（8 个 rank 全部在权重加载阶段失败，HostUvaBuffer.__init__ 抛错）",
+     "fix": "根因：BaseDeviceAdaptor.host_register_flags() 返回 ACL_HOST_REG_MAPPED|ACL_HOST_REG_PINNED（0x10000002）；aclrtMallocHost 返回的内存本就已 page-locked，PINNED 是冗余提示，而该 runtime 直接拒绝这个组合（107000 = ACL_ERROR_RT_PARAM_INVALID）。A5 适配器只返回 MAPPED，注释里已写明 A5 runtime 拒绝冗余 PINNED；A2/910B 的 STANDARD 路径与 A5 不一致，代码里也有 TODO: unify flags　修法：原文未合入修复，方向是把 BaseDeviceAdaptor 的 flags 改成只 MAPPED（改在基类，避免 HostUvaBuffer 与 SharedUvaBuffer 再次分叉）；临时绕过是关掉 engram cpu_offload（但 12 GiB 表就得全放 device）"
+    },
+    {
+     "hit": "同 rc=107000 在 A3 + CANN 9.3 上已被 #22287 报过，但只改了 HostUvaBuffer 调用点、未合入",
+     "fix": "根因：修复位置错在调用点而非基类，SharedUvaBuffer 仍走同一条 flag 逻辑　修法：修 BaseDeviceAdaptor，两个子类同时受益"
+    }
+   ],
+   "maturity": "experimental",
+   "urls": [
+    "https://github.com/vllm-project/vllm-ascend/issues/23532"
+   ],
+   "evidence": "C",
+   "status": "candidate",
+   "tags": [
+    "实战案例",
+    "昇腾"
+   ],
+   "changelog": [
+    {
+     "date": "",
+     "change": "收录自案例库"
+    }
+   ],
+   "updated_at": "2026-11-22",
+   "updated_by": "案例"
+  },
+  {
    "id": "engine/vllm",
    "name": "vLLM",
    "alias": [
@@ -15724,6 +16043,36 @@
    "to": "engine/vllm-ascend",
    "type": "runs_on",
    "note": "OpenCode 压缩历史后 vLLM KV 缓存变… 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261128-01",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "EmbeddingGemma2 在 310P 上跑通 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261128-02",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "310P3 上 MTP(K=3) + FULL_DE… 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261128-03",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "DeepSeek-V4.1-Flash w8a8 +… 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261128-04",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "Kimi-Linear-48B 开 prefix c… 在 vLLM-Ascend 上实跑"
+  },
+  {
+   "from": "case/20261128-05",
+   "to": "engine/vllm-ascend",
+   "type": "runs_on",
+   "note": "A2 910B3 + driver 26.2 在 vLLM-Ascend 上实跑"
   },
   {
    "from": "engine/vllm",
