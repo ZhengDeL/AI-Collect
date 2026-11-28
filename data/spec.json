@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-27",
+  "date": "2026-11-28",
   "items": [
     {
       "line": "nvidia",
@@ -650,6 +650,24 @@
       "status": "实验性"
     },
     {
+      "line": "nvidia",
+      "family": "other",
+      "name": "vLLM · VLM hidden states 提取修复（DFlash drafter 训练侧支撑）",
+      "mechanism": "extract_hidden_states 为训练 DFlash drafter 抓取 target 模型在文档图像上的 hidden states；对把 text config 存在 decoder 键下的模型（Nemotron 3.5 Parse），原实现把 typed 子配置序列化成 dict 后又恢复到 text_config，Transformers 同时看到 decoder 与 text_config 两个键而启动报 multiple valid text configs。修复改为按原识别键恢复 typed 对象。",
+      "engine": "vLLM",
+      "versions": "测试实现 commit c8aa02afb9fe84b2b720f4d4f3fb9ebd6fd4c514；base 2f170a0fed20fd84dfcf6da2a3a8188a32f67e4e；Python 3.14、PyTorch 2.14.0+cu130、Transformers 5.23.0；H100 + CUDA 13、0.34.0rc1.dev1014+g8586ccbcf。PR #69064，merged 2026-11-27T09:16:53Z",
+      "config": "vllm serve nvidia/Nemotron-3.5-Parse --trust-remote-code --enforce-eager --max-model-len 16384 --speculative-config '{\"method\":\"extract_hidden_states\",\"num_speculative_tokens\":1,\"draft_model_config\":{\"hf_config\":{\"eagle_aux_hidden_state_layer_ids\":[2,5,9,10]}}}' --kv-transfer-config '{\"kv_connector\":\"ExampleHiddenStatesConnector\",\"kv_role\":\"kv_producer\",...}'",
+      "gain": "配置回归测试：base 3 failed / 4 passed → 修复后 7 passed；VLM 集成：base Nemotron 启动失败（1 failed, 1 passed）→ 修复后 2 passed；OpenAI server 单 H100 实测 prompt_tokens=2088、image_placeholder_tokens=2081、generated_tokens=1200、hidden_states_shape=[3287,4,1024]、dtype=bfloat16、all_values_finite=true、token_ids_match=true。属训练侧数据提取修复，无 serving 吞吐或接受率数字（未查到）。",
+      "cost": "只解决 hidden states 导出（DFlash drafter 训练的数据准备），不直接改变线上推理速度；最后采样 token 没有 forward pass、不导出 hidden state，token_ids_match 只覆盖到倒数第二个生成 token；依赖 Transformers 5.23.0 的 get_text_config 四个键（decoder/text_config/generator/text_encoder），其他版本行为可能不同。",
+      "pitfalls": {
+        "hit": "在 decoder 类 config 上开 extract_hidden_states，启动报 `ValueError: Multiple valid text configs were found in the model config: ['decoder', 'text_config'].`。",
+        "fix": "升级到含 #69064 的版本，让 typed 子配置按原键（decoder / generator / text_encoder / text_config）恢复；验证用 aux_layer_ids=[2,5,9,10] 检查 hidden_states_shape 与 token_ids_match=true，不要拿它当推理加速证据。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm/pull/69064",
+      "status": "实验性"
+    },
+    {
       "line": "ascend",
       "family": "other",
       "name": "vllm-ascend · 通用配置与 16 token 硬上限",
@@ -1044,8 +1062,62 @@
       "evidence": "B",
       "url": "https://github.com/sgl-project/sglang/pull/38860",
       "status": "实验性"
+    },
+    {
+      "line": "ascend",
+      "family": "other",
+      "name": "vLLM-Ascend · GDN 宽验证窗口修复（Qwen3.6-35B-A3B + DSpark，0% 接受率→~25%）",
+      "mechanism": "修复 Gated Delta Net（GDN）投机验证在宽窗口（>8 slots，num_speculative_tokens=7 或 8）下状态表 dispatch 与 FLA Triton fused_recurrent_gated_delta_rule 路径不一致的问题：避免双重 L2 归一化、保留 hybrid page strides、保护 PAD_SLOT_ID=-1、让 ACLGraph 动态 replay 不触发 Triton 重编译。属验证路径正确性修复，把乱码和 0% 接受率恢复到可用。",
+      "engine": "vLLM-Ascend",
+      "versions": "releases/v0.32.0rc（bugfix 后带 release note fragment release_notes/fragments/11641.yaml）；vLLM v0.32.0（commit 5df63a7203cdb9328d824a27b682e77c7b9928be）；镜像 quay.io/ascend/vllm-ascend:v0.32.0rc1-a3；Python 3.12.16。PR #11641，merged 2026-11-27T08:52:37Z",
+      "config": "Atlas A3，TP2 + EP，Qwen3.6-35B-A3B + DSpark，FULL_DECODE_ONLY + ACLGraph；num_speculative_tokens=7 或 8（触发宽窗口）；并发压测 input=128 / output=64、16 请求、concurrency=8；确定性题 17*23=?",
+      "gain": "A3 实机（并发 16 请求 / concurrency 8）：未修复 k=8 → 118.56 tok/s、acceptance 0.01%、mean accepted len 1.00；修复后 k=7 → 192.61 tok/s、acceptance 25.87%、mean accepted len 2.81；修复后 k=8 → 126.65 tok/s、acceptance 25.33%、mean accepted len 3.03。确定性题：未修复 k=8 输出 256 个 U+FFFD 乱码、acceptance 0/2040；修复后 k=7/k=8 均精确得 391、acceptance 28.57%/25.00%、mean accepted len 3.00。ACLGraph replay 启动后 0 次 graph/Torch/Dynamo/Triton 重编译。注意这是从「损坏不可用」恢复到可用，不是常规调参加速。",
+      "cost": "只影响宽窗口（>8 slots，num_speculative_tokens>=7）的 2-D GDN state-table 路径；窄窗口（<=8 slots，grammar-trimmed）与 1-D state-table 路径未改动；完整精度套件（GPQA/C-Eval）未跑，上游 E2E CI 待 ready-precise；收益来自修 bug，k=7 与 k=8 吞吐差较大（192.61 vs 126.65），需按机型实测选。",
+      "pitfalls": {
+        "hit": "在 v0.32.0rc 上给 Qwen3.6-35B-A3B + DSpark 配 num_speculative_tokens=7/8，输出乱码（U+FFFD）、draft acceptance 掉到 0%，容易被误判成 drafter 或模型问题。",
+        "fix": "升级到含 #11641 的版本（或临时把 num_speculative_tokens 降到 <=6）；判定看确定性题是否精确得 391、acceptance 是否回到 ~25%；验证用 FULL_DECODE_ONLY + ACLGraph，确认 replay 无 Triton 重编译。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/11641",
+      "status": "可上生产"
+    },
+    {
+      "line": "ascend",
+      "family": "other",
+      "name": "vLLM-Ascend · Kimi DSpark C8 QuantFlashMLA decode 融合与缩批 graph replay 修复（A5）",
+      "mechanism": "对符合条件的 Kimi DSpark C8 decode，在 Q/KV 转 FP8 之前用 npu_mla_prolog_v3 把 BF16 projection 与 RoPE 融合；带 DCP 时先 gather Q heads 再量化、保留完整当前 KV chunk 供 split attention。另修 QuantFlashMLA 在已捕获 batch 缩小后的 graph replay：capture 时预留足够 metadata 行，replay padding 按每请求 query 上限切成多段。",
+      "engine": "vLLM-Ascend",
+      "versions": "vLLM main commit c410543d9ffff03f5f6c4a8c0ae1d3ad082c4a15；CPU attention 测试在 3f89a67d（117 passed）；PR #23015，merged 2026-11-27T09:44:27Z",
+      "config": "A5（Ascend 950 系）；符合条件的 draft 自动启用融合预处理；DCP1 TP2 与 DCP8 TP8 两种切分；93 层、8 专家 target；vLLM main pin c410543d9",
+      "gain": "A5 早期实测（93 层 / 8 专家 target）：TP2/DCP1 下每 draft-layer call 的平均预处理 kernel 时间 134.9µs → 90.1µs（每 rank 55 次调用）；TP8/DCP8 下两个 C8 版本各跑两次、64-token 输出完全一致。117 个 attention CPU 测试通过（覆盖 graph padding、C8 预处理、DCP、layerwise KV 加载）。无端到端吞吐倍数（未查到）。",
+      "cost": "只是 draft 预处理 kernel 微秒级优化，全 target 八节点 P/D 验证仍 outstanding；收益仅对 eligible A5 C8 draft 生效；缩批修复是正确性（避免 replay 越界），不是加速；无 serving 级 tok/s 实测，不能外推端到端加速比。",
+      "pitfalls": {
+        "hit": "graph replay 时 captured batch 变小，metadata 行不足或 padding 超过单请求 query 上限，导致 QuantFlashMLA replay 出错；或不加融合直接跑 C8，draft 预处理 kernel 停在 134.9µs。",
+        "fix": "用含 #23015 的版本：capture 预留足够 metadata 行、replay padding 按 per-request query limit 分段；A5 C8 draft 走 npu_mla_prolog_v3 融合（BF16 projection+RoPE 在 FP8 转换前）；要端到端数字必须自己跑八节点 P/D，官方未给。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/vllm-project/vllm-ascend/pull/23015",
+      "status": "实验性"
+    },
+    {
+      "line": "ascend",
+      "family": "draft",
+      "name": "SGLang · Kimi-K3.1 DFLASH 投机解码在昇腾使能（原仅 CUDA）",
+      "mechanism": "让 Kimi K3.1 + DFLASH draft 在昇腾可跑：draft attention 允许 ascend backend 处理 DFLASH sliding-window MLA block（forward_mtp 里按 FIA band 加窗），target-verify 的 sparse_mode 按层类型分支（ENCODER_ONLY 用 tril-anchored band、非 sliding encoder 全 attention、causal 保持原行为）；DP graph replay 让空闲 rank 用 0 实行 replay 活跃 rank 的 verify graph，替代 NPU 上的 force-eager；补 set_mla_kv_buffer适配 separated/combined/NZ ascend layout。",
+      "engine": "SGLang",
+      "versions": "PR #52518，merged 2026-11-27T07:32:28Z；昇腾 NPU，4 节点 64 卡（--tp-size 64 --attn-dp-size 4 --nnodes 4），--quantization modelslim，Kimi-K3.1-Pro-w4a8 draft",
+      "config": "export SGLANG_ENABLE_SPEC_V2=1 / SGLANG_RAGGED_VERIFY_MODE=static / SGLANG_DSPARK_FOLDED_PROPOSAL=0 / SGLANG_DSPARK_STACKED_CTX_KV=0 / SGLANG_DSPARK_EMBED_IN_GRAPH=0 / HCCL_OP_EXPANSION_MODE=AIV 等；sglang serve --attention-backend ascend --device npu --tp-size 64 --attn-dp-size 4 --nnodes 4 --enable-dp-lm-head --mem-fraction-static 0.78 --chunked-prefill-size 32768 --speculative-algorithm DFLASH --speculative-draft-attention-backend ascend --speculative-num-draft-tokens 5 --speculative-draft-model-quantization unquant",
+      "gain": "精度：Kimi-K3.1-Pro-w4a8 / GSM8K main 子集 200 题、正确 198、99%。Speed Tests and Profiling 标注 TODO，官方未给吞吐或接受率数字（未查到）。价值在于把 K3.1+DFlash 从「仅 CUDA 可用」扩到昇腾可跑。",
+      "cost": "无端到端吞吐/接受率实测，不能据此判断加速倍数；依赖大量环境变量与 4 节点 64 卡特定拓扑；graph capture 需处理 shared-expert deferred release（改用 record_stream）、bool mask 需在 addcmul_ 前提升为 int；verify 后端 nv_cutedsl 仅 SM100，其余走 triton KDA；PR 页 PR Test (Base) 显示失败（:x:），AMD ROCm 仍在跑，合并后 CI 状态需自行确认。",
+      "pitfalls": {
+        "hit": "直接沿用 CUDA 配置在昇腾跑 DFLASH，ascend draft attention backend 拒绝 sliding-window MLA block，或 DP verify 强制每个 NPU rank eager；graph capture 在 EndCapture 报 \"events not joined\"。",
+        "fix": "按上列 export 全量开启，--speculative-draft-attention-backend ascend + --speculative-algorithm DFLASH + num-draft-tokens 5；capture 阶段把 shared-expert 释放改为 record_stream（不要用 alt_stream.wait_stream）；采样 bool presence mask 先转 int 再 addcmul_（aclnnInplaceAddcmul 拒 DT_BOOL）。"
+      },
+      "evidence": "B",
+      "url": "https://github.com/sgl-project/sglang/pull/52518",
+      "status": "实验性"
     }
   ],
   "version": "v1",
-  "generated_at": "2026-11-27T09:48:40+08:00"
+  "generated_at": "2026-11-28T09:02:12+08:00"
 }
